@@ -1,0 +1,267 @@
+"""Command line interface.
+
+    securemailscope analyze capture.pcap --output result.json
+
+Everything the CLI does is local and passive.  User-supplied paths are handled
+as :class:`~pathlib.Path` values and are never interpolated into a shell
+command; no subprocess is spawned anywhere in this package.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from collections.abc import Sequence
+from pathlib import Path
+from typing import TextIO
+
+from . import __version__
+from .config import AnalysisConfig
+from .errors import InputError, SecureMailScopeError
+from .models.analysis import STAGE_STATUS, AnalysisResult
+from .models.tcp import SessionCompleteness
+from .reporting.json_report import result_to_json, write_json_report
+
+__all__ = ["main", "build_parser"]
+
+EXIT_OK = 0
+EXIT_ERROR = 1
+EXIT_INPUT_ERROR = 2
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="securemailscope",
+        description=(
+            "Passive cryptographic security posture assessment for captured email "
+            "traffic. Analysis is entirely local: no captured host is contacted and "
+            "no capture data leaves this machine."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Implementation status of the analysis stages:\n  "
+            + "\n  ".join(f"{name:<26} {status}" for name, status in STAGE_STATUS.items())
+        ),
+    )
+    parser.add_argument("--version", action="version", version=f"securemailscope {__version__}")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    analyze = subparsers.add_parser(
+        "analyze",
+        help="Analyse a pcap/pcapng file and emit a session inventory as JSON.",
+        description=(
+            "Reads a capture, reconstructs TCP sessions with full packet provenance "
+            "and writes a JSON report. Application payload bytes are never included "
+            "in the report."
+        ),
+    )
+    analyze.add_argument("capture", type=Path, help="Path to a .pcap or .pcapng file.")
+    analyze.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        default=None,
+        help="Write the JSON report here instead of standard output.",
+    )
+    analyze.add_argument(
+        "--compact", action="store_true", help="Emit single-line JSON instead of indented."
+    )
+    analyze.add_argument(
+        "--no-segments",
+        action="store_true",
+        help="Omit per-packet segment provenance lists (smaller reports).",
+    )
+    analyze.add_argument(
+        "--quiet", action="store_true", help="Suppress the human-readable summary on stderr."
+    )
+
+    limits = analyze.add_argument_group(
+        "resource limits", "Override the documented defaults; all values are hard ceilings."
+    )
+    limits.add_argument("--max-capture-bytes", type=int, default=None)
+    limits.add_argument("--max-packets", type=int, default=None)
+    limits.add_argument("--max-packet-bytes", type=int, default=None)
+    limits.add_argument("--max-total-payload-bytes", type=int, default=None)
+    limits.add_argument("--max-session-payload-bytes", type=int, default=None)
+    limits.add_argument("--max-concurrent-sessions", type=int, default=None)
+    limits.add_argument("--max-total-sessions", type=int, default=None)
+    limits.add_argument("--max-segments-per-direction", type=int, default=None)
+
+    fixtures = subparsers.add_parser(
+        "fixtures",
+        help="Regenerate the deterministic synthetic test captures and manifests.",
+        description=(
+            "Generates the synthetic captures used by the test suite. Output is "
+            "byte-identical on every run; no network access is involved."
+        ),
+    )
+    fixtures.add_argument(
+        "--capture-dir",
+        type=Path,
+        default=Path("tests/fixtures/generated"),
+        help="Where to write the generated capture files (gitignored).",
+    )
+    fixtures.add_argument(
+        "--manifest-dir",
+        type=Path,
+        default=Path("tests/fixtures/manifests"),
+        help="Where to write the expectation manifests (committed).",
+    )
+
+    subparsers.add_parser(
+        "status", help="Print the implementation status of each analysis stage."
+    )
+    return parser
+
+
+def _config_from_args(args: argparse.Namespace) -> AnalysisConfig:
+    """Environment first, then explicit command line overrides."""
+    base = AnalysisConfig.from_env()
+    overrides = {
+        name: getattr(args, name)
+        for name in (
+            "max_capture_bytes",
+            "max_packets",
+            "max_packet_bytes",
+            "max_total_payload_bytes",
+            "max_session_payload_bytes",
+            "max_concurrent_sessions",
+            "max_total_sessions",
+            "max_segments_per_direction",
+        )
+        if getattr(args, name, None) is not None
+    }
+    if not overrides:
+        return base
+    from dataclasses import replace
+
+    return replace(base, **overrides)
+
+
+def _summarise(result: AnalysisResult, stream: TextIO) -> None:
+    capture = result.capture
+    inventory = result.inventory
+    print(f"capture      : {capture.source_name}", file=stream)
+    print(f"capture id   : {capture.capture_id}", file=stream)
+    print(
+        f"format       : {capture.file_format.value}"
+        + (f" ({capture.byte_order}-endian)" if capture.byte_order else ""),
+        file=stream,
+    )
+    print(
+        f"packets      : {capture.packet_count} "
+        f"({capture.tcp_packet_count} TCP, {capture.non_ip_packet_count} non-IP, "
+        f"{capture.non_tcp_packet_count} non-TCP, {capture.malformed_packet_count} malformed)",
+        file=stream,
+    )
+    if capture.first_packet_timestamp and capture.last_packet_timestamp:
+        print(
+            f"time range   : {capture.first_packet_timestamp.isoformat()} .. "
+            f"{capture.last_packet_timestamp.isoformat()}",
+            file=stream,
+        )
+    print(
+        f"sessions     : {inventory.session_count} "
+        f"(complete {inventory.complete_session_count}, "
+        f"partial {inventory.partial_session_count}, "
+        f"midstream {inventory.midstream_session_count}, "
+        f"truncated {inventory.truncated_session_count})",
+        file=stream,
+    )
+    print(
+        f"reconstructed: {inventory.total_bytes_reconstructed} bytes, "
+        f"{inventory.total_gap_count} gap(s), "
+        f"{inventory.total_overlap_conflict_count} overlap conflict(s)",
+        file=stream,
+    )
+    if capture.truncated:
+        print("NOTE         : capture parsing stopped early; results are incomplete.", file=stream)
+
+    for session in result.sessions:
+        hint = session.protocol_hint.value if session.protocol_hint else "no hint"
+        marker = "" if session.completeness is SessionCompleteness.COMPLETE else " *"
+        print(
+            f"  {session.session_id}  {session.flow.client} -> {session.flow.server}  "
+            f"{session.completeness.value}{marker}  "
+            f"c2s={session.client_to_server.bytes_reconstructed}B "
+            f"s2c={session.server_to_client.bytes_reconstructed}B  [{hint}]",
+            file=stream,
+        )
+
+    total_warnings = len(result.warnings) + sum(len(s.warnings) for s in result.sessions)
+    if total_warnings:
+        print(f"warnings     : {total_warnings} (see the JSON report)", file=stream)
+
+
+def _run_analyze(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
+    from .pipeline import analyze_capture
+
+    config = _config_from_args(args)
+    result = analyze_capture(args.capture, config=config)
+    include_segments = not args.no_segments
+    indent = None if args.compact else 2
+
+    if args.output is not None:
+        path = write_json_report(
+            result, args.output, indent=indent, include_segments=include_segments
+        )
+        if not args.quiet:
+            print(f"report       : {path}", file=err)
+    else:
+        print(
+            result_to_json(result, indent=indent, include_segments=include_segments),
+            file=out,
+        )
+    if not args.quiet:
+        _summarise(result, err)
+    return EXIT_OK
+
+
+def _run_fixtures(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
+    from .testing.fixtures import write_fixtures
+
+    specs = write_fixtures(args.capture_dir, args.manifest_dir)
+    for spec in specs:
+        print(f"{spec.name:28s} {spec.filename:32s} sha256:{spec.sha256}", file=out)
+    print(
+        f"{len(specs)} fixture(s) written to {args.capture_dir} "
+        f"with manifests in {args.manifest_dir}",
+        file=err,
+    )
+    return EXIT_OK
+
+
+def _run_status(out: TextIO) -> int:
+    print(json.dumps(STAGE_STATUS, indent=2), file=out)
+    return EXIT_OK
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    out, err = sys.stdout, sys.stderr
+
+    try:
+        if args.command == "analyze":
+            return _run_analyze(args, out, err)
+        if args.command == "fixtures":
+            return _run_fixtures(args, out, err)
+        if args.command == "status":
+            return _run_status(out)
+    except InputError as exc:
+        print(f"securemailscope: input error: {exc}", file=err)
+        return EXIT_INPUT_ERROR
+    except SecureMailScopeError as exc:
+        print(f"securemailscope: {exc}", file=err)
+        return EXIT_ERROR
+    except OSError as exc:
+        print(f"securemailscope: file system error: {exc}", file=err)
+        return EXIT_INPUT_ERROR
+
+    parser.error(f"unknown command {args.command!r}")
+    return EXIT_ERROR  # pragma: no cover - argparse exits first
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

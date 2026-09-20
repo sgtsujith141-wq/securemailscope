@@ -1,0 +1,78 @@
+{
+  "name": "L_ipv6_connection",
+  "filename": "l_ipv6_connection.pcap",
+  "description": "A complete IPv6 connection to the SMTP submission port.",
+  "generation": "securemailscope.testing.fixtures._fixture_l",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "1819b513e6d2c5314cfc2fdc5a42153a4db58917a56995fc9f17d7dec54a058c",
+  "file_size_bytes": 855,
+  "expected_packet_count": 9,
+  "expected_tcp_packet_count": 9,
+  "expected_timestamps_ns": [
+    1704067200000000000,
+    1704067200001000000,
+    1704067200002000000,
+    1704067200003000000,
+    1704067200004000000,
+    1704067200005000000,
+    1704067200006000000,
+    1704067200007000000,
+    1704067200008000000
+  ],
+  "expected_sessions": [
+    {
+      "client": "2001:db8::10:49152",
+      "server": "2001:db8:1::25:587",
+      "flow_instance": 1,
+      "packet_count": 9,
+      "completeness": "COMPLETE",
+      "handshake_complete": true,
+      "termination_reason": "FIN_BOTH_DIRECTIONS",
+      "role_status": "OBSERVED",
+      "role_basis": "TCP_SYN",
+      "protocol_hint": "HINT:SMTP submission",
+      "first_packet": 1,
+      "last_packet": 9,
+      "client_to_server": {
+        "bytes_reconstructed": 21,
+        "stream_base_sequence": 1001,
+        "base_status": "OBSERVED",
+        "runs": [
+          {
+            "stream_offset": 0,
+            "length": 21,
+            "content_hex": "45484c4f20636c69656e742e6578616d706c650d0a"
+          }
+        ],
+        "gaps": [],
+        "conflicts": [],
+        "segment_packets": [
+          4
+        ],
+        "duplicate_packets": {},
+        "packet_count": 5,
+        "retransmission_count": 0,
+        "duplicate_count": 0,
+        "out_of_order_count": 0
+      },
+      "server_to_client": {
+        "bytes_reconstructed": 0,
+        "stream_base_sequence": 5001,
+        "base_status": "OBSERVED",
+        "runs": [],
+        "gaps": [],
+        "conflicts": [],
+        "segment_packets": [],
+        "duplicate_packets": {},
+        "packet_count": 4,
+        "retransmission_count": 0,
+        "duplicate_count": 0,
+        "out_of_order_count": 0
+      }
+    }
+  ],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null
+}

@@ -1,0 +1,90 @@
+{
+  "name": "O_snapshot_truncated",
+  "filename": "o_snapshot_truncated.pcap",
+  "description": "The client data frame was stored with a short snapshot length: 10 of its 21 payload bytes are present. The missing tail must be reported as a NOT_CAPTURED gap rather than silently shortening the stream.",
+  "generation": "securemailscope.testing.fixtures._fixture_o",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "f59099d09444cb842aa869c5bfdbb2b07fa60db02c57d3fe3c877cc635526206",
+  "file_size_bytes": 664,
+  "expected_packet_count": 9,
+  "expected_tcp_packet_count": 9,
+  "expected_timestamps_ns": [
+    1704067200000000000,
+    1704067200001000000,
+    1704067200002000000,
+    1704067200003000000,
+    1704067200004000000,
+    1704067200005000000,
+    1704067200006000000,
+    1704067200007000000,
+    1704067200008000000
+  ],
+  "expected_sessions": [
+    {
+      "client": "192.0.2.10:49152",
+      "server": "198.51.100.25:25",
+      "flow_instance": 1,
+      "packet_count": 9,
+      "completeness": "PARTIAL",
+      "handshake_complete": true,
+      "termination_reason": "FIN_BOTH_DIRECTIONS",
+      "role_status": "OBSERVED",
+      "role_basis": "TCP_SYN",
+      "protocol_hint": "HINT:SMTP",
+      "first_packet": 1,
+      "last_packet": 9,
+      "client_to_server": {
+        "bytes_reconstructed": 10,
+        "stream_base_sequence": 1001,
+        "base_status": "OBSERVED",
+        "runs": [
+          {
+            "stream_offset": 0,
+            "length": 10,
+            "content_hex": "45484c4f20636c69656e"
+          }
+        ],
+        "gaps": [
+          {
+            "stream_offset": 10,
+            "length": 11,
+            "reason": "NOT_CAPTURED",
+            "preceding_packet": 4,
+            "following_packet": null
+          }
+        ],
+        "conflicts": [],
+        "segment_packets": [
+          4
+        ],
+        "duplicate_packets": {},
+        "packet_count": 5,
+        "retransmission_count": 0,
+        "duplicate_count": 0,
+        "out_of_order_count": 0
+      },
+      "server_to_client": {
+        "bytes_reconstructed": 0,
+        "stream_base_sequence": 5001,
+        "base_status": "OBSERVED",
+        "runs": [],
+        "gaps": [],
+        "conflicts": [],
+        "segment_packets": [],
+        "duplicate_packets": {},
+        "packet_count": 4,
+        "retransmission_count": 0,
+        "duplicate_count": 0,
+        "out_of_order_count": 0
+      }
+    }
+  ],
+  "expected_warning_codes": [
+    "TRUNCATED_PACKET_DATA",
+    "SEQUENCE_GAP",
+    "ACKED_DATA_NOT_CAPTURED"
+  ],
+  "expected_capture_truncated": false,
+  "expected_error": null
+}

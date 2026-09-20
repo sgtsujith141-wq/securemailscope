@@ -1,0 +1,88 @@
+{
+  "name": "K_pcapng_nanosecond",
+  "filename": "k_pcapng_nanosecond.pcapng",
+  "description": "Fixture A's packets in a pcapng container with if_tsresol=9. Timestamps carry a 987 ns offset that must survive parsing intact.",
+  "generation": "securemailscope.testing.fixtures._fixture_k",
+  "file_format": "pcapng",
+  "link_type_code": 1,
+  "capture_sha256": "767afe4cf83f5fadb52e8f3d0b230311009e0d8511fdcd6a61f1288e36ae7996",
+  "file_size_bytes": 1092,
+  "expected_packet_count": 11,
+  "expected_tcp_packet_count": 11,
+  "expected_timestamps_ns": [
+    1704067200000000987,
+    1704067200001000987,
+    1704067200002000987,
+    1704067200003000987,
+    1704067200004000987,
+    1704067200005000987,
+    1704067200006000987,
+    1704067200007000987,
+    1704067200008000987,
+    1704067200009000987,
+    1704067200010000987
+  ],
+  "expected_sessions": [
+    {
+      "client": "192.0.2.10:49152",
+      "server": "198.51.100.25:25",
+      "flow_instance": 1,
+      "packet_count": 11,
+      "completeness": "COMPLETE",
+      "handshake_complete": true,
+      "termination_reason": "FIN_BOTH_DIRECTIONS",
+      "role_status": "OBSERVED",
+      "role_basis": "TCP_SYN",
+      "protocol_hint": "HINT:SMTP",
+      "first_packet": 1,
+      "last_packet": 11,
+      "client_to_server": {
+        "bytes_reconstructed": 21,
+        "stream_base_sequence": 1001,
+        "base_status": "OBSERVED",
+        "runs": [
+          {
+            "stream_offset": 0,
+            "length": 21,
+            "content_hex": "45484c4f20636c69656e742e6578616d706c650d0a"
+          }
+        ],
+        "gaps": [],
+        "conflicts": [],
+        "segment_packets": [
+          4
+        ],
+        "duplicate_packets": {},
+        "packet_count": 6,
+        "retransmission_count": 0,
+        "duplicate_count": 0,
+        "out_of_order_count": 0
+      },
+      "server_to_client": {
+        "bytes_reconstructed": 24,
+        "stream_base_sequence": 5001,
+        "base_status": "OBSERVED",
+        "runs": [
+          {
+            "stream_offset": 0,
+            "length": 24,
+            "content_hex": "3235302d6d61696c2e6578616d706c652048656c6c6f0d0a"
+          }
+        ],
+        "gaps": [],
+        "conflicts": [],
+        "segment_packets": [
+          6
+        ],
+        "duplicate_packets": {},
+        "packet_count": 5,
+        "retransmission_count": 0,
+        "duplicate_count": 0,
+        "out_of_order_count": 0
+      }
+    }
+  ],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null
+}

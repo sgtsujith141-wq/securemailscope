@@ -1,0 +1,109 @@
+# ---------------------------------------------------------------------------
+# SecureMailScope .gitignore
+#
+# SECURITY-CRITICAL: this project handles packet captures that may contain
+# credentials, mail contents and personal data. Everything that could hold
+# real capture data or secrets is excluded here by default.
+# See SECURITY.md and docs/threat-model.md.
+# ---------------------------------------------------------------------------
+
+# --- Capture data (NEVER commit real captures) -----------------------------
+*.pcap
+*.pcapng
+*.cap
+*.pcap.gz
+*.pcapng.gz
+*.erf
+*.snoop
+captures/
+data/
+samples/
+evidence/
+
+# Generated synthetic fixtures (regenerate with `make fixtures`).
+tests/fixtures/generated/
+
+# --- Secrets and local configuration ---------------------------------------
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+secrets/
+*.sslkeylog
+sslkeylog*.log
+*keylog*.txt
+
+# --- Analysis output --------------------------------------------------------
+out/
+output/
+reports/
+*.report.json
+result.json
+results/
+*.sqlite
+*.sqlite3
+*.db
+
+# --- Python -----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Virtual environments ---------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+
+# --- Tooling caches ---------------------------------------------------------
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.nox/
+.hypothesis/
+
+# --- Node / frontend (later milestones) -------------------------------------
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# --- Editors and OS ---------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- Scratch ----------------------------------------------------------------
+scratch/
+tmp/

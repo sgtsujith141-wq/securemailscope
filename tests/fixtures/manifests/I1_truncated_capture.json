@@ -1,0 +1,67 @@
+{
+  "name": "I1_truncated_capture",
+  "filename": "i1_truncated_capture.pcap",
+  "description": "Fixture A cut off inside the fourth packet record. The three intact packets must still be analysed and the damage reported explicitly.",
+  "generation": "securemailscope.testing.fixtures._fixture_i_truncated (fixture A, byte-truncated)",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "252dac5f8f6f95127352e28498bea803809f28b6073b47a78d5a7a949d1402a6",
+  "file_size_bytes": 254,
+  "expected_packet_count": 3,
+  "expected_tcp_packet_count": 3,
+  "expected_timestamps_ns": [
+    1704067200000000000,
+    1704067200001000000,
+    1704067200002000000
+  ],
+  "expected_sessions": [
+    {
+      "client": "192.0.2.10:49152",
+      "server": "198.51.100.25:25",
+      "flow_instance": 1,
+      "packet_count": 3,
+      "completeness": "PARTIAL",
+      "handshake_complete": true,
+      "termination_reason": "NOT_OBSERVED",
+      "role_status": "OBSERVED",
+      "role_basis": "TCP_SYN",
+      "protocol_hint": "HINT:SMTP",
+      "first_packet": 1,
+      "last_packet": 3,
+      "client_to_server": {
+        "bytes_reconstructed": 0,
+        "stream_base_sequence": 1001,
+        "base_status": "OBSERVED",
+        "runs": [],
+        "gaps": [],
+        "conflicts": [],
+        "segment_packets": [],
+        "duplicate_packets": {},
+        "packet_count": 2,
+        "retransmission_count": 0,
+        "duplicate_count": 0,
+        "out_of_order_count": 0
+      },
+      "server_to_client": {
+        "bytes_reconstructed": 0,
+        "stream_base_sequence": 5001,
+        "base_status": "OBSERVED",
+        "runs": [],
+        "gaps": [],
+        "conflicts": [],
+        "segment_packets": [],
+        "duplicate_packets": {},
+        "packet_count": 1,
+        "retransmission_count": 0,
+        "duplicate_count": 0,
+        "out_of_order_count": 0
+      }
+    }
+  ],
+  "expected_warning_codes": [
+    "TRUNCATED_CAPTURE_FILE",
+    "NO_TERMINATION_OBSERVED"
+  ],
+  "expected_capture_truncated": true,
+  "expected_error": null
+}

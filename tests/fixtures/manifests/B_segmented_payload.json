@@ -1,0 +1,92 @@
+{
+  "name": "B_segmented_payload",
+  "filename": "b_segmented_payload.pcap",
+  "description": "The fixture A client payload split across three TCP segments delivered in order. Reconstruction must yield exactly the fixture A byte stream.",
+  "generation": "securemailscope.testing.fixtures._fixture_b",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "99a59ed70017834c875c41ebd1c8f5dcb4c2eec7419581c59ca9b40b73d1673f",
+  "file_size_bytes": 979,
+  "expected_packet_count": 13,
+  "expected_tcp_packet_count": 13,
+  "expected_timestamps_ns": [
+    1704067200000000000,
+    1704067200001000000,
+    1704067200002000000,
+    1704067200003000000,
+    1704067200004000000,
+    1704067200005000000,
+    1704067200006000000,
+    1704067200007000000,
+    1704067200008000000,
+    1704067200009000000,
+    1704067200010000000,
+    1704067200011000000,
+    1704067200012000000
+  ],
+  "expected_sessions": [
+    {
+      "client": "192.0.2.10:49152",
+      "server": "198.51.100.25:25",
+      "flow_instance": 1,
+      "packet_count": 13,
+      "completeness": "COMPLETE",
+      "handshake_complete": true,
+      "termination_reason": "FIN_BOTH_DIRECTIONS",
+      "role_status": "OBSERVED",
+      "role_basis": "TCP_SYN",
+      "protocol_hint": "HINT:SMTP",
+      "first_packet": 1,
+      "last_packet": 13,
+      "client_to_server": {
+        "bytes_reconstructed": 21,
+        "stream_base_sequence": 1001,
+        "base_status": "OBSERVED",
+        "runs": [
+          {
+            "stream_offset": 0,
+            "length": 21,
+            "content_hex": "45484c4f20636c69656e742e6578616d706c650d0a"
+          }
+        ],
+        "gaps": [],
+        "conflicts": [],
+        "segment_packets": [
+          4,
+          5,
+          6
+        ],
+        "duplicate_packets": {},
+        "packet_count": 8,
+        "retransmission_count": 0,
+        "duplicate_count": 0,
+        "out_of_order_count": 0
+      },
+      "server_to_client": {
+        "bytes_reconstructed": 24,
+        "stream_base_sequence": 5001,
+        "base_status": "OBSERVED",
+        "runs": [
+          {
+            "stream_offset": 0,
+            "length": 24,
+            "content_hex": "3235302d6d61696c2e6578616d706c652048656c6c6f0d0a"
+          }
+        ],
+        "gaps": [],
+        "conflicts": [],
+        "segment_packets": [
+          8
+        ],
+        "duplicate_packets": {},
+        "packet_count": 5,
+        "retransmission_count": 0,
+        "duplicate_count": 0,
+        "out_of_order_count": 0
+      }
+    }
+  ],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null
+}

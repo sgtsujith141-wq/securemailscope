@@ -1,0 +1,1 @@
+"""Serialisation of analysis results."""

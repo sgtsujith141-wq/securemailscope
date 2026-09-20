@@ -1,0 +1,17 @@
+{
+  "name": "I3_header_only",
+  "filename": "i3_header_only.pcap",
+  "description": "A valid pcap file header with no packet records at all.",
+  "generation": "securemailscope.testing.fixtures._fixture_i_header_only",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "704e5e5b3234433c01fcfd1b20a306e77e985038120492dc53965c3edd38a4ea",
+  "file_size_bytes": 24,
+  "expected_packet_count": 0,
+  "expected_tcp_packet_count": 0,
+  "expected_timestamps_ns": [],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null
+}

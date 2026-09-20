@@ -1,0 +1,17 @@
+{
+  "name": "I2_not_a_capture",
+  "filename": "i2_not_a_capture.pcap",
+  "description": "A file with a .pcap extension whose contents are not a capture at all. Format detection must reject it on contents, not on the extension.",
+  "generation": "securemailscope.testing.fixtures._fixture_i_not_a_capture",
+  "file_format": "raw",
+  "link_type_code": -1,
+  "capture_sha256": "aafe01d591e8e1b09027f73808fdda101261397bc8950752d223a960501f8cf3",
+  "file_size_bytes": 83,
+  "expected_packet_count": 0,
+  "expected_tcp_packet_count": 0,
+  "expected_timestamps_ns": [],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": "UnsupportedCaptureFormatError"
+}
