@@ -20,9 +20,11 @@ from pathlib import Path
 from typing import Any, Final
 
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import func, select
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from ..config import AnalysisConfig
 from ..models.analysis import REPORT_SCHEMA_VERSION
@@ -66,7 +68,7 @@ from .security import (
     allowed_origins,
 )
 from .service import AnalysisService
-from .storage import CaptureStorage, UploadRejected
+from .storage import CaptureStorage, UploadRejected, UploadTooLarge
 
 __all__ = ["create_app", "AppState", "API_VERSION"]
 
@@ -175,6 +177,33 @@ def _session_summary(row: SessionRow) -> SessionSummary:
 
 def _finding_summary(row: FindingRow) -> FindingSummary:
     return FindingSummary.model_validate(row)
+
+
+#: HTTP status -> the stable ``error`` code clients match on. The human text
+#: in ``detail`` may be reworded; these codes are part of the API contract.
+_ERROR_CODES: dict[int, str] = {
+    400: "bad_request",
+    401: "unauthorised",
+    404: "not_found",
+    405: "method_not_allowed",
+    413: "payload_too_large",
+    422: "invalid_request",
+    500: "internal_error",
+}
+
+
+def _require_investigation(db_session: Any, investigation_id: str) -> InvestigationRow:
+    """Fetch an investigation or raise 404.
+
+    Sub-collections have to check this explicitly. Filtering rows by an
+    investigation id that does not exist returns an empty set perfectly
+    happily, so without this an analyst who mistypes an id is shown "no
+    findings" -- which reads as a clean result -- instead of "not found".
+    """
+    row = db_session.get(InvestigationRow, investigation_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="investigation not found")
+    return row
 
 
 def _results_for(state: AppState, investigation_id: str) -> tuple[list[Any], Any]:
@@ -290,6 +319,52 @@ def create_app(
         )
         return response
 
+    @app.exception_handler(StarletteHTTPException)
+    async def _http_error(
+        request: Request, exc: StarletteHTTPException
+    ) -> JSONResponse:
+        """One error shape for the whole API.
+
+        The host and token guards in the middleware answer with an
+        ``ErrorResponse``; without this, every ``HTTPException`` raised by a
+        handler would answer with Starlette's ``{"detail": ...}`` instead, and
+        a client would have to understand two contracts. ``detail`` is kept, so
+        this is additive for anything already reading it.
+        """
+        detail = exc.detail if isinstance(exc.detail, str) else "the request failed"
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=ErrorResponse(
+                error=_ERROR_CODES.get(exc.status_code, "request_failed"),
+                detail=detail,
+                status_code=exc.status_code,
+            ).model_dump(),
+            headers=getattr(exc, "headers", None),
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def _validation_error(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
+        """Validation failures, reported without echoing the whole input back."""
+        fields = sorted(
+            ".".join(str(part) for part in error.get("loc", ())[1:])
+            for error in exc.errors()
+        )
+        return JSONResponse(
+            status_code=422,
+            content=ErrorResponse(
+                error="invalid_request",
+                detail=(
+                    "the request parameters were not valid: "
+                    + ", ".join(field for field in fields if field)
+                    if any(fields)
+                    else "the request parameters were not valid"
+                ),
+                status_code=422,
+            ).model_dump(),
+        )
+
     @app.exception_handler(Exception)
     async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
         # Logged in full locally, reported briefly to the caller. An API that
@@ -340,6 +415,10 @@ def create_app(
         """Store an uploaded capture privately, validating as it streams."""
         try:
             stored = app_state.storage.store(file.file, file.filename or "capture")
+        except UploadTooLarge as exc:
+            # 413, not 422: the body is well formed, there is simply too much
+            # of it, and a client needs to tell those apart.
+            raise HTTPException(status_code=413, detail=str(exc)) from exc
         except UploadRejected as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -522,6 +601,7 @@ def create_app(
         investigation_id: str, app_state: AppState = Depends(get_state)
     ) -> list[JobStatus]:
         with app_state.database.session() as db_session:
+            _require_investigation(db_session, investigation_id)
             rows = (
                 db_session.query(JobRow)
                 .filter(JobRow.investigation_id == investigation_id)
@@ -572,6 +652,7 @@ def create_app(
                 detail=f"sort must be one of {', '.join(sorted(sortable))}",
             )
         with app_state.database.session() as db_session:
+            _require_investigation(db_session, investigation_id)
             query = db_session.query(SessionRow).filter(
                 SessionRow.investigation_id == investigation_id
             )
@@ -647,6 +728,7 @@ def create_app(
         app_state: AppState = Depends(get_state),
     ) -> Page[FindingSummary]:
         with app_state.database.session() as db_session:
+            _require_investigation(db_session, investigation_id)
             query = db_session.query(FindingRow).filter(
                 FindingRow.investigation_id == investigation_id
             )
@@ -890,6 +972,7 @@ def create_app(
         investigation_id: str, app_state: AppState = Depends(get_state)
     ) -> list[ExportSummary]:
         with app_state.database.session() as db_session:
+            _require_investigation(db_session, investigation_id)
             rows = (
                 db_session.query(ReportExportRow)
                 .filter(ReportExportRow.investigation_id == investigation_id)

@@ -64,11 +64,13 @@ export function Timeline() {
       <Panel>
         <div className="flex flex-wrap gap-2">
           <select className="input" value={eventType} data-testid="event-type-filter"
+                  aria-label="Filter timeline by event type"
                   onChange={(e) => { setEventType(e.target.value); setOffset(0) }}>
             <option value="">All event types</option>
             {EVENT_TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
           </select>
           <input className="input flex-1 min-w-[180px]" placeholder="Filter by session id"
+                 aria-label="Filter timeline by session id"
                  value={sessionId} data-testid="timeline-session-filter"
                  onChange={(e) => { setSessionId(e.target.value); setOffset(0) }} />
         </div>

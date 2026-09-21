@@ -304,6 +304,13 @@ def _build_story(model: ReportModel, styles: dict[str, Any], width: float) -> li
                 + (f" · {_escape(finding.priority)}" if finding.priority else "")
                 + f" · confidence {_escape(finding.confidence)}",
                 styles["h3"]),
+            # The stable handle that ties this entry to the JSON export, the
+            # HTML report and the dashboard. Printed in full: a truncated
+            # identifier cannot be cross-referenced.
+            Paragraph(
+                f"<font face='Courier' size='7'>{_escape(finding.finding_id)}</font>",
+                styles["muted"],
+            ),
             Paragraph(_escape(finding.description), p),
             Paragraph(f"<b>Impact.</b> {_escape(finding.technical_impact)}", styles["muted"]),
         ]

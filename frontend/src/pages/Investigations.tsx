@@ -130,6 +130,7 @@ export function Investigations() {
           multiple
           accept=".pcap,.pcapng"
           className="hidden"
+          aria-label="Choose capture files to upload"
           data-testid="file-input"
           onChange={(event) => onFiles(event.target.files)}
         />

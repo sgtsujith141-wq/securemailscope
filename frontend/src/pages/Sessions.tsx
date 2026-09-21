@@ -61,15 +61,20 @@ export function Sessions() {
 
       <Panel>
         <div className="flex flex-wrap gap-2 items-center">
+          {/* A placeholder is not an accessible name: it is not reliably
+              announced and it disappears the moment the analyst types. */}
           <input className="input flex-1 min-w-[200px]" placeholder="Search session, endpoint or cipher suite"
+                 aria-label="Search sessions by session id, endpoint or cipher suite"
                  value={search} data-testid="session-search"
                  onChange={(e) => { setSearch(e.target.value); setOffset(0) }} />
           <select className="input" value={protocol} data-testid="protocol-filter"
+                  aria-label="Filter sessions by protocol"
                   onChange={(e) => { setProtocol(e.target.value); setOffset(0) }}>
             <option value="">All protocols</option>
             {['SMTP', 'IMAP', 'POP3', 'UNKNOWN'].map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
           <select className="input" value={tls} data-testid="tls-filter"
+                  aria-label="Filter sessions by TLS version"
                   onChange={(e) => { setTls(e.target.value); setOffset(0) }}>
             <option value="">All TLS versions</option>
             {['TLS 1.0', 'TLS 1.1', 'TLS 1.2', 'TLS 1.3'].map((v) => <option key={v} value={v}>{v}</option>)}

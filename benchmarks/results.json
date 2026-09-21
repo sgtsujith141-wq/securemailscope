@@ -1,0 +1,199 @@
+{
+  "environment": {
+    "cpu_count": "16",
+    "machine": "x86_64",
+    "numpy": "2.1.3",
+    "platform": "macOS-26.6.2-x86_64-i386-64bit",
+    "processor": "i386",
+    "pydantic": "2.9.2",
+    "python": "3.12.14",
+    "reportlab": "4.2.5",
+    "scapy": "2.6.1",
+    "sklearn": "1.5.2",
+    "sqlalchemy": "2.0.36"
+  },
+  "measurement_context": "Locally generated synthetic captures on one machine. These are measurements of this configuration, not a claim about throughput on other hardware or on real traffic.",
+  "repeats": 3,
+  "results": [
+    {
+      "bytes_per_second": 278200.4,
+      "capture_bytes": 24751,
+      "correct": true,
+      "findings": 24,
+      "label": "Small",
+      "notes": [],
+      "packets": 150,
+      "packets_per_second": 1686.0,
+      "peak_rss_mb": 189.6,
+      "profile": "small",
+      "repeats": 3,
+      "report_bytes": {
+        "html": 93088,
+        "json": 198769,
+        "pdf": 46135
+      },
+      "seconds_max": 0.0904,
+      "seconds_median": 0.089,
+      "seconds_min": 0.0816,
+      "sessions_expected": 25,
+      "sessions_observed": 25,
+      "stages": [
+        {
+          "added_seconds": 0.0663,
+          "name": "ingestion, TCP, protocol, TLS",
+          "seconds": 0.0663,
+          "within_noise": false
+        },
+        {
+          "added_seconds": 0.0356,
+          "name": "+ security assessment",
+          "seconds": 0.1019,
+          "within_noise": true
+        },
+        {
+          "added_seconds": 0.0005,
+          "name": "+ machine learning",
+          "seconds": 0.1024,
+          "within_noise": true
+        }
+      ],
+      "tls_sessions_expected": 25,
+      "tls_sessions_observed": 25
+    },
+    {
+      "bytes_per_second": 226719.4,
+      "capture_bytes": 194673,
+      "correct": true,
+      "findings": 171,
+      "label": "Medium",
+      "notes": [],
+      "packets": 1200,
+      "packets_per_second": 1397.5,
+      "peak_rss_mb": 270.4,
+      "profile": "medium",
+      "repeats": 3,
+      "report_bytes": {
+        "html": 368747,
+        "json": 1351249,
+        "pdf": 144268
+      },
+      "seconds_max": 0.9827,
+      "seconds_median": 0.8587,
+      "seconds_min": 0.8497,
+      "sessions_expected": 200,
+      "sessions_observed": 200,
+      "stages": [
+        {
+          "added_seconds": 0.599,
+          "name": "ingestion, TCP, protocol, TLS",
+          "seconds": 0.599,
+          "within_noise": false
+        },
+        {
+          "added_seconds": 0.2943,
+          "name": "+ security assessment",
+          "seconds": 0.8933,
+          "within_noise": false
+        },
+        {
+          "added_seconds": 0.038,
+          "name": "+ machine learning",
+          "seconds": 0.9313,
+          "within_noise": true
+        }
+      ],
+      "tls_sessions_expected": 200,
+      "tls_sessions_observed": 200
+    },
+    {
+      "bytes_per_second": 205306.4,
+      "capture_bytes": 971126,
+      "correct": true,
+      "findings": 845,
+      "label": "Large",
+      "notes": [],
+      "packets": 6000,
+      "packets_per_second": 1268.5,
+      "peak_rss_mb": 625.2,
+      "profile": "large",
+      "repeats": 3,
+      "report_bytes": {
+        "html": 1586545,
+        "json": 6277058,
+        "pdf": 537117
+      },
+      "seconds_max": 4.934,
+      "seconds_median": 4.7301,
+      "seconds_min": 4.6738,
+      "sessions_expected": 1000,
+      "sessions_observed": 1000,
+      "stages": [
+        {
+          "added_seconds": 3.5869,
+          "name": "ingestion, TCP, protocol, TLS",
+          "seconds": 3.5869,
+          "within_noise": false
+        },
+        {
+          "added_seconds": 1.156,
+          "name": "+ security assessment",
+          "seconds": 4.7428,
+          "within_noise": false
+        },
+        {
+          "added_seconds": 0.145,
+          "name": "+ machine learning",
+          "seconds": 4.8878,
+          "within_noise": true
+        }
+      ],
+      "tls_sessions_expected": 1000,
+      "tls_sessions_observed": 1000
+    },
+    {
+      "bytes_per_second": 181309.0,
+      "capture_bytes": 3884717,
+      "correct": true,
+      "findings": 3376,
+      "label": "Stress",
+      "notes": [],
+      "packets": 24000,
+      "packets_per_second": 1120.1,
+      "peak_rss_mb": 1800.0,
+      "profile": "stress",
+      "repeats": 3,
+      "report_bytes": {
+        "html": 6122712,
+        "json": 24575113,
+        "pdf": 1988059
+      },
+      "seconds_max": 22.0968,
+      "seconds_median": 21.4259,
+      "seconds_min": 21.3276,
+      "sessions_expected": 4000,
+      "sessions_observed": 4000,
+      "stages": [
+        {
+          "added_seconds": 15.219,
+          "name": "ingestion, TCP, protocol, TLS",
+          "seconds": 15.219,
+          "within_noise": false
+        },
+        {
+          "added_seconds": 4.7179,
+          "name": "+ security assessment",
+          "seconds": 19.9369,
+          "within_noise": true
+        },
+        {
+          "added_seconds": 9.5251,
+          "name": "+ machine learning",
+          "seconds": 29.4619,
+          "within_noise": false
+        }
+      ],
+      "tls_sessions_expected": 4000,
+      "tls_sessions_observed": 4000
+    }
+  ]
+}

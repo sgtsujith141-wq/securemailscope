@@ -59,6 +59,15 @@ class UploadRejected(Exception):
     """An upload that will not be stored, with a reason safe to show a user."""
 
 
+class UploadTooLarge(UploadRejected):
+    """The upload exceeded the configured size limit.
+
+    Kept distinct from the other rejections so the API can answer 413 rather
+    than 422. A client that cannot tell "too big" from "not a capture" cannot
+    tell the user to split the file rather than to check its format.
+    """
+
+
 @dataclass(frozen=True)
 class StoredCapture:
     storage_id: str
@@ -136,7 +145,7 @@ class CaptureStorage:
                         break
                     total += len(chunk)
                     if total > self.max_bytes:
-                        raise UploadRejected(
+                        raise UploadTooLarge(
                             f"the upload exceeds the configured limit of "
                             f"{self.max_bytes} bytes and was abandoned before it "
                             "was fully written"

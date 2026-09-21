@@ -1,0 +1,159 @@
+{
+  "thresholds_defined_on": "2026-09-21",
+  "results_generated_at": null,
+  "environment": {
+    "cpu_count": "16",
+    "machine": "x86_64",
+    "numpy": "2.1.3",
+    "platform": "macOS-26.6.2-x86_64-i386-64bit",
+    "processor": "i386",
+    "pydantic": "2.9.2",
+    "python": "3.12.14",
+    "reportlab": "4.2.5",
+    "scapy": "2.6.1",
+    "sklearn": "1.5.2",
+    "sqlalchemy": "2.0.36"
+  },
+  "verdicts": [
+    {
+      "id": "T1",
+      "profile": "medium",
+      "metric": "packets_per_second",
+      "observed": 1397.5,
+      "threshold": 500,
+      "operator": ">=",
+      "gated": true,
+      "status": "PASS"
+    },
+    {
+      "id": "T2",
+      "profile": "medium->large",
+      "metric": "time_scaling_exponent",
+      "observed": 1.06,
+      "threshold": 1.2,
+      "operator": "<=",
+      "gated": true,
+      "status": "PASS"
+    },
+    {
+      "id": "T3",
+      "profile": "large",
+      "metric": "peak_rss_mb",
+      "observed": 625.2,
+      "threshold": 2048,
+      "operator": "<=",
+      "gated": true,
+      "status": "PASS"
+    },
+    {
+      "id": "T4",
+      "profile": "medium->large",
+      "metric": "rss_growth_kb_per_packet",
+      "observed": 75.691,
+      "threshold": 100,
+      "operator": "<=",
+      "gated": true,
+      "status": "PASS"
+    },
+    {
+      "id": "T5",
+      "profile": "small",
+      "metric": "max_report_bytes",
+      "observed": 198769,
+      "threshold": 33554432,
+      "operator": "<=",
+      "gated": true,
+      "status": "PASS"
+    },
+    {
+      "id": "T5",
+      "profile": "medium",
+      "metric": "max_report_bytes",
+      "observed": 1351249,
+      "threshold": 33554432,
+      "operator": "<=",
+      "gated": true,
+      "status": "PASS"
+    },
+    {
+      "id": "T5",
+      "profile": "large",
+      "metric": "max_report_bytes",
+      "observed": 6277058,
+      "threshold": 33554432,
+      "operator": "<=",
+      "gated": true,
+      "status": "PASS"
+    },
+    {
+      "id": "T6",
+      "profile": "small",
+      "metric": "correct",
+      "observed": true,
+      "threshold": true,
+      "operator": "==",
+      "gated": true,
+      "status": "PASS"
+    },
+    {
+      "id": "T6",
+      "profile": "medium",
+      "metric": "correct",
+      "observed": true,
+      "threshold": true,
+      "operator": "==",
+      "gated": true,
+      "status": "PASS"
+    },
+    {
+      "id": "T6",
+      "profile": "large",
+      "metric": "correct",
+      "observed": true,
+      "threshold": true,
+      "operator": "==",
+      "gated": true,
+      "status": "PASS"
+    },
+    {
+      "id": "T6",
+      "profile": "stress",
+      "metric": "correct",
+      "observed": true,
+      "threshold": true,
+      "operator": "==",
+      "gated": false,
+      "status": "PASS"
+    },
+    {
+      "id": "T7",
+      "profile": "small",
+      "metric": "max_over_min_ratio",
+      "observed": 1.108,
+      "threshold": 2.0,
+      "operator": "<=",
+      "gated": true,
+      "status": "PASS"
+    },
+    {
+      "id": "T7",
+      "profile": "medium",
+      "metric": "max_over_min_ratio",
+      "observed": 1.157,
+      "threshold": 2.0,
+      "operator": "<=",
+      "gated": true,
+      "status": "PASS"
+    },
+    {
+      "id": "T7",
+      "profile": "large",
+      "metric": "max_over_min_ratio",
+      "observed": 1.056,
+      "threshold": 2.0,
+      "operator": "<=",
+      "gated": true,
+      "status": "PASS"
+    }
+  ]
+}

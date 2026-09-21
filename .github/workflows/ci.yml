@@ -1,0 +1,249 @@
+# SecureMailScope continuous integration.
+#
+# Two things this workflow is careful about.
+#
+# *It uploads nothing sensitive.* Fixture captures are generated during the run
+# and never uploaded as artifacts. The only artifact is the benchmark JSON,
+# which contains timings and counts -- no packet data, no file contents.
+#
+# *It asks for as little as it can.* Permissions are read-only at the workflow
+# level, so a compromised action in the dependency tree cannot write to the
+# repository. No secret is referenced anywhere, so none can be printed.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege: nothing in this workflow writes to the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  engine:
+    name: Engine (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,backend,reporting-tests,ml]"
+
+      - name: Check the installed set matches the lock file
+        run: |
+          python - <<'PY'
+          import re, subprocess, sys, pathlib
+          locked = {}
+          for line in pathlib.Path("requirements-lock.txt").read_text().splitlines():
+              line = line.strip()
+              if line and not line.startswith("#"):
+                  name, version = line.split("==", 1)
+                  locked[name.lower().replace("_", "-")] = version
+          frozen = subprocess.run(
+              [sys.executable, "-m", "pip", "list", "--format=freeze"],
+              capture_output=True, text=True, check=True,
+          ).stdout
+          drift = []
+          for line in frozen.splitlines():
+              if "==" not in line:
+                  continue
+              name, version = line.split("==", 1)
+              key = name.lower().replace("_", "-")
+              if key in locked and locked[key] != version:
+                  drift.append(f"{name}: locked {locked[key]}, installed {version}")
+          if drift:
+              # Reported, not fatal: a resolver on a different Python version
+              # may legitimately pick a different build of a transitive.
+              print("::warning::dependency drift from requirements-lock.txt")
+              for item in drift:
+                  print(f"::warning::{item}")
+          else:
+              print("installed versions match requirements-lock.txt")
+          PY
+
+      - name: Generate fixtures
+        run: python scripts/generate_fixtures.py
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Type check
+        run: mypy
+
+      - name: Test
+        run: pytest -q
+
+      - name: Install TShark and cross-check the dissection
+        if: matrix.python == '3.12'
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq tshark
+          SECUREMAILSCOPE_TSHARK=1 pytest tests/test_tshark_crosscheck.py -q
+
+  clean-install:
+    name: Clean install from a bare checkout
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install the engine alone, with no extras
+        run: |
+          python -m venv .venv-engine
+          .venv-engine/bin/pip install --upgrade pip
+          .venv-engine/bin/pip install .
+
+      - name: The engine must work without the web, ML or reporting stacks
+        run: |
+          .venv-engine/bin/python - <<'PY'
+          import sys
+          import securemailscope.pipeline  # noqa: F401
+          banned = [m for m in ("fastapi", "sqlalchemy", "sklearn", "uvicorn",
+                                "reportlab", "jinja2") if m in sys.modules]
+          assert not banned, f"the engine pulled in: {banned}"
+          print("engine imports cleanly with its required dependencies only")
+          PY
+          .venv-engine/bin/securemailscope --help
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      - name: Audit the production dependency tree
+        # The build output is what reaches a browser. Development-only
+        # advisories are reported in docs/dependency-audit.md rather than
+        # failing the build on a tool the application never ships.
+        run: npm audit --omit=dev --audit-level=moderate
+
+  end-to-end:
+    name: End to end (real backend, real engine)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Python
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,backend,reporting-tests,ml]"
+
+      - name: Generate fixtures
+        run: python scripts/generate_fixtures.py
+
+      - name: Install Node
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install the browser
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the end-to-end suite
+        working-directory: frontend
+        run: npm run e2e
+
+  benchmarks:
+    name: Benchmarks
+    runs-on: ubuntu-latest
+    # A shared runner is not the target hardware, so these numbers judge
+    # nothing. The job exists to prove the harness runs and the corpus ground
+    # truth still matches; the published figures come from a recorded local run.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,backend,reporting-tests,ml]"
+
+      - name: Run the small and medium profiles
+        run: python scripts/run_benchmarks.py --profile small,medium --repeats 3
+
+      - name: Upload the results
+        # Timings and counts only. The generated captures live in a temporary
+        # directory and are never uploaded.
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ github.sha }}
+          path: benchmarks/results.json
+          retention-days: 14
+          if-no-files-found: error

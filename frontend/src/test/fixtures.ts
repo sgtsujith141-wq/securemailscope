@@ -6,7 +6,8 @@
  */
 import type {
   CaptureSummary, FindingDetail, FindingSummary, InvestigationDetail,
-  InvestigationSummary, JobStatus, Page, SessionDetail, SessionSummary, TimelineEntry,
+  InvestigationSummary, JobStatus, Page, SessionDetail, SessionSummary, Settings,
+  TimelineEntry,
 } from '../lib/api'
 
 export const page = <T,>(items: T[]): Page<T> => ({
@@ -262,3 +263,60 @@ export const timeline: TimelineEntry[] = [
     order_index: 1,
   },
 ]
+
+/**
+ * Intelligence, ML and settings payloads, shaped from the real API responses
+ * (captured from a live analysis of `aa_tls10_static_rsa.pcap`, then trimmed).
+ * The backend types these as open records, so TypeScript would not have caught
+ * a wrong shape here -- the values are taken from the running API rather than
+ * invented.
+ */
+export const intelligence: Record<string, unknown> = {
+  investigation_id: investigation.investigation_id,
+  schema_version: '1.0.0',
+  fingerprint_algorithm_version: 'smsfp/1',
+  created_at: '2026-06-01T12:00:00Z',
+  capture_inventory: [],
+  server_entities: [],
+  cryptographic_fingerprints: [],
+  drift_events: [],
+  session_correlations: [],
+  evidence_timeline: [],
+  blast_radius: [],
+  intelligence_warnings: [],
+  scope_statement: 'Covers only the captures listed.',
+  limitations: [],
+}
+
+export const ml: Record<string, unknown> = {
+  summary: {
+    ml_status: 'COMPLETED',
+    feature_schema_version: 'smsfeat/1',
+    anomaly_algorithm: 'rarity-baseline',
+    anomaly_detector_is_ml: false,
+    anomaly_model_id: 'tls-anomaly',
+    anomaly_model_version: '1.0.0',
+    classifier_model_id: 'tls-posture',
+    classification_validation_status: 'NOT_VALIDATED',
+    anomalous_session_count: 0,
+    not_evaluable_session_count: 0,
+    evaluation_available: true,
+  },
+  results: [],
+  evaluation: null,
+}
+
+export const settings: Settings = {
+  max_upload_bytes: 536870912,
+  max_capture_bytes: 536870912,
+  max_packets: 2000000,
+  max_total_sessions: 100000,
+  assess_security: true,
+  minimum_score_coverage_percent: 50,
+  enable_ml: true,
+  default_report_format: 'pdf',
+  retain_captures: true,
+  requires_reanalysis: ['max_packets', 'enable_ml'],
+  storage_root: '/tmp/securemailscope/storage',
+  storage_usage_bytes: 992,
+}

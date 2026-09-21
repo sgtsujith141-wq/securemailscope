@@ -138,6 +138,10 @@ unavailable are excluded from both sides of the fraction and reported separately
     <span class="muted mono">{{ f.rule_id }}</span>
     {%- if f.priority %}<span class="muted"> · {{ f.priority }}</span>{% endif %}
     <span class="muted"> · confidence {{ f.confidence }}</span></div>
+  {#- The finding id is the stable handle that ties this entry to the JSON
+      export, the PDF and the dashboard. Without it an HTML report cannot be
+      cross-referenced, so it is printed in full, never abbreviated. #}
+  <div class="muted mono">{{ f.finding_id }}</div>
   <p>{{ f.description }}</p>
   <p class="muted"><strong>Impact.</strong> {{ f.technical_impact }}</p>
   <div class="ev"><strong>Evidence.</strong>

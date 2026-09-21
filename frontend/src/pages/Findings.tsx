@@ -99,11 +99,13 @@ export function Findings() {
       <Panel>
         <div className="flex flex-wrap gap-2">
           <select className="input" value={severity} data-testid="severity-filter"
+                  aria-label="Filter findings by severity"
                   onChange={(e) => { setSeverity(e.target.value); setOffset(0) }}>
             <option value="">All severities</option>
             {SEVERITIES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
           <select className="input" value={category} data-testid="category-filter"
+                  aria-label="Filter findings by category"
                   onChange={(e) => { setCategory(e.target.value); setOffset(0) }}>
             <option value="">All categories</option>
             {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>)}
