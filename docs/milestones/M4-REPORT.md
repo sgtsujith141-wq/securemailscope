@@ -4,6 +4,7 @@
 - **Date:** 2026-09-21
 - **Milestone:** M4 — Evidence-based security rules, explainable scoring, threat prioritisation and remediation
 - **Baseline (M3):** `765203e29d3aac5e1bd2cb57b92f103c72466e03`
+- **Commit:** `5518ccbeb2b41cc75942d71be85372b63882d0b3`
 - **Result:** **COMPLETE** — all 12 acceptance gates pass.
 
 The TShark cross-check, reported `NOT_VERIFIED` in both M2 and M3, was
