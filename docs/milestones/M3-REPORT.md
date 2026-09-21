@@ -4,6 +4,7 @@
 - **Date:** 2026-09-21
 - **Milestone:** M3 — TLS reconstruction, cryptographic extraction and X.509 intelligence
 - **Baseline (M2):** `d217c29a339b7cac6dedd291300430a6800067ca`
+- **Commit:** `7019b8ffd26f9d8720d3ec911d6c7586921aac5a`
 - **Result:** **COMPLETE** — all 14 acceptance gates pass. Gate 14's TShark
   cross-check is written but **NOT_VERIFIED** in this environment; see §10.2.
 
