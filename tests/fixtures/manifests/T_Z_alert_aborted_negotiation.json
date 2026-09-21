@@ -1,0 +1,64 @@
+{
+  "name": "T_Z_alert_aborted_negotiation",
+  "filename": "t_z_alert_aborted_negotiation.pcap",
+  "description": "The server answers the ClientHello with a fatal handshake_failure alert. The alert must be decoded and the handshake reported as aborted, not negotiated.",
+  "generation": "securemailscope.testing.tls_fixtures_synthetic._fixture_z",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "9999eaa4a82f45d135844443dddfcf1f0e70c7153ed85389113089705826738b",
+  "file_size_bytes": 552,
+  "expected_packet_count": 6,
+  "expected_tcp_packet_count": 6,
+  "expected_timestamps_ns": [
+    1780315200000000000,
+    1780315200001000000,
+    1780315200002000000,
+    1780315200003000000,
+    1780315200004000000,
+    1780315200005000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": null,
+  "expected_tls": [
+    {
+      "session_index": 0,
+      "entry_point": "IMPLICIT",
+      "handshake_state": "ABORTED_BY_ALERT",
+      "client_record_parse_state": "COMPLETE",
+      "server_record_parse_state": "COMPLETE",
+      "forward_secrecy_status": "UNKNOWN_INCOMPLETE_EVIDENCE",
+      "certificate_visibility": "NOT_OBSERVED",
+      "key_exchange_method": "UNKNOWN",
+      "selected_version": null,
+      "selected_version_source": null,
+      "selected_cipher_suite": null,
+      "cipher_decomposition_applicable": true,
+      "cipher_key_exchange": null,
+      "key_exchange_source": null,
+      "selected_group": null,
+      "server_name_indication": "mail.example.invalid",
+      "certificate_count": 0,
+      "record_count": null,
+      "message_types": [
+        "client_hello"
+      ],
+      "alert_descriptions": [
+        "handshake_failure"
+      ],
+      "encryption_boundary_reasons": {},
+      "resumption_likely": null,
+      "hello_retry_request": false,
+      "handshake_analyzed": false,
+      "certificates": [],
+      "validation": null,
+      "expected_warning_codes": [
+        "TLS_ALERT_OBSERVED"
+      ]
+    }
+  ],
+  "byte_reproducible": true,
+  "forbidden_strings": []
+}

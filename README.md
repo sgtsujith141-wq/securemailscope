@@ -29,18 +29,24 @@ or "not built yet".
 | STARTTLS / STLS state reconstruction | **IMPLEMENTED** | Advertisement, request, outcome, both transition boundaries |
 | Implicit TLS detection | **IMPLEMENTED** | Record framing only; the protocol inside stays a port hint |
 | Authentication observation | **IMPLEMENTED** | Presence and mechanism only — never credentials |
-| TLS record framing | **PARTIAL** | Enough to locate and bound TLS bytes; contents untouched |
-| TLS handshake analysis | NOT IMPLEMENTED | M3 |
-| Certificate assessment | NOT IMPLEMENTED | M3 / M4 |
+| TLS record framing and handshake reassembly | **IMPLEMENTED** | Stops at a hole; never parses ambiguous bytes |
+| Version, cipher suite, key exchange | **IMPLEMENTED** | Offered vs selected kept strictly apart |
+| Forward-secrecy observation | **IMPLEMENTED** | Criteria stated per result, with RFC citations |
+| Certificate extraction | **PARTIAL** | TLS ≤ 1.2 only — TLS 1.3 certificates are encrypted |
+| Certificate validation (dates, chain, hostname) | **IMPLEMENTED** | Five independent checks, no defaults assumed |
+| Certificate revocation | NOT IMPLEMENTED | Permanently out of scope: no network requests |
+| Certificate posture assessment | NOT IMPLEMENTED | M4 |
 | Risk assessment and findings | NOT IMPLEMENTED | M4 |
 | Evidence correlation | NOT IMPLEMENTED | M5 |
 | ML-assisted analysis | NOT IMPLEMENTED | M6 |
 | REST backend / web UI | NOT IMPLEMENTED | M7+ |
 
-The engine reports **no negotiated TLS version, no cipher suite and no
-certificate**. `handshake_analyzed` is a constant `false` in every report:
-"the server agreed to start TLS" and "a TLS handshake completed" are different
-facts, and only the first is observable in M2.
+Three things are constants in every report, and are asserted by the test
+suite rather than left to trust: `handshake_analyzed` is `false`,
+`handshakes_cryptographically_verified` is `0`, and
+`revocation_checks_performed` is `0`. Verifying a handshake completed needs
+the traffic keys a capture does not contain, and revocation checking would
+need a network request the engine never makes.
 
 ---
 
@@ -118,7 +124,33 @@ securemailscope analyze tests/fixtures/generated/p_a_smtp_starttls_accepted.pcap
 # Plaintext authentication, recorded without the credential
 securemailscope analyze tests/fixtures/generated/p_m_auth_before_tls.pcap --quiet \
   | jq '.protocols[0].authentication'
+
+# A TLS 1.2 handshake: negotiated parameters and the certificate it presented
+securemailscope analyze tests/fixtures/generated/t_a_tls12_complete_handshake.pcap \
+  --trust-store tests/fixtures/generated/synthetic-root.pem \
+  --expected-server-identity mail.example.invalid --quiet \
+  | jq '.tls[0] | {version: .version.selected_version.name,
+                   suite: .cipher_suite.selected.name,
+                   forward_secrecy: .forward_secrecy.status,
+                   validation: .certificates.validation | map_values(.status)}'
+
+# TLS 1.3: the certificate is encrypted, and the report says so
+securemailscope analyze tests/fixtures/generated/t_d_tls13_negotiation.pcap --quiet \
+  | jq '.tls[0].certificates | {visibility, visibility_explanation}'
 ```
+
+### Certificate validation needs inputs you supply
+
+There is **no default trust store** and **no default expected identity**.
+Without them, chain and hostname verification report `NOT_AVAILABLE` rather
+than using a bundle the report cannot name or an identity nobody authorised:
+
+| Flag | Enables |
+|---|---|
+| `--trust-store PEM` | Chain verification against anchors the report can identify |
+| `--expected-server-identity NAME` | Hostname verification (the destination IP is never used) |
+| `--trust-observed-sni` | Opt in to using the observed SNI as that identity |
+| `--assess-current-time` | An additional, separately labelled current-time date check |
 
 ## What the report contains
 

@@ -1,18 +1,13 @@
-"""TLS record and handshake reconstruction.
+"""TLS record, handshake and cryptographic parameter analysis (M3).
 
-STATUS: NOT IMPLEMENTED (planned for M3).
+STATUS: IMPLEMENTED for the observable, plaintext portion of a handshake.
 
-This package is intentionally empty.  No TLS parsing, cipher-suite extraction
-or handshake reconstruction exists yet, and the engine never emits TLS
-findings -- a report that contains no TLS section means the analysis was not
-performed, not that the traffic was unencrypted.
+What this package does: frames TLS records over reconstructed TCP payload,
+reassembles handshake messages across records, identifies the negotiated
+version and cipher suite, describes key exchange, and assesses forward
+secrecy -- all from bytes that were actually visible.
 
-Planned scope: TLS record layer framing over reconstructed TCP streams,
-ClientHello/ServerHello parsing, negotiated version and cipher suite,
-extensions (SNI, ALPN, supported_groups, signature_algorithms), and STARTTLS /
-STLS upgrade correlation with the M2 email-protocol layer.
-
-Known hard limit: in TLS 1.3 the Certificate message is encrypted, so
-certificate details cannot be recovered from a passive capture without key
-material.  See ``docs/limitations.md``.
+What it deliberately does not do: decrypt anything, accept key material, or
+claim a handshake completed. In TLS 1.3 everything after the ServerHello is
+encrypted, so that is where plaintext analysis stops.
 """

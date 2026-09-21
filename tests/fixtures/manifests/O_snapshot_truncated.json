@@ -88,5 +88,7 @@
   "expected_capture_truncated": false,
   "expected_error": null,
   "expected_protocols": null,
+  "expected_tls": null,
+  "byte_reproducible": true,
   "forbidden_strings": []
 }

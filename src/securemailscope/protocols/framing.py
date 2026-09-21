@@ -25,20 +25,28 @@ from ..models.protocol import (
 from ..models.tcp import Direction
 from .reader import DirectionalBuffer
 
-__all__ = ["probe_tls_records", "RECORD_HEADER_SIZE", "MAX_RECORD_BYTES"]
+__all__ = [
+    "probe_tls_records",
+    "classify_record_header",
+    "identify_handshake",
+    "RECORD_HEADER_SIZE",
+    "MAX_RECORD_BYTES",
+    "CONTENT_TYPES",
+    "HANDSHAKE_TYPES",
+]
 
 RECORD_HEADER_SIZE: Final = 5
 #: TLSCiphertext may exceed TLSPlaintext by the AEAD expansion allowance.
 MAX_RECORD_BYTES: Final = 16384 + 2048
 
-_CONTENT_TYPES: Final[dict[int, TLSContentType]] = {
+CONTENT_TYPES: Final[dict[int, TLSContentType]] = {
     20: TLSContentType.CHANGE_CIPHER_SPEC,
     21: TLSContentType.ALERT,
     22: TLSContentType.HANDSHAKE,
     23: TLSContentType.APPLICATION_DATA,
 }
 
-_HANDSHAKE_TYPES: Final[dict[int, str]] = {
+HANDSHAKE_TYPES: Final[dict[int, str]] = {
     0: "HELLO_REQUEST",
     1: "CLIENT_HELLO",
     2: "SERVER_HELLO",
@@ -69,12 +77,16 @@ _LIMITATIONS: Final[tuple[str, ...]] = (
 )
 
 
-def _classify_header(window: bytes) -> tuple[int, TLSContentType, str, int] | None:
-    """Validate a 5-byte record header. Returns ``(type, name, version, length)``."""
+def classify_record_header(window: bytes) -> tuple[int, TLSContentType, str, int] | None:
+    """Validate a 5-byte record header. Returns ``(type, name, version, length)``.
+
+    Shared by the M2 framing probe and the M3 record layer so both apply
+    exactly the same structural rules.
+    """
     if len(window) < RECORD_HEADER_SIZE:
         return None
     content_type = window[0]
-    name = _CONTENT_TYPES.get(content_type)
+    name = CONTENT_TYPES.get(content_type)
     if name is None:
         return None
     if window[1] != 0x03 or window[2] > 0x04:
@@ -86,12 +98,12 @@ def _classify_header(window: bytes) -> tuple[int, TLSContentType, str, int] | No
     return content_type, name, version, length
 
 
-def _handshake_detail(body: bytes, declared_length: int) -> tuple[int, str] | None:
+def identify_handshake(body: bytes, declared_length: int) -> tuple[int, str] | None:
     """Identify a handshake message and cross-check its inner length."""
     if len(body) < 4:
         return None
     handshake_type = body[0]
-    name = _HANDSHAKE_TYPES.get(handshake_type)
+    name = HANDSHAKE_TYPES.get(handshake_type)
     if name is None:
         return None
     inner_length = (body[1] << 16) | (body[2] << 8) | body[3]
@@ -117,7 +129,7 @@ def probe_tls_records(
     offset = start_offset
     for index in range(max_records):
         window = buffer.read(offset, RECORD_HEADER_SIZE)
-        header = _classify_header(window)
+        header = classify_record_header(window)
         if header is None:
             break
         content_type, name, version, declared_length = header
@@ -127,7 +139,7 @@ def probe_tls_records(
         handshake_type: int | None = None
         handshake_name: str | None = None
         if name is TLSContentType.HANDSHAKE:
-            detail = _handshake_detail(body, declared_length)
+            detail = identify_handshake(body, declared_length)
             if detail is not None:
                 handshake_type, handshake_name = detail
 

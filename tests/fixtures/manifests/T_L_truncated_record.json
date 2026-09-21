@@ -1,0 +1,63 @@
+{
+  "name": "T_L_truncated_record",
+  "filename": "t_l_truncated_record.pcap",
+  "description": "The server's record declares more bytes than the capture contains. It must be reported truncated with the declared and available lengths, and framing must stop rather than continue into whatever follows.",
+  "generation": "securemailscope.testing.tls_fixtures_synthetic._fixture_l",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "49d230f02894482e705744214bc5bc295fa25993b3edb20dcaadb4f83ca91b8f",
+  "file_size_bytes": 574,
+  "expected_packet_count": 6,
+  "expected_tcp_packet_count": 6,
+  "expected_timestamps_ns": [
+    1780315200000000000,
+    1780315200001000000,
+    1780315200002000000,
+    1780315200003000000,
+    1780315200004000000,
+    1780315200005000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": null,
+  "expected_tls": [
+    {
+      "session_index": 0,
+      "entry_point": "IMPLICIT",
+      "handshake_state": "CLIENT_HELLO_ONLY",
+      "client_record_parse_state": "COMPLETE",
+      "server_record_parse_state": "TRUNCATED_RECORD",
+      "forward_secrecy_status": "UNKNOWN_INCOMPLETE_EVIDENCE",
+      "certificate_visibility": "NOT_OBSERVED",
+      "key_exchange_method": "UNKNOWN",
+      "selected_version": null,
+      "selected_version_source": null,
+      "selected_cipher_suite": null,
+      "cipher_decomposition_applicable": true,
+      "cipher_key_exchange": null,
+      "key_exchange_source": null,
+      "selected_group": null,
+      "server_name_indication": "mail.example.invalid",
+      "certificate_count": 0,
+      "record_count": null,
+      "message_types": [
+        "client_hello",
+        "server_hello"
+      ],
+      "alert_descriptions": [],
+      "encryption_boundary_reasons": {},
+      "resumption_likely": null,
+      "hello_retry_request": false,
+      "handshake_analyzed": false,
+      "certificates": [],
+      "validation": null,
+      "expected_warning_codes": [
+        "TLS_RECORD_TRUNCATED"
+      ]
+    }
+  ],
+  "byte_reproducible": true,
+  "forbidden_strings": []
+}

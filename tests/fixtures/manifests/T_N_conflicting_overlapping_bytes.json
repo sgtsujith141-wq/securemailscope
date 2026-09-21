@@ -1,0 +1,61 @@
+{
+  "name": "T_N_conflicting_overlapping_bytes",
+  "filename": "t_n_conflicting_overlapping_bytes.pcap",
+  "description": "Two overlapping TCP segments disagree about the bytes carrying the server's TLS record. Those bytes must be flagged ambiguous and must not be treated as unambiguous cryptographic evidence.",
+  "generation": "securemailscope.testing.tls_fixtures_synthetic._fixture_n",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "9fbef5b634eac91f7373133b5792b34546eb830a9223214e46a6e13daf3598dc",
+  "file_size_bytes": 707,
+  "expected_packet_count": 7,
+  "expected_tcp_packet_count": 7,
+  "expected_timestamps_ns": [
+    1780315200000000000,
+    1780315200001000000,
+    1780315200002000000,
+    1780315200003000000,
+    1780315200004000000,
+    1780315200005000000,
+    1780315200006000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": null,
+  "expected_tls": [
+    {
+      "session_index": 0,
+      "entry_point": "IMPLICIT",
+      "handshake_state": "INDETERMINATE",
+      "client_record_parse_state": "COMPLETE",
+      "server_record_parse_state": "AMBIGUOUS_BYTES",
+      "forward_secrecy_status": "UNKNOWN_INCOMPLETE_EVIDENCE",
+      "certificate_visibility": "NOT_OBSERVED",
+      "key_exchange_method": "UNKNOWN",
+      "selected_version": null,
+      "selected_version_source": null,
+      "selected_cipher_suite": null,
+      "cipher_decomposition_applicable": true,
+      "cipher_key_exchange": null,
+      "key_exchange_source": null,
+      "selected_group": null,
+      "server_name_indication": "mail.example.invalid",
+      "certificate_count": 0,
+      "record_count": null,
+      "message_types": [],
+      "alert_descriptions": [],
+      "encryption_boundary_reasons": {},
+      "resumption_likely": null,
+      "hello_retry_request": false,
+      "handshake_analyzed": false,
+      "certificates": [],
+      "validation": null,
+      "expected_warning_codes": [
+        "TLS_RECORD_AMBIGUOUS"
+      ]
+    }
+  ],
+  "byte_reproducible": true,
+  "forbidden_strings": []
+}

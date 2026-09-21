@@ -1,0 +1,90 @@
+{
+  "name": "T_S_incomplete_chain",
+  "filename": "t_s_incomplete_chain.pcap",
+  "description": "The server presents only its end-entity certificate, omitting the intermediate that links it to the root. With a trust store configured this must FAIL and be described as an incomplete chain, which is different from a chain that was built and found invalid.",
+  "generation": "securemailscope.testing.tls_fixtures_synthetic._fixture_s",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": null,
+  "file_size_bytes": null,
+  "expected_packet_count": 6,
+  "expected_tcp_packet_count": 6,
+  "expected_timestamps_ns": [
+    1780315200000000000,
+    1780315200001000000,
+    1780315200002000000,
+    1780315200003000000,
+    1780315200004000000,
+    1780315200005000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": null,
+  "expected_tls": [
+    {
+      "session_index": 0,
+      "entry_point": "IMPLICIT",
+      "handshake_state": "SERVER_FLIGHT_COMPLETE",
+      "client_record_parse_state": "COMPLETE",
+      "server_record_parse_state": "COMPLETE",
+      "forward_secrecy_status": "EPHEMERAL_OBSERVED",
+      "certificate_visibility": "OBSERVED",
+      "key_exchange_method": "ECDHE",
+      "selected_version": "TLS 1.2",
+      "selected_version_source": "LEGACY_VERSION",
+      "selected_cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+      "cipher_decomposition_applicable": true,
+      "cipher_key_exchange": "ECDHE",
+      "key_exchange_source": "CIPHER_SUITE",
+      "selected_group": "secp256r1",
+      "server_name_indication": "mail.example.invalid",
+      "certificate_count": 1,
+      "record_count": null,
+      "message_types": [
+        "client_hello",
+        "server_hello",
+        "certificate",
+        "server_key_exchange",
+        "server_hello_done"
+      ],
+      "alert_descriptions": [],
+      "encryption_boundary_reasons": {},
+      "resumption_likely": null,
+      "hello_retry_request": false,
+      "handshake_analyzed": false,
+      "certificates": [
+        {
+          "chain_position": 0,
+          "subject": "CN=deep.example.invalid",
+          "issuer": "CN=SecureMailScope Synthetic Test Intermediate",
+          "public_key_algorithm": "EC",
+          "signature_algorithm": "ecdsa-with-SHA256",
+          "subject_alternative_names": [
+            "DNS:deep.example.invalid"
+          ],
+          "is_self_issued": false,
+          "public_key_size_bits": 256,
+          "public_key_curve": "secp256r1",
+          "basic_constraints_ca": false,
+          "extended_key_usage": [
+            "serverAuth"
+          ]
+        }
+      ],
+      "validation": {
+        "certificate_observed": "PASSED",
+        "validity_dates_checked": "PASSED",
+        "chain_verified": "NOT_AVAILABLE",
+        "hostname_verified": "NOT_AVAILABLE",
+        "revocation_checked": "NOT_AVAILABLE",
+        "trust_store_configured": false,
+        "reference_identity": null
+      },
+      "expected_warning_codes": []
+    }
+  ],
+  "byte_reproducible": false,
+  "forbidden_strings": []
+}

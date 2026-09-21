@@ -189,16 +189,107 @@ stating their status and the milestone that owns them.
 | F11.6 | Pre-upgrade flag recorded | `models/protocol.py` | M2 | `occurred_before_tls_upgrade` + state at attempt | `test_protocols.py::test_authentication_observations_match_manifest` | **IMPLEMENTED** |
 | F11.7 | Plaintext auth scored as a finding | `assessment/` | M4 | — | — | **NOT IMPLEMENTED** (observation only, by design) |
 
-## F7 — TLS and certificate analysis
+## F7 — TLS record and handshake analysis (M3)
 
 | ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
 |---|---|---|---|---|---|---|
-| F7.1 | TLS record framing over reconstructed streams | `protocols/framing.py` | M2/M3 | Header validation and bounds only; contents untouched | `test_protocol_reader.py` (framing tests) | **PARTIAL** |
-| F7.2 | Reconstruct handshakes | `tls/` | M3 | ClientHello/ServerHello parsed | — | **NOT IMPLEMENTED** |
-| F7.3 | Extract observable crypto properties | `tls/` | M3 | Version, cipher suite, groups, signature algorithms, ALPN, SNI | — | **NOT IMPLEMENTED** |
-| F7.4 | Certificate extraction | `certificates/` | M3 | TLS ≤ 1.2 only; TLS 1.3 → `NOT_AVAILABLE` | — | **NOT IMPLEMENTED** |
-| F7.5 | Certificate security assessment | `certificates/` | M4 | Key size, algorithm, validity, chain shape | — | **NOT IMPLEMENTED** |
-| F7.6 | Correctly report TLS 1.3 certificate unavailability | `tls/`, docs | M3 | `NOT_AVAILABLE`, never `UNKNOWN`, never omitted | — | **NOT IMPLEMENTED** (documented in `limitations.md`) |
+| F7.1 | TLS record framing over reconstructed streams | `tls/records.py` | M3 | Records framed with provenance; bounded | `test_tls.py::test_records_carry_provenance` | **IMPLEMENTED** |
+| F7.2 | Records split across TCP segments | `tls/records.py` | M3 | Framed normally; all packets recorded | `test_tls.py` (T_I) | **IMPLEMENTED** |
+| F7.3 | Multiple records in one segment | `tls/records.py` | M3 | Each framed separately | `test_tls.py` (T_A, T_K) | **IMPLEMENTED** |
+| F7.4 | Partial record header / body | `tls/records.py` | M3 | `TRUNCATED_RECORD` with declared vs available | `test_tls.py` (T_L) | **IMPLEMENTED** |
+| F7.5 | Do not parse through a TCP gap | `tls/records.py` | M3 | `ALIGNMENT_LOST_AT_GAP`; framing stops | `test_tls.py` (T_M) | **IMPLEMENTED** |
+| F7.6 | Conflicting bytes not treated as evidence | `tls/records.py`, `analyzer.py` | M3 | `AMBIGUOUS_BYTES`; body never parsed | `test_tls.py` (T_N) | **IMPLEMENTED** |
+| F7.7 | Malformed content type / invalid length | `tls/records.py` | M3 | `MALFORMED_RECORD`; framing stops | `test_tls.py` (T_Y) | **IMPLEMENTED** |
+| F7.8 | Configurable record and buffer bounds | `config.py`, `tls/records.py` | M3 | Limits enforced with diagnostics | `test_tls_validation.py::test_record_count_limit_is_enforced` | **IMPLEMENTED** |
+| F7.9 | Separate directional record streams | `tls/records.py` | M3 | Per-direction parse state and indices | `test_tls.py::test_session_shape_matches_manifest` | **IMPLEMENTED** |
+| F7.10 | All four content types handled | `tls/analyzer.py` | M3 | handshake, alert, CCS, application_data | `test_tls.py` (T_A, T_Z, T_HRR) | **IMPLEMENTED** |
+| F7.11 | TLS 1.3 compatibility CCS not read as TLS 1.2 | `tls/analyzer.py` | M3 | Recognised as compatibility; no TLS 1.2 inference | `test_tls.py` (T_HRR) | **IMPLEMENTED** |
+| F7.12 | Encrypted TLS 1.3 application_data never parsed | `tls/analyzer.py` | M3 | Records framed, `body_interpreted` false | `test_tls.py::test_records_carry_provenance` | **IMPLEMENTED** |
+| F7.13 | Handshake message spanning records | `tls/handshake.py` | M3 | Reassembled; contributing records recorded | `test_tls.py` (T_J) | **IMPLEMENTED** |
+| F7.14 | Multiple messages in one record | `tls/handshake.py` | M3 | All reported separately | `test_tls.py` (T_K) | **IMPLEMENTED** |
+| F7.15 | Message completeness tracked | `tls/handshake.py` | M3 | `complete=False`; not interpreted | `test_tls.py` (T_L, T_M) | **IMPLEMENTED** |
+| F7.16 | TLS 1.2 encryption boundary at CCS | `tls/analyzer.py` | M3 | Direction goes dark at its own CCS | `test_tls.py` (T_A boundaries) | **IMPLEMENTED** |
+| F7.17 | TLS 1.3 encryption boundary after ServerHello | `tls/analyzer.py` | M3 | Both directions; nothing after parsed | `test_tls.py` (T_D boundaries) | **IMPLEMENTED** |
+| F7.18 | Unknown handshake types handled gracefully | `tls/handshake.py` | M3 | Numeric type reported with a limitation | Code path; `HANDSHAKE_TYPE_NAMES` fallback | **IMPLEMENTED** |
+| F7.19 | No decryption; no key logs loaded | whole engine | M3 | No key material is read or accepted | `test_tls_validation.py::test_tls_analysis_opens_no_socket` | **IMPLEMENTED** |
+
+## F12 — Version, cipher and key-exchange identification (M3)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F12.1 | Client-offered versions | `tls/analyzer.py` | M3 | From `supported_versions`, else legacy | `test_tls.py::test_version_negotiation_matches_manifest` | **IMPLEMENTED** |
+| F12.2 | Server-selected version | `tls/analyzer.py` | M3 | Recorded with `selected_source` | same | **IMPLEMENTED** |
+| F12.3 | TLS 1.3 from `supported_versions` only | `tls/analyzer.py` | M3 | Never from legacy or record-layer version | `test_tls_validation.py::test_tls13_version_comes_from_the_extension_not_legacy_version` | **IMPLEMENTED** |
+| F12.4 | Offered ≠ selected | `models/tls.py` | M3 | Separate fields; UNKNOWN without ServerHello | `test_tls_validation.py::test_client_hello_alone_never_yields_a_negotiated_version` | **IMPLEMENTED** |
+| F12.5 | GREASE and malformed extensions handled safely | `tls/extensions.py` | M3 | GREASE marked; malformed recorded and skipped | `test_tls_wire.py` | **IMPLEMENTED** |
+| F12.6 | Offered and selected cipher suites | `tls/analyzer.py` | M3 | Exact numeric id plus registered name | `test_tls.py::test_cipher_suite_matches_manifest` | **IMPLEMENTED** |
+| F12.7 | Unknown suite ids do not crash | `tls/registry.py` | M3 | Reported numerically, `known=false` | `test_tls_wire.py` | **IMPLEMENTED** |
+| F12.8 | Documented, versioned suite registry | `tls/registry.py` | M3 | Source and revision emitted in every report | `test_tls.py::test_cipher_suite_matches_manifest` | **IMPLEMENTED** |
+| F12.9 | TLS 1.2 suite decomposition | `tls/registry.py` | M3 | kx, auth, cipher, MAC from the suite | `test_tls.py` (T_A, T_C) | **IMPLEMENTED** |
+| F12.10 | TLS 1.3 suites do not encode kx/auth | `tls/analyzer.py` | M3 | `decomposition_applicable=false`; fields empty | `test_tls_validation.py::test_tls13_cipher_suite_does_not_encode_key_exchange` | **IMPLEMENTED** |
+| F12.11 | TLS 1.2 key exchange family identified | `tls/keyexchange.py` | M3 | RSA / DHE / ECDHE recognised | `test_tls.py` (T_A, T_C) | **IMPLEMENTED** |
+| F12.12 | Ephemeral parameters extracted where safe | `tls/keyexchange.py` | M3 | Curve and public-key length from ServerKeyExchange | `test_tls.py` (T_A selected group) | **IMPLEMENTED** |
+| F12.13 | Curve not inferred when unexposed | `tls/keyexchange.py` | M3 | `selected_group` absent with a limitation | `test_tls.py` (T_H) | **IMPLEMENTED** |
+| F12.14 | TLS 1.3 groups, key_share, PSK modes | `tls/extensions.py`, `keyexchange.py` | M3 | Server key_share group extracted | `test_tls.py` (T_D) | **IMPLEMENTED** |
+| F12.15 | HelloRetryRequest handled | `tls/handshake.py` | M3 | Distinguished by its special random; not a negotiation | `test_tls.py` (T_HRR) | **IMPLEMENTED** |
+| F12.16 | PSK-only vs PSK+DHE distinguished | `tls/keyexchange.py` | M3 | `PSK` vs `PSK_EPHEMERAL` | `test_tls.py` (T_F) | **IMPLEMENTED** |
+| F12.17 | TLS 1.3 not automatically forward secret | `tls/forward_secrecy.py` | M3 | PSK-only ⇒ `PSK_ONLY` | Code path + criteria text | **IMPLEMENTED** |
+| F12.18 | ServerHello ≠ completed handshake | `tls/forward_secrecy.py` | M3 | `handshake_completion_observable` false always | `test_tls.py::test_no_handshake_is_ever_claimed_verified` | **IMPLEMENTED** |
+
+## F13 — Forward secrecy (M3)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F13.1 | Dedicated forward-secrecy module | `tls/forward_secrecy.py` | M3 | Structured result with stated criteria | `test_tls.py::test_key_exchange_and_forward_secrecy_match_manifest` | **IMPLEMENTED** |
+| F13.2 | Ephemeral observed vs capable | `tls/forward_secrecy.py` | M3 | Two distinct statuses | `test_tls.py` (T_A vs T_H) | **IMPLEMENTED** |
+| F13.3 | Static RSA identified | `tls/forward_secrecy.py` | M3 | `STATIC_RSA_KEY_EXCHANGE` with RFC citation | `test_tls.py` (T_C) | **IMPLEMENTED** |
+| F13.4 | PSK-only identified | `tls/forward_secrecy.py` | M3 | `PSK_ONLY` | Code path + T_F | **IMPLEMENTED** |
+| F13.5 | Unknown on incomplete evidence | `tls/forward_secrecy.py` | M3 | `UNKNOWN_INCOMPLETE_EVIDENCE` | `test_tls.py` (T_G, T_Z) | **IMPLEMENTED** |
+| F13.6 | Criteria documented per result | `models/tls.py` | M3 | `criteria` names the rule and the evidence | `test_tls.py` asserts non-empty | **IMPLEMENTED** |
+| F13.7 | Scoring | `assessment/` | M4 | — | — | **NOT IMPLEMENTED** (by design) |
+
+## F14 — Certificate extraction and validation (M3)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F14.1 | Extract from plaintext Certificate messages | `tls/analyzer.py` | M3 | TLS ≤ 1.2 chains decoded | `test_tls.py::test_certificates_match_manifest` | **IMPLEMENTED** |
+| F14.2 | TLS 1.3 certificate reported unavailable | `tls/analyzer.py` | M3 | `ENCRYPTED_TLS13` with explanation, never a failure | `test_tls_validation.py::test_tls13_certificate_is_unavailable_not_missing` | **IMPLEMENTED** |
+| F14.3 | Certificate-list and DER decoding | `tls/handshake.py`, `certificates/parse.py` | M3 | Both TLS 1.2 and 1.3 framings | `test_tls.py` | **IMPLEMENTED** |
+| F14.4 | Fingerprint, subject, issuer, serial, dates | `certificates/parse.py` | M3 | All present and asserted | `test_tls.py::test_certificates_match_manifest` | **IMPLEMENTED** |
+| F14.5 | Public key algorithm and size | `certificates/parse.py` | M3 | RSA/EC/Ed25519/Ed448/DSA; no invented bit length | `test_tls.py`, `test_tls_wire.py` | **IMPLEMENTED** |
+| F14.6 | Signature algorithm and hash | `certificates/parse.py` | M3 | Both recorded | `test_tls.py` | **IMPLEMENTED** |
+| F14.7 | SANs, BasicConstraints, KeyUsage, EKU, position | `certificates/parse.py` | M3 | All extracted | `test_tls.py` | **IMPLEMENTED** |
+| F14.8 | Unsupported algorithms handled explicitly | `certificates/parse.py` | M3 | `supported=false` with a note | Code path | **IMPLEMENTED** |
+| F14.9 | Bounded certificate count and size | `config.py`, `tls/handshake.py` | M3 | Limits enforced with notes | `test_tls_validation.py` (2 tests) | **IMPLEMENTED** |
+| F14.10 | No raw DER/PEM in default reports | `models/certificates.py` | M3 | Fingerprint and size instead | `test_tls_validation.py::test_reports_never_contain_raw_certificate_bytes` | **IMPLEMENTED** |
+| F14.11 | Five independent validation fields | `certificates/validate.py` | M3 | Separate statuses and explanations | `test_tls.py::test_validation_checks_are_independent_and_match_manifest` | **IMPLEMENTED** |
+| F14.12 | Validity at capture timestamp | `certificates/validate.py` | M3 | `CAPTURE_TIME` mode; aware timestamps | `test_tls_validation.py` (4 date tests) | **IMPLEMENTED** |
+| F14.13 | Optional current-time assessment, labelled | `certificates/validate.py` | M3 | Additive, separately identified | `test_tls_validation.py::test_current_time_assessment_is_additive_and_labelled` | **IMPLEMENTED** |
+| F14.14 | Explicit trust store; no auto-fetch | `certificates/truststore.py` | M3 | `NOT_AVAILABLE` without one; no network | `test_tls_validation.py` (5 chain tests) | **IMPLEMENTED** |
+| F14.15 | Established verification API used | `certificates/validate.py` | M3 | `cryptography.x509.verification` | same | **IMPLEMENTED** |
+| F14.16 | Missing intermediate distinguished | `certificates/validate.py` | M3 | "chain appears incomplete" | `test_tls_validation.py::test_incomplete_chain_is_distinguished_from_an_invalid_one` | **IMPLEMENTED** |
+| F14.17 | Trust store identified without paths | `models/certificates.py` | M3 | Anchor-set digest, count, policy | `test_tls_validation.py::test_chain_verifies_against_a_configured_trust_store` | **IMPLEMENTED** |
+| F14.18 | Hostname needs an explicit identity | `certificates/validate.py` | M3 | Destination IP never used | `test_tls_validation.py::test_hostname_is_not_available_without_a_reference_identity` | **IMPLEMENTED** |
+| F14.19 | SNI is evidence, not an expectation | `certificates/validate.py` | M3 | Opt-in only | `test_tls_validation.py::test_observed_sni_is_evidence_not_an_expectation` | **IMPLEMENTED** |
+| F14.20 | Hostname outcomes distinguished | `certificates/validate.py` | M3 | Match / mismatch / no identity / unavailable / error | `test_tls_validation.py` (4 hostname tests) | **IMPLEMENTED** |
+| F14.21 | Revocation never claimed | `certificates/validate.py` | M3 | Always `NOT_AVAILABLE` with explanation | `test_tls.py::test_validation_checks_are_independent_and_match_manifest` | **IMPLEMENTED** |
+| F14.22 | Chain success ≠ non-revocation | `certificates/validate.py` | M3 | Stated in the chain check's limitations | same | **IMPLEMENTED** |
+| F14.23 | Documented algorithm policy | `certificates/policy.py` | M3 | RFC-cited factual notes, no scores | `policy_notes` field | **IMPLEMENTED** |
+| F14.24 | Certificate posture scoring | `assessment/` | M4 | — | — | **NOT IMPLEMENTED** (by design) |
+| F14.25 | Revocation checking (OCSP/CRL) | — | never | — | — | **NOT IMPLEMENTED** (out of scope: no network) |
+
+## F15 — TLS session lifecycle (M3)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F15.1 | Complete observable handshake sequences | `tls/analyzer.py` | M3 | `SERVER_FLIGHT_COMPLETE` | `test_tls.py` (T_A) | **IMPLEMENTED** |
+| F15.2 | Partial captures | `tls/analyzer.py` | M3 | `CLIENT_HELLO_ONLY`, `SERVER_HELLO_WITHOUT_CLIENT_HELLO` | `test_tls.py` (T_G, T_H, T_X) | **IMPLEMENTED** |
+| F15.3 | Aborted handshakes and alerts | `tls/analyzer.py` | M3 | `ABORTED_BY_ALERT` with decoded alert | `test_tls.py` (T_Z) | **IMPLEMENTED** |
+| F15.4 | Encrypted alerts | `tls/analyzer.py` | M3 | Framing only, `encrypted=true` | Code path | **IMPLEMENTED** |
+| F15.5 | TLS 1.2 resumption indicators | `tls/analyzer.py` | M3 | Session-id echo compared, ids not stored | `test_tls.py` (T_A resumption) | **IMPLEMENTED** |
+| F15.6 | TLS 1.3 PSK resumption indicators | `tls/analyzer.py` | M3 | `likely_resumed` from offer + selection | `test_tls.py` (T_F) | **IMPLEMENTED** |
+| F15.7 | No certificate is not a failure | `tls/analyzer.py` | M3 | `CertificateVisibility` states the cause | `test_tls.py::test_certificates_match_manifest` | **IMPLEMENTED** |
+| F15.8 | Negotiation progress ≠ verified completion | `models/tls.py` | M3 | Constants asserted across every fixture | `test_tls.py::test_no_handshake_is_ever_claimed_verified` | **IMPLEMENTED** |
 
 ## F8 — Assessment, correlation, ML, reporting, UI
 
@@ -236,21 +327,23 @@ stating their status and the milestone that owns them.
 
 ## Summary
 
-| Status | Count | Change since M1 |
+| Status | Count | Change since M2 |
 |---|---|---|
-| IMPLEMENTED | 124 | +50 |
-| PARTIAL | 4 | +1 |
-| NOT IMPLEMENTED | 18 | −5 |
-| **Total requirements tracked** | **146** | +46 |
+| IMPLEMENTED | 198 | +74 |
+| PARTIAL | 3 | -1 |
+| NOT IMPLEMENTED | 16 | -2 |
+| **Total requirements tracked** | **217** | +71 |
 
-As of M2 the implemented set covers capture ingestion, TCP reconstruction,
-data contracts, the CLI, the non-functional guarantees, and the full email
-protocol layer: SMTP/IMAP/POP3 parsing, STARTTLS/STLS state reconstruction,
-TLS transition boundaries, implicit-TLS framing detection and
-credential-free authentication observation.
+As of M3 the implemented set covers capture ingestion, TCP reconstruction,
+the email protocol layer, and the TLS layer: record framing, handshake
+reassembly, version and cipher-suite identification, key-exchange analysis,
+forward-secrecy observation, X.509 extraction and five independent validation
+checks.
 
-**Still not claimed anywhere:** TLS handshake reconstruction, negotiated
-version or cipher suite, certificate extraction or assessment (F7.2–F7.6),
-security findings and scoring (F8.1–F8.2), correlation (F8.3), ML (F8.4),
-backend and frontend (F8.6–F8.8). `handshake_analyzed` is a constant `False`
-in every report M2 produces.
+**Still not claimed anywhere:** security findings and scoring (F8.1–F8.2,
+F13.7, F14.24), correlation (F8.3), ML (F8.4), backend and frontend
+(F8.6–F8.8), and revocation checking (F14.25, permanently out of scope).
+
+**Constants in every report M3 produces:**
+`handshake_analyzed = false`, `handshakes_cryptographically_verified = 0`,
+`revocation_checks_performed = 0`.

@@ -30,6 +30,7 @@ from .manifest import (
     ExpectedRun,
     ExpectedSession,
     ExpectedStream,
+    ExpectedTLS,
     FixtureManifest,
 )
 from .packets import (
@@ -79,6 +80,11 @@ class FixtureSpec:
     expected_error: str | None = None
     #: ``None`` means this fixture makes no protocol-layer assertions.
     expected_protocols: list[ExpectedProtocol] | None = None
+    #: ``None`` means this fixture makes no TLS-layer assertions.
+    expected_tls: list[ExpectedTLS] | None = None
+    #: False when the capture bytes differ between runs (live TLS handshakes
+    #: and randomised certificate signatures).
+    byte_reproducible: bool = True
     #: Dummy credential strings that must never appear in any output.
     forbidden_strings: list[str] = field(default_factory=list)
 
@@ -94,8 +100,8 @@ class FixtureSpec:
             generation=self.generation,
             file_format=self.file_format,
             link_type_code=self.link_type_code,
-            capture_sha256=self.sha256,
-            file_size_bytes=len(self.data),
+            capture_sha256=self.sha256 if self.byte_reproducible else None,
+            file_size_bytes=len(self.data) if self.byte_reproducible else None,
             expected_packet_count=self.expected_packet_count,
             expected_tcp_packet_count=self.expected_tcp_packet_count,
             expected_timestamps_ns=list(self.timestamps_ns),
@@ -104,6 +110,8 @@ class FixtureSpec:
             expected_capture_truncated=self.expected_capture_truncated,
             expected_error=self.expected_error,
             expected_protocols=self.expected_protocols,
+            expected_tls=self.expected_tls,
+            byte_reproducible=self.byte_reproducible,
             forbidden_strings=list(self.forbidden_strings),
         )
 
@@ -1281,12 +1289,24 @@ def build_fixtures() -> list[FixtureSpec]:
     protocol fixtures in :mod:`securemailscope.testing.protocol_fixtures`.
     """
     from .protocol_fixtures import build_protocol_fixtures
+    from .tls_fixtures import build_tls_fixtures
 
-    return [builder() for builder in _BUILDERS] + build_protocol_fixtures()
+    return (
+        [builder() for builder in _BUILDERS]
+        + build_protocol_fixtures()
+        + build_tls_fixtures()
+    )
 
 
 def write_fixtures(capture_dir: Path, manifest_dir: Path) -> list[FixtureSpec]:
-    """Write captures and manifests to disk, returning the specs."""
+    """Write captures and manifests to disk, returning the specs.
+
+    The synthetic root certificate used by the TLS fixtures is written next to
+    the captures as ``synthetic-root.pem`` so chain verification can be
+    demonstrated against the very anchor those captures were signed by. It is
+    a public certificate, it lands in the gitignored generated directory, and
+    no private key is ever written outside a temporary directory.
+    """
     capture_dir.mkdir(parents=True, exist_ok=True)
     manifest_dir.mkdir(parents=True, exist_ok=True)
     specs = build_fixtures()
@@ -1297,4 +1317,7 @@ def write_fixtures(capture_dir: Path, manifest_dir: Path) -> list[FixtureSpec]:
             json.dumps(spec.manifest().to_dict(), indent=2, ensure_ascii=False) + "\n",
             encoding="utf-8",
         )
+    from .tls_fixtures import TRUST_STORE_NAME, _ca
+
+    (capture_dir / TRUST_STORE_NAME).write_bytes(_ca().root_pem)
     return specs

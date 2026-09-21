@@ -1,0 +1,56 @@
+{
+  "name": "T_H_server_hello_only",
+  "filename": "t_h_server_hello_only.pcap",
+  "description": "A ServerHello with no preceding ClientHello, as a midstream capture produces. The negotiated parameters are observable but the client's offers are not.",
+  "generation": "securemailscope.testing.tls_fixtures_synthetic._fixture_h",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "05afe39257c362b9303dedc8f5c4bdf1e3ce911b7f616857c076a8f3b09bbcb9",
+  "file_size_bytes": 213,
+  "expected_packet_count": 2,
+  "expected_tcp_packet_count": 2,
+  "expected_timestamps_ns": [
+    1780315200000000000,
+    1780315200001000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": null,
+  "expected_tls": [
+    {
+      "session_index": 0,
+      "entry_point": "IMPLICIT",
+      "handshake_state": "SERVER_HELLO_WITHOUT_CLIENT_HELLO",
+      "client_record_parse_state": "NOT_TLS",
+      "server_record_parse_state": "COMPLETE",
+      "forward_secrecy_status": "CAPABLE_NEGOTIATED",
+      "certificate_visibility": "NOT_OBSERVED",
+      "key_exchange_method": "ECDHE",
+      "selected_version": "TLS 1.2",
+      "selected_version_source": null,
+      "selected_cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+      "cipher_decomposition_applicable": true,
+      "cipher_key_exchange": "ECDHE",
+      "key_exchange_source": "CIPHER_SUITE",
+      "selected_group": null,
+      "server_name_indication": null,
+      "certificate_count": 0,
+      "record_count": null,
+      "message_types": [
+        "server_hello"
+      ],
+      "alert_descriptions": [],
+      "encryption_boundary_reasons": {},
+      "resumption_likely": null,
+      "hello_retry_request": false,
+      "handshake_analyzed": false,
+      "certificates": [],
+      "validation": null,
+      "expected_warning_codes": []
+    }
+  ],
+  "byte_reproducible": true,
+  "forbidden_strings": []
+}

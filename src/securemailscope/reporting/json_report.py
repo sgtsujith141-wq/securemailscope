@@ -26,6 +26,7 @@ def result_to_dict(
     *,
     include_segments: bool = True,
     include_protocol_events: bool = True,
+    include_tls_records: bool = True,
 ) -> dict[str, Any]:
     """Convert a result to plain Python objects.
 
@@ -44,6 +45,9 @@ def result_to_dict(
     if not include_protocol_events:
         for analysis in data.get("protocols", []):
             analysis.pop("events", None)
+    if not include_tls_records:
+        for analysis in data.get("tls", []):
+            analysis.pop("records", None)
     return data
 
 
@@ -53,12 +57,14 @@ def result_to_json(
     indent: int | None = 2,
     include_segments: bool = True,
     include_protocol_events: bool = True,
+    include_tls_records: bool = True,
 ) -> str:
     return json.dumps(
         result_to_dict(
             result,
             include_segments=include_segments,
             include_protocol_events=include_protocol_events,
+            include_tls_records=include_tls_records,
         ),
         indent=indent,
         ensure_ascii=False,
@@ -73,6 +79,7 @@ def write_json_report(
     indent: int | None = 2,
     include_segments: bool = True,
     include_protocol_events: bool = True,
+    include_tls_records: bool = True,
 ) -> Path:
     """Write the report to ``destination`` and return the resolved path."""
     path = Path(destination).expanduser().resolve(strict=False)
@@ -82,6 +89,7 @@ def write_json_report(
         indent=indent,
         include_segments=include_segments,
         include_protocol_events=include_protocol_events,
+        include_tls_records=include_tls_records,
     )
     path.write_text(payload + "\n", encoding="utf-8")
     return path

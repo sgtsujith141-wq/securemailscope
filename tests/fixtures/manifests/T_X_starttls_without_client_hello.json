@@ -1,0 +1,63 @@
+{
+  "name": "T_X_starttls_without_client_hello",
+  "filename": "t_x_starttls_without_client_hello.pcap",
+  "description": "STARTTLS is accepted and the server's TLS bytes follow, but no ClientHello was captured. The server side must still be analysed, and the absence of the client's offers must be visible rather than filled in.",
+  "generation": "securemailscope.testing.tls_fixtures_synthetic._fixture_x",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "b92d06e808ae58c5acb26f99548b5b42cd488b33ef9993e2bd83990292179cee",
+  "file_size_bytes": 858,
+  "expected_packet_count": 9,
+  "expected_tcp_packet_count": 9,
+  "expected_timestamps_ns": [
+    1780315200000000000,
+    1780315200001000000,
+    1780315200002000000,
+    1780315200003000000,
+    1780315200004000000,
+    1780315200005000000,
+    1780315200006000000,
+    1780315200007000000,
+    1780315200008000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": null,
+  "expected_tls": [
+    {
+      "session_index": 0,
+      "entry_point": "STARTTLS_UPGRADE",
+      "handshake_state": "SERVER_HELLO_WITHOUT_CLIENT_HELLO",
+      "client_record_parse_state": "NOT_TLS",
+      "server_record_parse_state": "COMPLETE",
+      "forward_secrecy_status": "CAPABLE_NEGOTIATED",
+      "certificate_visibility": "NOT_OBSERVED",
+      "key_exchange_method": "ECDHE",
+      "selected_version": "TLS 1.2",
+      "selected_version_source": null,
+      "selected_cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+      "cipher_decomposition_applicable": true,
+      "cipher_key_exchange": "ECDHE",
+      "key_exchange_source": "CIPHER_SUITE",
+      "selected_group": null,
+      "server_name_indication": null,
+      "certificate_count": 0,
+      "record_count": null,
+      "message_types": [
+        "server_hello"
+      ],
+      "alert_descriptions": [],
+      "encryption_boundary_reasons": {},
+      "resumption_likely": null,
+      "hello_retry_request": false,
+      "handshake_analyzed": false,
+      "certificates": [],
+      "validation": null,
+      "expected_warning_codes": []
+    }
+  ],
+  "byte_reproducible": true,
+  "forbidden_strings": []
+}

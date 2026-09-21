@@ -1,0 +1,66 @@
+{
+  "name": "T_M_missing_segment_during_handshake",
+  "filename": "t_m_missing_segment_during_handshake.pcap",
+  "description": "A TCP segment is missing from the middle of the server's handshake. TLS records are only self-delimiting when every preceding byte was read, so framing must stop at the hole with ALIGNMENT_LOST_AT_GAP rather than resynchronising on a guess.",
+  "generation": "securemailscope.testing.tls_fixtures_synthetic._fixture_m",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": null,
+  "file_size_bytes": null,
+  "expected_packet_count": 7,
+  "expected_tcp_packet_count": 7,
+  "expected_timestamps_ns": [
+    1780315200000000000,
+    1780315200001000000,
+    1780315200002000000,
+    1780315200003000000,
+    1780315200004000000,
+    1780315200005000000,
+    1780315200006000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": null,
+  "expected_tls": [
+    {
+      "session_index": 0,
+      "entry_point": "IMPLICIT",
+      "handshake_state": "INDETERMINATE",
+      "client_record_parse_state": "COMPLETE",
+      "server_record_parse_state": "ALIGNMENT_LOST_AT_GAP",
+      "forward_secrecy_status": "CAPABLE_NEGOTIATED",
+      "certificate_visibility": "NOT_OBSERVED",
+      "key_exchange_method": "ECDHE",
+      "selected_version": "TLS 1.2",
+      "selected_version_source": null,
+      "selected_cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+      "cipher_decomposition_applicable": true,
+      "cipher_key_exchange": "ECDHE",
+      "key_exchange_source": "CIPHER_SUITE",
+      "selected_group": null,
+      "server_name_indication": "mail.example.invalid",
+      "certificate_count": 0,
+      "record_count": null,
+      "message_types": [
+        "client_hello",
+        "server_hello",
+        "certificate"
+      ],
+      "alert_descriptions": [],
+      "encryption_boundary_reasons": {},
+      "resumption_likely": null,
+      "hello_retry_request": false,
+      "handshake_analyzed": false,
+      "certificates": [],
+      "validation": null,
+      "expected_warning_codes": [
+        "TLS_RECORD_ALIGNMENT_LOST",
+        "TLS_HANDSHAKE_MESSAGE_INCOMPLETE"
+      ]
+    }
+  ],
+  "byte_reproducible": false,
+  "forbidden_strings": []
+}

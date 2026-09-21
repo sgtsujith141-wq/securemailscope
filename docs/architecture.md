@@ -82,6 +82,24 @@ reading the capture and writing the report.
    └──────────────────────────────┬──────────────────────────────┘
                                   │
    ┌──────────────────────────────▼──────────────────────────────┐
+   │ tls/records.py         TLS record framing over the runs     │
+   │   stops at a hole: after missing bytes, record alignment is │
+   │   unknowable, so framing never resynchronises on a guess    │
+   └──────────────────────────────┬──────────────────────────────┘
+                                  │
+   ┌──────────────────────────────▼──────────────────────────────┐
+   │ tls/handshake.py    message reassembly across records       │
+   │ tls/extensions.py   supported_versions, key_share, SNI, ... │
+   │   appends only plaintext records: past the encryption       │
+   │   boundary nothing enters the buffer                        │
+   └──────────────────────────────┬──────────────────────────────┘
+                                  │
+   ┌──────────────────────────────▼──────────────────────────────┐
+   │ tls/keyexchange.py  tls/forward_secrecy.py  tls/registry.py  │
+   │ certificates/parse.py  truststore.py  validate.py  policy.py│
+   └──────────────────────────────┬──────────────────────────────┘
+                                  │
+   ┌──────────────────────────────▼──────────────────────────────┐
    │ models/*  typed result  ->  reporting/json_report.py  -> JSON│
    └─────────────────────────────────────────────────────────────┘
 ```
@@ -104,13 +122,15 @@ per-code emission cap.
 | `pipeline.py` | Orchestration | everything above |
 | `cli.py` | Command line | `pipeline`, `reporting`, `config` |
 | `testing/` | Deterministic fixture generation | `models`, Scapy |
-| `tls/`, `certificates/`, `assessment/`, `intelligence/`, `ml/` | Empty; later milestones | — |
+| `tls/` | Record framing, handshake reassembly, version/cipher/key-exchange/forward-secrecy analysis | `models`, `config`, `diagnostics`, `protocols` |
+| `certificates/` | X.509 decoding, trust store, the five validation checks | `models`, `certificates.policy`, `cryptography` |
+| `assessment/`, `intelligence/`, `ml/` | Empty; later milestones | — |
 
 Dependencies point one way. `models/` imports nothing from the project, so a
 data contract can never be bent by an implementation detail. `ingestion/` does
 not know what a session is. `network/` does not know what a report is.
 
-Five packages exist as documented placeholders with no code. They carry a
+Three packages exist as documented placeholders with no code. They carry a
 docstring stating `NOT IMPLEMENTED`, the planned milestone and the intended
 scope. They were not filled with stub functions, because a stub that returns
 `None` is indistinguishable from a feature that found nothing.
@@ -251,6 +271,83 @@ yes), `TLS_BYTES_OBSERVED` (and TLS-framed bytes followed), `UPGRADE_REJECTED`,
 and `INCOMPLETE`. None of these means a handshake completed;
 `handshake_analyzed` is a constant `False` for the whole of M2.
 
+## The TLS and certificate layer (M3)
+
+### Record alignment is lost at a hole
+
+A TLS record stream is self-delimiting only if every preceding byte was read.
+After missing data, the first byte of the next run may be the middle of a
+record body, so framing from there produces confident nonsense.
+`tls/records.py` therefore stops at the gap with `ALIGNMENT_LOST_AT_GAP`.
+Records that merely span *TCP segments* are unaffected: segments inside one
+reassembled run are contiguous, so a record split across packets is read
+normally and every contributing packet is recorded.
+
+Bytes overlapping an unresolved TCP overlap conflict are framed and reported
+but never parsed — an ambiguous byte cannot be evidence of a negotiated
+parameter.
+
+### Records and messages are independent framings
+
+One handshake message may span several records (a Certificate message always
+does) and one record may carry several messages. `tls/handshake.py`
+concatenates record *bodies* per direction and parses messages out of the
+concatenation, keeping a map from every buffer position back to its stream
+offset, record index and packets. Because a message that is incomplete when
+one record arrives may complete when the next lands, the buffer is re-parsed
+on each append and a message is only interpreted once it is complete.
+
+### The encryption boundary
+
+This is the spine of the design. Everything before it is evidence; everything
+after it is bytes we can frame but must not interpret.
+
+| Protocol | Boundary | Reference |
+|---|---|---|
+| TLS 1.2 | The ChangeCipherSpec sent by that direction | RFC 5246 §7.1 |
+| TLS 1.3 | Immediately after the ServerHello, both directions | RFC 8446 §2 |
+
+A TLS 1.3 peer may emit a ChangeCipherSpec purely for middlebox
+compatibility (RFC 8446 §D.4). It is recognised as such and is **never** read
+as evidence of a TLS 1.2 handshake. An `application_data` record in a TLS 1.3
+session carries encrypted handshake messages and is never parsed as plaintext.
+
+### Version identification
+
+RFC 8446 §4.2.1: a TLS 1.3 server signals the version in the ServerHello
+`supported_versions` extension and leaves `legacy_version` at 0x0303.
+Identifying TLS 1.3 from the legacy field or from the record-layer version is
+therefore wrong, and the report records which source was used. A ClientHello
+without a ServerHello yields offered versions and a selected version of
+`UNKNOWN` — the highest offered version is never promoted.
+
+### Cipher suites mean different things in 1.2 and 1.3
+
+A TLS 1.2 suite encodes key exchange, authentication, cipher and MAC. A
+TLS 1.3 suite encodes an AEAD and a hash and nothing else (RFC 8446 §B.4), so
+`decomposition_applicable` is `false` and the key-exchange fields stay empty;
+the real answer comes from `key_share` and `signature_algorithms`. Unknown
+code points are reported by their exact numeric value, and RFC 8701 GREASE
+values are marked rather than reported as unknown algorithms.
+
+### Certificate validation is five independent questions
+
+`certificates/validate.py` answers presence, dates, chain, hostname and
+revocation separately. The installed library exposes chain and hostname
+together through `ServerVerifier`, so each is isolated by neutralising the
+other: the chain check uses the leaf's own first DNS SAN as the subject, and
+the hostname check trusts the presented chain. That deviation from a single
+API call is documented in the module, because the alternative — a
+hand-written RFC 6125 matcher — would be a second, unverified implementation
+of the rule that matters most.
+
+There is **no default trust store**: without one, chain verification is
+`NOT_AVAILABLE` rather than silently using a bundle the report cannot name.
+There is **no default reference identity**: the destination IP is never used
+as one, and an observed SNI is the client's request rather than an authorised
+expectation. Revocation is never performed, because the engine makes no
+network requests at all.
+
 ## Planned evolution
 
 The TCP layer is the foundation every later milestone stands on, which is why
@@ -259,10 +356,9 @@ M1 spent its effort there. Later stages attach to it without modifying it:
 - **M2 (done)** consumes `payload_runs()` per direction to parse SMTP/IMAP/POP3
   command and response grammar and to reconstruct `STARTTLS` / `STLS` state.
   Each parsed element keeps the packet references of the bytes it came from.
-- **M3** reconstructs TLS handshakes starting from the boundaries and record
-  observations M2 produced, and extracts negotiated parameters. A gap in a run
-  means the record layer stops there rather than guessing. M2 deliberately
-  leaves the record *contents* untouched so M3 owns that entirely.
+- **M3 (done)** reconstructs TLS records and handshakes starting from the
+  boundaries M2 produced, extracts negotiated parameters, and decodes and
+  validates certificates where they are visible in plaintext.
 - **M4–M6** add assessment, correlation and ML on top of those observations,
   never replacing them.
 - **M7–M8** add a local FastAPI adapter and a React UI around the unchanged

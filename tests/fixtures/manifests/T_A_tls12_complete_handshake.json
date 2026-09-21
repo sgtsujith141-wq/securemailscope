@@ -1,0 +1,78 @@
+{
+  "name": "T_A_tls12_complete_handshake",
+  "filename": "t_a_tls12_complete_handshake.pcap",
+  "description": "A complete TLS 1.2 handshake negotiated locally by OpenSSL, carried on port 993. Every plaintext handshake message through ServerHelloDone must be reconstructed and the server's certificate extracted.",
+  "generation": "securemailscope.testing.tls_fixtures._fixture_a (live OpenSSL, in-memory BIO)",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": null,
+  "file_size_bytes": null,
+  "expected_packet_count": 7,
+  "expected_tcp_packet_count": 7,
+  "expected_timestamps_ns": [
+    1780315200000000000,
+    1780315200001000000,
+    1780315200002000000,
+    1780315200003000000,
+    1780315200004000000,
+    1780315200005000000,
+    1780315200006000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": null,
+  "expected_tls": [
+    {
+      "session_index": 0,
+      "entry_point": "IMPLICIT",
+      "handshake_state": "SERVER_FLIGHT_COMPLETE",
+      "client_record_parse_state": "COMPLETE",
+      "server_record_parse_state": "COMPLETE",
+      "forward_secrecy_status": "EPHEMERAL_OBSERVED",
+      "certificate_visibility": "OBSERVED",
+      "key_exchange_method": "ECDHE",
+      "selected_version": "TLS 1.2",
+      "selected_version_source": "LEGACY_VERSION",
+      "selected_cipher_suite": "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+      "cipher_decomposition_applicable": true,
+      "cipher_key_exchange": "ECDHE",
+      "key_exchange_source": "CIPHER_SUITE",
+      "selected_group": null,
+      "server_name_indication": "mail.example.invalid",
+      "certificate_count": 1,
+      "record_count": null,
+      "message_types": [
+        "client_hello",
+        "server_hello",
+        "certificate",
+        "server_key_exchange",
+        "server_hello_done",
+        "client_key_exchange",
+        "new_session_ticket"
+      ],
+      "alert_descriptions": [],
+      "encryption_boundary_reasons": {
+        "CLIENT_TO_SERVER": "TLS12_CHANGE_CIPHER_SPEC",
+        "SERVER_TO_CLIENT": "TLS12_CHANGE_CIPHER_SPEC"
+      },
+      "resumption_likely": false,
+      "hello_retry_request": false,
+      "handshake_analyzed": false,
+      "certificates": [],
+      "validation": {
+        "certificate_observed": "PASSED",
+        "validity_dates_checked": "PASSED",
+        "chain_verified": "NOT_AVAILABLE",
+        "hostname_verified": "NOT_AVAILABLE",
+        "revocation_checked": "NOT_AVAILABLE",
+        "trust_store_configured": false,
+        "reference_identity": null
+      },
+      "expected_warning_codes": []
+    }
+  ],
+  "byte_reproducible": false,
+  "forbidden_strings": []
+}

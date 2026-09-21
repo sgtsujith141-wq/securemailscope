@@ -231,6 +231,107 @@ or `NOT_OBSERVED`. A client boundary is never inferred from the end of the
 upgrade command: if no framing validates, the boundary says `NOT_OBSERVED`
 with `UNKNOWN` status rather than guessing.
 
+## The TLS and certificate layer (M3)
+
+### Offered is not selected
+
+`TLSVersionAnalysis` and `CipherSuiteAnalysis` keep the two apart in separate
+fields. A ClientHello populates `offered_versions` and `offered`; only a
+ServerHello populates `selected_version` and `selected`. With no ServerHello,
+`negotiation_status` is `UNKNOWN` and the selected fields stay empty. The
+highest offered version is never promoted into a negotiated one.
+
+`selected_source` records *how* the version was determined —
+`SUPPORTED_VERSIONS_EXTENSION` or `LEGACY_VERSION` — because for TLS 1.3 only
+the first is correct (RFC 8446 §4.2.1).
+
+### Unknown code points keep their numbers
+
+`CodePointRef` carries the numeric value, its hex form, the registered name
+when the registry has one, and `known`. An unrecognised cipher suite is
+reported as `0x1337` with `known: false`, never approximated from a
+neighbouring entry. RFC 8701 GREASE values are marked `grease: true` so they
+are not counted as unknown algorithms. `CipherSuiteAnalysis` names the
+registry and its revision so a reader can tell which table produced a name.
+
+### Negotiation is not completion
+
+Passive analysis cannot verify a Finished message without the handshake
+traffic keys. Three fields exist to make that boundary explicit, and all three
+are constants in M3:
+
+- `TLSUpgradeAttempt.handshake_analyzed` / `handshake_analysis_status`
+- `ForwardSecrecyAssessment.handshake_completion_observable` — `false`, with
+  `handshake_completion_explanation` carrying the reason
+- `TLSInventory.handshakes_cryptographically_verified` — `0`
+- `TLSInventory.revocation_checks_performed` — `0`
+
+### Forward secrecy states its criteria
+
+`ForwardSecrecyAssessment.criteria` is a sentence naming the RFC clause and
+the evidence that produced the status. The statuses separate *capability* from
+*observation*:
+
+| Status | Meaning |
+|---|---|
+| `EPHEMERAL_OBSERVED` | An ephemeral exchange was negotiated **and** its key material was seen (a TLS 1.2 ServerKeyExchange or a TLS 1.3 server `key_share`) |
+| `CAPABLE_NEGOTIATED` | An ephemeral suite was negotiated but the key material was not captured |
+| `STATIC_RSA_KEY_EXCHANGE` | RFC 5246 §7.4.7.1: the premaster secret is encrypted to the server's long-term key |
+| `PSK_ONLY` | A pre-shared key with no ephemeral contribution |
+| `NOT_FORWARD_SECRET` | A known method that provides none |
+| `UNKNOWN_INCOMPLETE_EVIDENCE` | Not enough was observed to classify |
+| `NOT_OBSERVABLE` | The property cannot be determined passively for this session |
+
+TLS 1.3 is **not** assumed forward secret merely because it is TLS 1.3: a
+PSK-only resumption without a `key_share` is `PSK_ONLY`.
+
+### Certificate absence has causes
+
+`CertificateVisibility` distinguishes why no certificate is available, so
+"none present" is never reported as a certificate failure:
+
+| Value | Meaning |
+|---|---|
+| `OBSERVED` | A plaintext Certificate message was decoded |
+| `ENCRYPTED_TLS13` | It exists but is encrypted under handshake traffic keys. Permanent. |
+| `ENCRYPTED_AFTER_CCS` | TLS 1.2 went encrypted before any certificate was seen |
+| `NOT_PRESENT_RESUMED` | A resumed session legitimately carries none |
+| `NOT_OBSERVED` | The handshake never reached that point in this capture |
+| `PARSE_FAILED` / `PARSER_UNAVAILABLE` | Present but undecodable, or no X.509 library |
+| `NOT_APPLICABLE_ANONYMOUS` | An anonymous suite sends no certificate |
+
+### Observation and validation are separate models
+
+`CertificateObservation` records what a certificate *claims*.
+`CertificateValidation` records five independent answers, each with its own
+status and explanation:
+
+| Check | Answers |
+|---|---|
+| `certificate_observed` | Was one visible at all? |
+| `validity_dates_checked` | Was it inside its window **at capture time**? |
+| `chain_verified` | Does it chain to an explicitly configured anchor? |
+| `hostname_verified` | Does it name the identity the analyst expected? |
+| `revocation_checked` | Always `NOT_AVAILABLE` — see below |
+
+None implies another. A verified chain says nothing about the name, and
+neither says anything about revocation.
+
+`assessment_mode` is always `CAPTURE_TIME` for the primary answer; a
+current-time assessment, when requested, is additive and labelled as a
+separate statement. `PublicKeyInfo.size_bits` is `None` for Ed25519 and Ed448,
+because a variable key length is not a meaningful description of them.
+
+`TrustStoreInfo` identifies the anchor set by a digest of its members'
+fingerprints rather than by a filesystem path, so two reports can be compared
+without disclosing where anyone keeps their files.
+
+### Revocation is never performed
+
+`REVOCATION_EXPLANATION` is attached wherever it matters: the engine makes no
+network requests, so OCSP and CRL retrieval are out of scope by design, and a
+successful chain verification is **not** evidence of non-revocation.
+
 ## Rules for future milestones
 
 These apply to every stage added after M1:
@@ -250,3 +351,8 @@ These apply to every stage added after M1:
    reach them.
 7. An upgrade, a record header and a handshake are three different facts. No
    stage may collapse them.
+8. Offered is never selected; negotiated is never completed; parsed is never
+   validated. Each pair has separate fields and neither may be derived from
+   the other.
+9. A code point with no registry entry keeps its number. Nothing is
+   approximated from a name's shape.

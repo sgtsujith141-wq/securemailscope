@@ -26,7 +26,12 @@ MANIFEST_DIR = Path(__file__).parent / "fixtures" / "manifests"
 
 @dataclass(frozen=True)
 class Fixture:
-    """A generated capture paired with its committed expectations."""
+    """A generated capture paired with its committed expectations.
+
+    Fixtures whose bytes are not reproducible -- live OpenSSL handshakes and
+    randomised ECDSA certificate signatures -- skip the capture-hash check and
+    rely entirely on their semantic expectations.
+    """
 
     name: str
     path: Path
@@ -39,6 +44,16 @@ class Fixture:
     @property
     def expected_warning_codes(self) -> set[str]:
         return set(self.manifest["expected_warning_codes"])
+
+    @property
+    def expected_tls(self) -> list[dict[str, Any]]:
+        expected = self.manifest.get("expected_tls")
+        assert expected is not None, f"{self.name} declares no TLS expectations"
+        return expected
+
+    @property
+    def byte_reproducible(self) -> bool:
+        return bool(self.manifest.get("byte_reproducible", True))
 
 
 @pytest.fixture(scope="session")
@@ -65,13 +80,29 @@ def fixtures(capture_dir: Path, manifests: dict[str, dict[str, Any]]) -> dict[st
     for name, manifest in manifests.items():
         path = capture_dir / manifest["filename"]
         assert path.is_file(), f"fixture {name} was not generated"
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
-        assert digest == manifest["capture_sha256"], (
-            f"fixture {name} is not reproducible: generated sha256 {digest} but the "
-            f"committed manifest records {manifest['capture_sha256']}"
-        )
+        if manifest.get("byte_reproducible", True) and manifest.get("capture_sha256"):
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            assert digest == manifest["capture_sha256"], (
+                f"fixture {name} is not reproducible: generated sha256 {digest} but the "
+                f"committed manifest records {manifest['capture_sha256']}"
+            )
         result[name] = Fixture(name=name, path=path, manifest=manifest)
     return result
+
+
+@pytest.fixture(scope="session")
+def trust_store_pem(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The synthetic root, written out so chain verification can use it.
+
+    Written at test time into a temporary directory: no certificate or key
+    material is ever committed to the repository.
+    """
+    from securemailscope.testing.tls_fixtures import _ca
+
+    directory = tmp_path_factory.mktemp("truststore")
+    path = directory / "synthetic-root.pem"
+    path.write_bytes(_ca().root_pem)
+    return path
 
 
 @pytest.fixture

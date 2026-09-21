@@ -22,6 +22,9 @@ __all__ = [
     "ExpectedUpgrade",
     "ExpectedAuthentication",
     "ExpectedProtocol",
+    "ExpectedCertificate",
+    "ExpectedValidation",
+    "ExpectedTLS",
     "FixtureManifest",
 ]
 
@@ -152,6 +155,71 @@ class ExpectedProtocol:
 
 
 @dataclass(frozen=True)
+class ExpectedCertificate:
+    """Expected content of one certificate in the presented chain."""
+
+    chain_position: int
+    subject: str
+    issuer: str
+    public_key_algorithm: str
+    signature_algorithm: str
+    subject_alternative_names: list[str]
+    is_self_issued: bool
+    public_key_size_bits: int | None = None
+    public_key_curve: str | None = None
+    basic_constraints_ca: bool | None = None
+    extended_key_usage: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class ExpectedValidation:
+    """Expected status of each of the five independent checks."""
+
+    certificate_observed: str
+    validity_dates_checked: str
+    chain_verified: str
+    hostname_verified: str
+    revocation_checked: str
+    trust_store_configured: bool = False
+    reference_identity: str | None = None
+
+
+@dataclass(frozen=True)
+class ExpectedTLS:
+    """Expected TLS analysis for one session."""
+
+    session_index: int
+    entry_point: str
+    handshake_state: str
+    client_record_parse_state: str
+    server_record_parse_state: str
+    forward_secrecy_status: str
+    certificate_visibility: str
+    key_exchange_method: str
+    selected_version: str | None = None
+    selected_version_source: str | None = None
+    selected_cipher_suite: str | None = None
+    cipher_decomposition_applicable: bool = True
+    cipher_key_exchange: str | None = None
+    key_exchange_source: str | None = None
+    selected_group: str | None = None
+    server_name_indication: str | None = None
+    certificate_count: int = 0
+    record_count: int | None = None
+    #: Handshake message names, in the order they must be reported.
+    message_types: list[str] = field(default_factory=list)
+    alert_descriptions: list[str] = field(default_factory=list)
+    encryption_boundary_reasons: dict[str, str] = field(default_factory=dict)
+    resumption_likely: bool | None = None
+    hello_retry_request: bool = False
+    #: Always False in M3; asserted so a regression is caught.
+    handshake_analyzed: bool = False
+    certificates: list[ExpectedCertificate] = field(default_factory=list)
+    validation: ExpectedValidation | None = None
+    expected_warning_codes: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class FixtureManifest:
     name: str
     filename: str
@@ -159,8 +227,10 @@ class FixtureManifest:
     generation: str
     file_format: str
     link_type_code: int
-    capture_sha256: str
-    file_size_bytes: int
+    #: ``None`` for fixtures that are not byte-reproducible: recording a hash
+    #: that changes every run would be misleading, not useful.
+    capture_sha256: str | None
+    file_size_bytes: int | None
     expected_packet_count: int
     expected_tcp_packet_count: int
     expected_timestamps_ns: list[int]
@@ -171,6 +241,12 @@ class FixtureManifest:
     expected_error: str | None = None
     #: ``None`` means the fixture makes no protocol-layer assertions.
     expected_protocols: list[ExpectedProtocol] | None = None
+    #: ``None`` means the fixture makes no TLS-layer assertions.
+    expected_tls: list[ExpectedTLS] | None = None
+    #: False for fixtures containing randomised signatures or live OpenSSL
+    #: handshakes: their bytes differ per run, so the capture hash is not
+    #: asserted and the semantic expectations carry the whole test.
+    byte_reproducible: bool = True
     #: Byte strings that must never appear in any serialised output. Used by
     #: fixtures carrying recognisable dummy credentials.
     forbidden_strings: list[str] = field(default_factory=list)

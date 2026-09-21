@@ -1,0 +1,92 @@
+{
+  "name": "T_C_tls12_static_rsa",
+  "filename": "t_c_tls12_static_rsa.pcap",
+  "description": "A TLS 1.2 handshake using static RSA key exchange. The premaster secret is encrypted to the server's long-term key, so the session has no forward secrecy and must be classified STATIC_RSA_KEY_EXCHANGE.",
+  "generation": "securemailscope.testing.tls_fixtures._fixture_c (live OpenSSL, kRSA)",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": null,
+  "file_size_bytes": null,
+  "expected_packet_count": 7,
+  "expected_tcp_packet_count": 7,
+  "expected_timestamps_ns": [
+    1780315200000000000,
+    1780315200001000000,
+    1780315200002000000,
+    1780315200003000000,
+    1780315200004000000,
+    1780315200005000000,
+    1780315200006000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": null,
+  "expected_tls": [
+    {
+      "session_index": 0,
+      "entry_point": "IMPLICIT",
+      "handshake_state": "SERVER_FLIGHT_COMPLETE",
+      "client_record_parse_state": "COMPLETE",
+      "server_record_parse_state": "COMPLETE",
+      "forward_secrecy_status": "STATIC_RSA_KEY_EXCHANGE",
+      "certificate_visibility": "OBSERVED",
+      "key_exchange_method": "RSA",
+      "selected_version": "TLS 1.2",
+      "selected_version_source": null,
+      "selected_cipher_suite": "TLS_RSA_WITH_AES_128_CBC_SHA",
+      "cipher_decomposition_applicable": true,
+      "cipher_key_exchange": "RSA",
+      "key_exchange_source": "CIPHER_SUITE",
+      "selected_group": null,
+      "server_name_indication": "mail.example.invalid",
+      "certificate_count": 1,
+      "record_count": null,
+      "message_types": [
+        "client_hello",
+        "server_hello",
+        "certificate",
+        "server_hello_done",
+        "client_key_exchange",
+        "new_session_ticket"
+      ],
+      "alert_descriptions": [],
+      "encryption_boundary_reasons": {},
+      "resumption_likely": null,
+      "hello_retry_request": false,
+      "handshake_analyzed": false,
+      "certificates": [
+        {
+          "chain_position": 0,
+          "subject": "CN=mail.example.invalid",
+          "issuer": "CN=SecureMailScope Synthetic Test Root",
+          "public_key_algorithm": "RSA",
+          "signature_algorithm": "ecdsa-with-SHA256",
+          "subject_alternative_names": [
+            "DNS:mail.example.invalid"
+          ],
+          "is_self_issued": false,
+          "public_key_size_bits": 2048,
+          "public_key_curve": null,
+          "basic_constraints_ca": false,
+          "extended_key_usage": [
+            "serverAuth"
+          ]
+        }
+      ],
+      "validation": {
+        "certificate_observed": "PASSED",
+        "validity_dates_checked": "PASSED",
+        "chain_verified": "NOT_AVAILABLE",
+        "hostname_verified": "NOT_AVAILABLE",
+        "revocation_checked": "NOT_AVAILABLE",
+        "trust_store_configured": false,
+        "reference_identity": null
+      },
+      "expected_warning_codes": []
+    }
+  ],
+  "byte_reproducible": false,
+  "forbidden_strings": []
+}

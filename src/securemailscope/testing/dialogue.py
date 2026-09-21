@@ -165,6 +165,27 @@ class Dialogue:
             end_offset=self.server_offset,
         )
 
+    def send_server_conflicting(self, first: bytes, second: bytes, overlap: int) -> Sent:
+        """Send two overlapping server segments whose overlap disagrees.
+
+        The second segment starts ``overlap`` bytes before the first ends and
+        carries different bytes there, which is the TCP-level ambiguity the
+        reassembler reports as an overlap conflict.
+        """
+        if overlap <= 0 or overlap > min(len(first), len(second)):
+            raise ValueError("overlap must fit inside both segments")
+        start = self.server_offset
+        first_number = self.conversation.s2c(self._server_seq, self._client_seq, "PA", first)
+        second_seq = self._server_seq + len(first) - overlap
+        second_number = self.conversation.s2c(second_seq, self._client_seq, "PA", second)
+        self._server_seq = second_seq + len(second)
+        self.server_offset = start + len(first) - overlap + len(second)
+        return Sent(
+            packets=(first_number, second_number),
+            start_offset=start,
+            end_offset=self.server_offset,
+        )
+
     def retransmit_last_client(self) -> int:
         """Resend the previous client segment with a fresh IP ID."""
         if self._last_client_segment is None:

@@ -11,6 +11,7 @@ from .capture import CaptureMetadata
 from .evidence import AnalysisWarning
 from .protocol import ProtocolInventory, ProtocolSessionAnalysis
 from .tcp import TCPSession
+from .tls import TLSInventory, TLSSessionAnalysis
 
 __all__ = [
     "AnalysisStage",
@@ -25,10 +26,14 @@ __all__ = [
 #: Bumped whenever the JSON output contract changes.
 #:
 #: 1.1.0 (M2) adds the top-level ``protocols`` array and ``protocol_inventory``
-#: object, and adds members to ``stage_status``. It is backward compatible:
-#: every 1.0.0 field keeps its name, type and meaning, and the M1 TCP models
-#: are unchanged. A 1.0.0 consumer can ignore the new keys.
-REPORT_SCHEMA_VERSION = "1.1.0"
+#: object, and adds members to ``stage_status``.
+#:
+#: 1.2.0 (M3) adds the top-level ``tls`` array and ``tls_inventory`` object,
+#: adds optional M3 fields to ``TLSRecordObservation``, and adds further
+#: ``stage_status`` members. Still backward compatible: every 1.0.0 and 1.1.0
+#: field keeps its name, type and meaning, and the M1 TCP and M2 protocol
+#: models are unchanged. An older consumer can ignore the new keys.
+REPORT_SCHEMA_VERSION = "1.2.0"
 
 
 class AnalysisStage(StrEnum):
@@ -45,7 +50,13 @@ class AnalysisStage(StrEnum):
     EMAIL_PROTOCOL_PARSING = "EMAIL_PROTOCOL_PARSING"
     STARTTLS_DETECTION = "STARTTLS_DETECTION"
     TLS_RECORD_FRAMING = "TLS_RECORD_FRAMING"
+    TLS_HANDSHAKE_ANALYSIS = "TLS_HANDSHAKE_ANALYSIS"
     TLS_ANALYSIS = "TLS_ANALYSIS"
+    KEY_EXCHANGE_ANALYSIS = "KEY_EXCHANGE_ANALYSIS"
+    FORWARD_SECRECY_ASSESSMENT = "FORWARD_SECRECY_ASSESSMENT"
+    CERTIFICATE_EXTRACTION = "CERTIFICATE_EXTRACTION"
+    CERTIFICATE_VALIDATION = "CERTIFICATE_VALIDATION"
+    CERTIFICATE_REVOCATION = "CERTIFICATE_REVOCATION"
     CERTIFICATE_ASSESSMENT = "CERTIFICATE_ASSESSMENT"
     RISK_ASSESSMENT = "RISK_ASSESSMENT"
     ML_ANALYSIS = "ML_ANALYSIS"
@@ -58,10 +69,20 @@ STAGE_STATUS: dict[AnalysisStage, str] = {
     AnalysisStage.PROTOCOL_HINTS: "IMPLEMENTED",
     AnalysisStage.EMAIL_PROTOCOL_PARSING: "IMPLEMENTED",
     AnalysisStage.STARTTLS_DETECTION: "IMPLEMENTED",
-    # Record framing only: enough to locate and bound TLS bytes, not to parse
-    # them. Handshake reconstruction is M3.
-    AnalysisStage.TLS_RECORD_FRAMING: "PARTIAL",
-    AnalysisStage.TLS_ANALYSIS: "NOT_IMPLEMENTED",
+    AnalysisStage.TLS_RECORD_FRAMING: "IMPLEMENTED",
+    AnalysisStage.TLS_HANDSHAKE_ANALYSIS: "IMPLEMENTED",
+    # Implemented for the observable plaintext portion of a handshake. Nothing
+    # is decrypted, so TLS 1.3 traffic after the ServerHello stays opaque.
+    AnalysisStage.TLS_ANALYSIS: "PARTIAL",
+    AnalysisStage.KEY_EXCHANGE_ANALYSIS: "IMPLEMENTED",
+    AnalysisStage.FORWARD_SECRECY_ASSESSMENT: "IMPLEMENTED",
+    # TLS 1.2 and earlier only; TLS 1.3 certificates are encrypted.
+    AnalysisStage.CERTIFICATE_EXTRACTION: "PARTIAL",
+    # Dates, chain and hostname are implemented and independently reported.
+    AnalysisStage.CERTIFICATE_VALIDATION: "IMPLEMENTED",
+    # No OCSP or CRL retrieval exists; the engine makes no network requests.
+    AnalysisStage.CERTIFICATE_REVOCATION: "NOT_IMPLEMENTED",
+    # Turning certificate observations into a posture judgement is M4.
     AnalysisStage.CERTIFICATE_ASSESSMENT: "NOT_IMPLEMENTED",
     AnalysisStage.RISK_ASSESSMENT: "NOT_IMPLEMENTED",
     AnalysisStage.ML_ANALYSIS: "NOT_IMPLEMENTED",
@@ -141,6 +162,18 @@ class AnalysisResult(_Frozen):
             "Application-layer analysis, one entry per session, joined to "
             "'sessions' by session_id. Kept separate so the M1 TCP contract is "
             "unchanged."
+        ),
+    )
+
+    tls_inventory: TLSInventory = Field(
+        default_factory=TLSInventory,
+        description="Capture-wide totals for the TLS and certificate layer (M3).",
+    )
+    tls: tuple[TLSSessionAnalysis, ...] = Field(
+        default=(),
+        description=(
+            "TLS analysis, one entry per session that carried TLS, joined to "
+            "'sessions' and 'protocols' by session_id."
         ),
     )
 

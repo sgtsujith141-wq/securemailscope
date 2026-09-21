@@ -69,10 +69,12 @@ def test_report_declares_stage_status_honestly(fixtures: dict[str, Fixture]) -> 
     assert status["EMAIL_PROTOCOL_PARSING"] == "IMPLEMENTED"
     assert status["STARTTLS_DETECTION"] == "IMPLEMENTED"
     # Framing only: enough to bound TLS bytes, not to parse them.
-    assert status["TLS_RECORD_FRAMING"] == "PARTIAL"
-    assert status["TLS_ANALYSIS"] == "NOT_IMPLEMENTED"
+    assert status["TLS_RECORD_FRAMING"] == "IMPLEMENTED"
+    # M3 analyses only what a passive capture can show; nothing is decrypted.
+    assert status["TLS_ANALYSIS"] == "PARTIAL"
+    assert status["CERTIFICATE_REVOCATION"] == "NOT_IMPLEMENTED"
     assert status["CERTIFICATE_ASSESSMENT"] == "NOT_IMPLEMENTED"
-    assert data["tool"]["report_schema_version"] == "1.1.0"
+    assert data["tool"]["report_schema_version"] == "1.2.0"
     # No fabricated cryptographic findings anywhere in the document. This is
     # now a structural check rather than a substring one: the prose legitimately
     # mentions certificates in order to say they are NOT analysed, so what must
@@ -81,6 +83,10 @@ def test_report_declares_stage_status_honestly(fixtures: dict[str, Fixture]) -> 
                                  "negotiated_cipher", "certificate_chain",
                                  "subject", "issuer", "not_after"}) == []
     assert data["protocol_inventory"]["tls_handshakes_analysed"] == 0
+    # This capture carries no TLS at all, so no cryptographic claim may appear.
+    assert data["tls"] == []
+    assert data["tls_inventory"]["handshakes_cryptographically_verified"] == 0
+    assert data["tls_inventory"]["revocation_checks_performed"] == 0
     for analysis in data["protocols"]:
         upgrade = analysis.get("upgrade")
         if upgrade is not None:

@@ -90,7 +90,65 @@ history. This keeps the habit correct for when real captures are involved.
 | P_S | EHLO, its reply and STARTTLS split across segments, CRLF split | Reassembly restores records before the line reader |
 | P_T | Capture starting midstream, no greeting | Detection falls to PROBABLE; no capability claimed |
 
-No fixture contains a real TLS handshake or a certificate. The TLS records in
+### M3 TLS and certificate fixtures
+
+Two generation methods, kept clearly distinct because they buy different
+things and have different reproducibility.
+
+**Locally negotiated (A-F)** -- real OpenSSL handshakes produced through
+`ssl.MemoryBIO` pairs. No socket is created and no capture privilege is
+needed: the client and server exchange bytes in memory. These test the parser
+against what a real implementation actually emits. TLS randoms and ephemeral
+key shares make them non-reproducible, so their manifests record **no capture
+hash** and assert negotiated parameters instead.
+
+**Synthetically constructed (G-Z)** -- messages assembled byte by byte from
+the RFC structures. This is the only way to produce a record split at a chosen
+boundary, a truncated record, a hole mid-handshake, or bytes two segments
+disagree about. Fixtures whose certificates come from the synthetic CA inherit
+ECDSA's randomised signatures and are also non-reproducible; the purely
+structural ones assert a capture hash.
+
+| Fixture | Method | Principally verifies |
+|---|---|---|
+| T_A | live | Complete TLS 1.2 flight; certificate extracted |
+| T_B | live | TLS 1.2 ECDHE; group from ServerKeyExchange, not from client offers |
+| T_C | live | Static RSA key exchange ⇒ `STATIC_RSA_KEY_EXCHANGE`, no ServerKeyExchange |
+| T_D | live | TLS 1.3 version from `supported_versions`, not `legacy_version` |
+| T_E | live | TLS 1.3 certificate is `ENCRYPTED_TLS13`, not a failure |
+| T_F | live | TLS 1.3 PSK resumption; no new certificate is not an error |
+| T_G | synthetic | ClientHello only ⇒ selected version and suite stay UNKNOWN |
+| T_H | synthetic | ServerHello without ClientHello (midstream) |
+| T_I | synthetic | One record across three TCP segments |
+| T_J | synthetic | One handshake message across several records |
+| T_K | synthetic | Four messages in one record |
+| T_L | synthetic | Truncated record reported, framing stops |
+| T_M | synthetic | Missing segment ⇒ `ALIGNMENT_LOST_AT_GAP` |
+| T_N | synthetic | Conflicting overlapping bytes ⇒ not interpreted |
+| T_O | synthetic | Expired at capture time |
+| T_P | synthetic | Not yet valid at capture time |
+| T_Q | synthetic | Self-signed: a fact, not a verdict |
+| T_R | synthetic | Valid chain; verifies only with a configured anchor |
+| T_S | synthetic | Incomplete chain distinguished from invalid |
+| T_T | synthetic | Hostname match, wildcard match and mismatch |
+| T_U | synthetic | SNI present but not an authorised expectation |
+| T_V | synthetic | Implicit TLS on an email port |
+| T_W | synthetic | STARTTLS then an observable handshake |
+| T_X | synthetic | Upgrade accepted, ClientHello never captured |
+| T_Y | synthetic | Malformed certificate lengths ⇒ safe failure |
+| T_Z | synthetic | Fatal alert ⇒ aborted, not negotiated |
+| T_HRR | synthetic | HelloRetryRequest is not a ServerHello; TLS 1.3 compat CCS is not TLS 1.2 |
+
+### Certificates and keys are never committed
+
+The synthetic CA creates a fresh key pair in-process at fixture-build time.
+Certificates and keys are written only into temporary directories, and the
+public root is emitted next to the generated captures (also gitignored) so
+chain verification can be demonstrated. **No private key material exists
+anywhere in the repository** -- only the code that generates it.
+
+No fixture contains a real TLS handshake against a real server, a real
+certificate, or traffic from any real system. The TLS records in
 P_A, P_C, P_D, P_F, P_L, P_N, P_O, P_S and P_T are synthetic, structurally
 valid record/handshake headers built byte by byte
 (`securemailscope.testing.tls_blobs`) so the framing detector has something
@@ -112,6 +170,8 @@ suite claims a handshake was analysed.
 | `test_protocols.py` | Manifest-driven M2: detection, upgrade state, boundaries, events, auth, warnings, credential absence |
 | `test_protocol_reader.py` | Line reader bounds and gap safety, redaction filters, TLS record framing |
 | `test_protocol_behaviour.py` | Command/response matching, malformed input, limits, the upgrade boundary |
+| `test_tls.py` | Manifest-driven M3: records, messages, version, cipher, key exchange, forward secrecy, certificates, validation |
+| `test_tls_validation.py` | Chain and hostname verification under different configurations, capture-time dates, TLS 1.3 limits, bounds, no-socket guarantee |
 | `test_tshark_crosscheck.py` | Optional cross-validation against an independent dissector |
 
 ## What "verified" means here
@@ -188,8 +248,19 @@ Stated rather than papered over:
 - No test yet asserts behaviour on a capture with multiple pcapng sections or
   multiple interfaces.
 - The TShark cross-check has not been executed in this environment because
-  TShark is not installed here. The tests are written and skip cleanly; they
-  have not been observed passing.
+  TShark is not installed here. The tests are written -- now including TLS
+  version, cipher suite and certificate comparisons -- and skip cleanly, but
+  they have **not been observed passing**. No claim of agreement with TShark
+  is made anywhere.
+- TLS fixtures built from live OpenSSL depend on the local library's
+  defaults. The TLS 1.3 fixtures assert the suite OpenSSL itself reports
+  negotiating, which is an independent cross-check on our parse of the
+  ServerHello rather than a copy of our own output, but a different OpenSSL
+  build may negotiate a different suite or group.
+- Static RSA key exchange is only exercised while the local OpenSSL still
+  offers `kRSA` at `@SECLEVEL=0`. The generator detects that and falls back to
+  a constructed handshake, which is recorded in the fixture's `generation`
+  field.
 - No fixture yet combines a protocol dialogue with an overlapping-segment
   conflict. The reader's ambiguity handling is unit-tested directly
   (`test_bytes_from_an_overlap_conflict_are_flagged_ambiguous`) but not end to

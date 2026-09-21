@@ -24,6 +24,10 @@ classifiers = [
 dependencies = [
   "scapy==2.6.1",
   "pydantic==2.9.2",
+  # X.509 parsing and the RFC 5280 verification API (M3). The TLS record and
+  # handshake layers do not need it; certificates/ degrades to NOT_AVAILABLE
+  # if it is missing, so the engine still runs without it.
+  "cryptography==43.0.3",
 ]
 
 [project.optional-dependencies]
@@ -32,14 +36,11 @@ dev = [
   "ruff==0.7.4",
   "mypy==1.13.0",
 ]
-# Declared, NOT used in M0/M1. Present so the dependency surface of later
+# Declared, NOT used yet. Present so the dependency surface of later
 # milestones is visible and pinned up front.
 backend = [
   "fastapi==0.115.5",
   "uvicorn==0.32.1",
-]
-certs = [
-  "cryptography==43.0.3",
 ]
 ml = [
   "scikit-learn==1.5.2",
@@ -76,6 +77,10 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
+# The TLS code-point table is a transcription of an IANA registry. Keeping one
+# entry per line, aligned, makes it checkable against the source; wrapping it
+# would make review harder, not easier.
+"src/securemailscope/tls/registry.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

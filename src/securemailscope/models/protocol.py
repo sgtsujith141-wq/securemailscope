@@ -280,6 +280,23 @@ class TLSRecordObservation(_Frozen):
     packet_refs: tuple[PacketReference, ...] = ()
     limitations: tuple[str, ...] = ()
 
+    # --- M3 record layer additions (optional; M2 framing leaves them unset) ---
+    record_index: int | None = Field(
+        default=None, description="Position in this direction's record sequence."
+    )
+    encrypted: bool = Field(
+        default=False,
+        description="True when the body is known or assumed to be encrypted, so it is "
+        "never parsed as plaintext.",
+    )
+    body_interpreted: bool = Field(
+        default=False, description="True when the body was parsed as plaintext handshake data."
+    )
+    ambiguous: bool = Field(
+        default=False,
+        description="True when these bytes overlap an unresolved TCP overlap conflict.",
+    )
+
 
 class TLSUpgradeAttempt(_Frozen):
     """The complete STARTTLS/STLS story for one session."""

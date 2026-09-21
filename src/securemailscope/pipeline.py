@@ -8,6 +8,8 @@
       -> link/IP/TCP dissection                              (ingestion/dissect)
       -> connection identification + payload reconstruction   (network/sessions)
       -> email protocol parsing + STARTTLS state             (protocols/analyzer)
+      -> TLS records, handshake, crypto parameters           (tls/analyzer)
+      -> X.509 extraction and independent validation         (certificates/)
       -> session inventory with provenance                   (models)
       -> JSON                                                (reporting)
 
@@ -21,6 +23,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import __version__
+from .certificates.truststore import load_trust_store
 from .config import AnalysisConfig
 from .diagnostics import WarningSink
 from .ingestion.dissect import DissectionOutcome, dissect
@@ -41,8 +44,16 @@ from .models.evidence import (
 )
 from .models.protocol import ProtocolSessionAnalysis
 from .models.tcp import Direction, SessionCompleteness, TCPSession
+from .models.tls import (
+    ForwardSecrecyStatus,
+    HandshakeState,
+    TLSEntryPoint,
+    TLSInventory,
+    TLSSessionAnalysis,
+)
 from .network.sessions import TCPSessionEngine
 from .protocols.analyzer import analyze_session, build_inventory
+from .tls.analyzer import analyze_tls_session
 
 __all__ = ["analyze_capture", "analyze_capture_with_payloads", "AnalysisArtifacts"]
 
@@ -147,6 +158,106 @@ def _analyze_protocols(
     return tuple(analyses)
 
 
+def _analyze_tls(
+    sessions: tuple[TCPSession, ...],
+    protocols: tuple[ProtocolSessionAnalysis, ...],
+    payload_runs: dict[tuple[str, Direction], list[tuple[int, bytes]]],
+    config: AnalysisConfig,
+    capture_id: str,
+) -> tuple[TLSSessionAnalysis, ...]:
+    """Run the TLS layer for every session that carries TLS.
+
+    The trust store is loaded once per capture, not once per session, so every
+    session in a report is judged against the same named anchor set.
+    """
+    trust_store = load_trust_store(config.trust_store_path)
+    by_session = {analysis.session_id: analysis for analysis in protocols}
+    results: list[TLSSessionAnalysis] = []
+    for session in sessions:
+        analysis = analyze_tls_session(
+            session,
+            by_session.get(session.session_id),
+            payload_runs.get((session.session_id, Direction.CLIENT_TO_SERVER), []),
+            payload_runs.get((session.session_id, Direction.SERVER_TO_CLIENT), []),
+            config=config,
+            capture_id=capture_id,
+            trust_store=trust_store,
+        )
+        if analysis is not None:
+            results.append(analysis)
+    return tuple(results)
+
+
+def _tls_inventory(analyses: tuple[TLSSessionAnalysis, ...]) -> TLSInventory:
+    def version_count(label: str) -> int:
+        return sum(
+            1
+            for analysis in analyses
+            if analysis.version.selected_version is not None
+            and analysis.version.selected_version.name == label
+        )
+
+    def check_passed(analysis: TLSSessionAnalysis, field: str) -> bool:
+        validation = analysis.certificates.validation
+        if validation is None:
+            return False
+        return getattr(validation, field).status.value == "PASSED"
+
+    legacy = sum(
+        1
+        for analysis in analyses
+        if analysis.version.selected_version is not None
+        and analysis.version.selected_version.name in {"SSL 3.0", "TLS 1.0", "TLS 1.1"}
+    )
+    forward_secret = sum(
+        1
+        for analysis in analyses
+        if analysis.forward_secrecy.status
+        in {ForwardSecrecyStatus.EPHEMERAL_OBSERVED, ForwardSecrecyStatus.CAPABLE_NEGOTIATED}
+    )
+    return TLSInventory(
+        tls_session_count=len(analyses),
+        implicit_tls_count=sum(
+            1 for a in analyses if a.entry_point is TLSEntryPoint.IMPLICIT
+        ),
+        starttls_upgrade_count=sum(
+            1 for a in analyses if a.entry_point is TLSEntryPoint.STARTTLS_UPGRADE
+        ),
+        negotiated_count=sum(
+            1
+            for a in analyses
+            if a.handshake_state
+            not in {
+                HandshakeState.NOT_OBSERVED,
+                HandshakeState.CLIENT_HELLO_ONLY,
+                HandshakeState.INDETERMINATE,
+            }
+        ),
+        tls13_count=version_count("TLS 1.3"),
+        tls12_count=version_count("TLS 1.2"),
+        legacy_version_count=legacy,
+        certificates_observed_count=sum(
+            1 for a in analyses if a.certificates.visibility.value == "OBSERVED"
+        ),
+        certificates_encrypted_count=sum(
+            1 for a in analyses if a.certificates.visibility.value == "ENCRYPTED_TLS13"
+        ),
+        chain_verified_count=sum(1 for a in analyses if check_passed(a, "chain_verified")),
+        hostname_verified_count=sum(
+            1 for a in analyses if check_passed(a, "hostname_verified")
+        ),
+        forward_secret_count=forward_secret,
+        static_rsa_count=sum(
+            1
+            for a in analyses
+            if a.forward_secrecy.status is ForwardSecrecyStatus.STATIC_RSA_KEY_EXCHANGE
+        ),
+        alert_count=sum(len(a.alerts) for a in analyses),
+        handshakes_cryptographically_verified=0,
+        revocation_checks_performed=0,
+    )
+
+
 def analyze_capture(
     path: Path | str,
     *,
@@ -220,6 +331,7 @@ def analyze_capture_with_payloads(
     sessions = engine.finalize()
     payload_runs = engine.payload_runs()
     protocols = _analyze_protocols(sessions, payload_runs, config, source.capture_id)
+    tls_sessions = _analyze_tls(sessions, protocols, payload_runs, config, source.capture_id)
 
     if non_ip:
         sink.add(
@@ -291,6 +403,8 @@ def analyze_capture_with_payloads(
         sessions=sessions,
         protocol_inventory=build_inventory(protocols),
         protocols=protocols,
+        tls_inventory=_tls_inventory(tls_sessions),
+        tls=tls_sessions,
         warnings=global_warnings,
     )
     return AnalysisArtifacts(result=result, payload_runs=payload_runs)

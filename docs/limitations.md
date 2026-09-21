@@ -39,6 +39,25 @@ Encrypted records are opaque. Without `SSLKEYLOGFILE` material or a private key
 plus a non-forward-secret cipher suite, message contents are unrecoverable. The
 project does not plan to accept key material.
 
+### TLS 1.2 versus TLS 1.3 visibility
+
+This is the single most consequential difference for passive analysis:
+
+| Evidence | TLS 1.2 | TLS 1.3 |
+|---|---|---|
+| ClientHello (offers, SNI, groups) | plaintext | plaintext |
+| ServerHello (version, suite, key_share) | plaintext | plaintext |
+| Certificate | **plaintext — extractable** | **encrypted — NOT_AVAILABLE** |
+| ServerKeyExchange (ephemeral group + public key) | plaintext | n/a (in key_share) |
+| EncryptedExtensions, CertificateVerify, Finished | after CCS: encrypted | encrypted |
+| Application data | encrypted | encrypted |
+
+The encryption boundary differs too: in TLS 1.2 a direction goes dark at its
+own ChangeCipherSpec (RFC 5246 §7.1); in TLS 1.3 everything after the
+ServerHello is encrypted (RFC 8446 §2). A TLS 1.3 session may still emit a
+ChangeCipherSpec purely for middlebox compatibility (RFC 8446 §D.4); it is
+recognised as such and never read as a TLS 1.2 signal.
+
 ### What remains observable under TLS 1.3
 
 Passive analysis still sees: the `ClientHello` in plaintext (offered versions,
@@ -190,6 +209,60 @@ The engine records that an upgrade was absent, rejected or unused. It does not
 conclude anything about intent or attack. Turning those observations into
 findings is M4.
 
+### TLS and certificate analysis limits
+
+**Handshake completion is never verified.** Confirming a Finished message
+needs the handshake traffic keys. No session is reported as a
+cryptographically completed handshake; what is reported is what was
+negotiated and what key material was visible.
+
+**Record alignment is lost at a hole.** TLS records are self-delimiting only
+if every preceding byte was read. After missing data, framing stops
+(`ALIGNMENT_LOST_AT_GAP`) rather than resynchronising on a guess. Records
+split across *TCP segments* are unaffected.
+
+**Ambiguous bytes are not parsed.** A record overlapping an unresolved TCP
+overlap conflict is framed and reported but never interpreted.
+
+**No trust store is assumed.** Without an explicitly configured PEM anchor
+set, chain verification reports `NOT_AVAILABLE`. The engine never falls back
+to a system bundle, because a report must be able to name the anchors it used.
+Intermediates are never fetched from the network, so a chain missing its
+intermediate is reported as incomplete rather than as verified-invalid.
+
+**No reference identity is assumed.** Hostname verification requires an
+expected identity supplied by the analyst. The destination IP address is never
+used as one. An observed SNI value is recorded as evidence of what the client
+asked for; it becomes a reference identity only if the operator explicitly
+elects to trust it.
+
+**Revocation is never checked.** No OCSP and no CRL retrieval exist, because
+the engine makes no network requests at all. A successful chain verification
+is not evidence of non-revocation.
+
+**Validity is judged at capture time.** Substituting the analysis clock would
+answer a different question. A current-time assessment is available but is
+always labelled as a separate statement.
+
+**Forward secrecy is a property of the negotiated method**, not a guarantee
+about an implementation's key handling or its reuse of ephemeral keys. TLS 1.3
+is not assumed forward secret: a PSK-only resumption is classified `PSK_ONLY`.
+
+**Key sizes are not invented.** Ed25519 and Ed448 report no bit length,
+because a variable key length is not a meaningful description of them.
+
+### Not implemented in the TLS layer
+
+- **Decryption of anything.** No key material is accepted, no `SSLKEYLOGFILE`
+  is read, and no private key is loaded. This is deliberate and permanent.
+- **Certificate transparency, OCSP stapling, CAA, DANE/TLSA.**
+- **Session ticket contents** (they are opaque server state).
+- **QUIC and DTLS.**
+- **Renegotiation and post-handshake authentication.**
+- **Compression, early data (0-RTT) payload.**
+- **Per-OS or per-library policy emulation** for what "acceptable" means; M3
+  reports facts, M4 will judge them.
+
 ### Not implemented in the protocol layer
 
 - SMTP `BDAT` / CHUNKING bodies (only dot-terminated `DATA` is skipped).
@@ -221,7 +294,8 @@ These are milestones, not permanent limits:
 |---|---|
 | ~~SMTP / IMAP / POP3 command and response parsing~~ | done in M2 |
 | ~~STARTTLS / STLS upgrade detection and state~~ | done in M2 |
-| TLS handshake reconstruction and negotiated parameters | M3 |
+| ~~TLS handshake reconstruction and negotiated parameters~~ | done in M3 |
+| ~~Certificate extraction and independent validation~~ | done in M3 (TLS ≤ 1.2) |
 | Certificate parsing and assessment (TLS ≤ 1.2 only) | M3–M4 |
 | Risk scoring and explainable findings | M4 |
 | Cross-session evidence correlation | M5 |
@@ -243,3 +317,6 @@ from "not looked for".
 - Present an inference as an observation.
 - Record a username, a password, a SASL payload, an email address or a message
   body -- from any protocol, in any field, at any milestone.
+- Accept a TLS key log, a private key, or any other decryption material.
+- Fetch a certificate, an intermediate, an OCSP response or a CRL.
+- Report a handshake as cryptographically verified.

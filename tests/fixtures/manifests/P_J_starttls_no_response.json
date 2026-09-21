@@ -68,5 +68,7 @@
       ]
     }
   ],
+  "expected_tls": null,
+  "byte_reproducible": true,
   "forbidden_strings": []
 }

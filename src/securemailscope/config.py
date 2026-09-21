@@ -70,6 +70,40 @@ class AnalysisConfig:
     #: TLS records probed at a transition boundary. Framing evidence only.
     max_tls_records_probed: int = 8
 
+    # --- TLS and certificate layer (M3) -------------------------------------
+    #: Records framed per direction before parsing stops.
+    max_tls_records_per_direction: int = 4096
+    #: Largest single TLS record accepted. RFC 8446 caps TLSCiphertext at
+    #: 2**14 + 256; the extra allowance tolerates non-conforming senders
+    #: without permitting an unbounded allocation.
+    max_tls_record_bytes: int = 16384 + 2048
+    #: Plaintext handshake bytes buffered per direction for message reassembly.
+    max_tls_handshake_bytes: int = 262_144
+    #: Handshake messages parsed per direction.
+    max_tls_handshake_messages: int = 256
+    #: Certificates decoded from one Certificate message.
+    max_certificates_per_chain: int = 16
+    #: Largest single DER certificate decoded.
+    max_certificate_bytes: int = 65_536
+
+    #: PEM file holding the trust anchors used for chain verification. When
+    #: unset, chain verification is reported NOT_AVAILABLE rather than
+    #: silently falling back to a system store whose contents we cannot name.
+    trust_store_path: str | None = None
+    #: The server identity the analyst expects this session to have presented.
+    #: Hostname verification is NOT_AVAILABLE without one; the destination IP
+    #: is never used as a substitute.
+    expected_server_identity: str | None = None
+    #: Opt-in: treat the SNI observed in the ClientHello as the reference
+    #: identity. Off by default -- SNI is what the client asked for, which is
+    #: evidence, not an authorised expectation.
+    trust_observed_sni_as_identity: bool = False
+    #: Also report validity against the clock at analysis time, alongside the
+    #: capture-time assessment.
+    assess_certificates_at_current_time: bool = False
+    #: Include base64 DER of each certificate in the report. Off by default.
+    include_certificate_der: bool = False
+
     #: When true the report may carry a short hex preview of payload bytes.
     #: Off by default: reports must be safe to share.
     include_payload_preview: bool = False
@@ -78,6 +112,12 @@ class AnalysisConfig:
 
     def __post_init__(self) -> None:
         numeric = [
+            "max_tls_records_per_direction",
+            "max_tls_record_bytes",
+            "max_tls_handshake_bytes",
+            "max_tls_handshake_messages",
+            "max_certificates_per_chain",
+            "max_certificate_bytes",
             "max_line_bytes",
             "max_literal_bytes",
             "max_message_body_bytes",
@@ -118,6 +158,9 @@ class AnalysisConfig:
         for f in fields(cls):
             raw = env.get(ENV_PREFIX + f.name.upper())
             if raw is None:
+                continue
+            if f.type == "str | None":
+                kwargs[f.name] = raw
                 continue
             if f.type == "bool":
                 lowered = raw.strip().lower()

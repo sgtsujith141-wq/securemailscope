@@ -78,6 +78,44 @@ def build_parser() -> argparse.ArgumentParser:
         help="Omit per-line protocol event lists (smaller reports).",
     )
     analyze.add_argument(
+        "--no-tls-records",
+        action="store_true",
+        help="Omit per-record TLS framing lists (smaller reports).",
+    )
+
+    tls = analyze.add_argument_group(
+        "TLS and certificate analysis",
+        "Certificate validation is off unless you supply the inputs it needs: there is "
+        "no default trust store and no default expected identity.",
+    )
+    tls.add_argument(
+        "--trust-store",
+        type=Path,
+        default=None,
+        metavar="PEM",
+        help="PEM file of trust anchors for chain verification. Without it, chain "
+        "verification reports NOT_AVAILABLE rather than using a store it cannot name.",
+    )
+    tls.add_argument(
+        "--expected-server-identity",
+        default=None,
+        metavar="NAME",
+        help="The server identity you expect the certificate to name. Without it, "
+        "hostname verification reports NOT_AVAILABLE; the destination IP is never used.",
+    )
+    tls.add_argument(
+        "--trust-observed-sni",
+        action="store_true",
+        help="Use the SNI observed in the ClientHello as the expected identity. Opt-in: "
+        "SNI is what the client asked for, not an authorised expectation.",
+    )
+    tls.add_argument(
+        "--assess-current-time",
+        action="store_true",
+        help="Also report certificate validity against the clock at analysis time, "
+        "alongside the capture-time assessment.",
+    )
+    analyze.add_argument(
         "--quiet", action="store_true", help="Suppress the human-readable summary on stderr."
     )
 
@@ -143,6 +181,14 @@ def _config_from_args(args: argparse.Namespace) -> AnalysisConfig:
         )
         if getattr(args, name, None) is not None
     }
+    if args.trust_store is not None:
+        overrides["trust_store_path"] = str(args.trust_store)
+    if getattr(args, "expected_server_identity", None):
+        overrides["expected_server_identity"] = args.expected_server_identity
+    if getattr(args, "trust_observed_sni", False):
+        overrides["trust_observed_sni_as_identity"] = True
+    if getattr(args, "assess_current_time", False):
+        overrides["assess_certificates_at_current_time"] = True
     if not overrides:
         return base
     from dataclasses import replace
@@ -222,11 +268,36 @@ def _summarise(result: AnalysisResult, stream: TextIO) -> None:
             "upgrade in effect (no credential material recorded)",
             file=stream,
         )
-    print(
-        "tls handshake: NOT ANALYSED - handshake reconstruction, cipher suites and "
-        "certificates are not implemented (M3)",
-        file=stream,
-    )
+    tls_by_session = {analysis.session_id: analysis for analysis in result.tls}
+    tls_inv = result.tls_inventory
+    if tls_inv.tls_session_count:
+        print(
+            f"tls sessions : {tls_inv.tls_session_count} "
+            f"({tls_inv.implicit_tls_count} implicit, "
+            f"{tls_inv.starttls_upgrade_count} via STARTTLS); "
+            f"TLS 1.3 {tls_inv.tls13_count}, TLS 1.2 {tls_inv.tls12_count}, "
+            f"legacy {tls_inv.legacy_version_count}",
+            file=stream,
+        )
+        print(
+            f"certificates : {tls_inv.certificates_observed_count} observed, "
+            f"{tls_inv.certificates_encrypted_count} encrypted under TLS 1.3; "
+            f"{tls_inv.chain_verified_count} chain-verified, "
+            f"{tls_inv.hostname_verified_count} hostname-verified",
+            file=stream,
+        )
+        print(
+            f"forward sec. : {tls_inv.forward_secret_count} with an ephemeral exchange, "
+            f"{tls_inv.static_rsa_count} with static RSA",
+            file=stream,
+        )
+        print(
+            "not verified : handshake completion (needs key material) and revocation "
+            "(no OCSP/CRL fetching by design)",
+            file=stream,
+        )
+    else:
+        print("tls sessions : none observed", file=stream)
 
     for session in result.sessions:
         analysis = protocols.get(session.session_id)
@@ -242,6 +313,19 @@ def _summarise(result: AnalysisResult, stream: TextIO) -> None:
             f"s2c={session.server_to_client.bytes_reconstructed}B  [{label}]",
             file=stream,
         )
+        tls_analysis = tls_by_session.get(session.session_id)
+        if tls_analysis is not None:
+            version = tls_analysis.version.selected_version
+            version_label = version.name or version.hex_value if version else "UNKNOWN"
+            suite = tls_analysis.cipher_suite.selected
+            suite_label = (suite.name or suite.hex_value) if suite else "no suite selected"
+            print(
+                f"      TLS: {version_label}  {suite_label}  "
+                f"kx={tls_analysis.key_exchange.method}  "
+                f"fs={tls_analysis.forward_secrecy.status.value}  "
+                f"cert={tls_analysis.certificates.visibility.value}",
+                file=stream,
+            )
         if analysis is not None and analysis.upgrade is not None:
             upgrade = analysis.upgrade
             boundaries = []
@@ -265,6 +349,7 @@ def _summarise(result: AnalysisResult, stream: TextIO) -> None:
         len(result.warnings)
         + sum(len(s.warnings) for s in result.sessions)
         + sum(len(a.warnings) for a in result.protocols)
+        + sum(len(a.warnings) for a in result.tls)
     )
     if total_warnings:
         print(f"warnings     : {total_warnings} (see the JSON report)", file=stream)
@@ -277,6 +362,7 @@ def _run_analyze(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
     result = analyze_capture(args.capture, config=config)
     include_segments = not args.no_segments
     include_events = not args.no_protocol_events
+    include_records = not args.no_tls_records
     indent = None if args.compact else 2
 
     if args.output is not None:
@@ -286,6 +372,7 @@ def _run_analyze(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
             indent=indent,
             include_segments=include_segments,
             include_protocol_events=include_events,
+            include_tls_records=include_records,
         )
         if not args.quiet:
             print(f"report       : {path}", file=err)
@@ -296,6 +383,7 @@ def _run_analyze(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
                 indent=indent,
                 include_segments=include_segments,
                 include_protocol_events=include_events,
+                include_tls_records=include_records,
             ),
             file=out,
         )
@@ -313,6 +401,12 @@ def _run_fixtures(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
     print(
         f"{len(specs)} fixture(s) written to {args.capture_dir} "
         f"with manifests in {args.manifest_dir}",
+        file=err,
+    )
+    print(
+        f"synthetic trust anchor: {args.capture_dir / 'synthetic-root.pem'} "
+        "(public certificate only; pass it to --trust-store to demonstrate "
+        "chain verification)",
         file=err,
     )
     return EXIT_OK
