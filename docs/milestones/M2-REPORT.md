@@ -537,10 +537,12 @@ deviation found must be recorded here.
 | Lines | +8,793 / −112 |
 | Branch | `main` |
 | Remote | `https://github.com/sgtsujith141-wq/securemailscope` (**PRIVATE**) |
-| Commit SHA | see §12 of this file's commit message / `git log` |
+| Commit SHA | `49bdb12b764e2a1d3f0aef8faf4fe407b0105c30` |
 
-Commit and push verification is recorded in the session output; local HEAD was
-confirmed equal to remote HEAD after pushing.
+Push verified: `fe3e0d1..49bdb12  main -> main`, exit 0.
+Local HEAD and remote HEAD both `49bdb12b764e2a1d3f0aef8faf4fe407b0105c30`.
+The published tree was audited afterwards: 126 files, zero matches for capture,
+key, environment, venv or analysis-output patterns.
 
 ---
 
