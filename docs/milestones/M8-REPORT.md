@@ -80,6 +80,8 @@ and the migration re-run as a no-op.
 | 7 | `hypothesis`, `starlette` and `joblib` were **imported but undeclared**, relying on what happened to be installed. | `tests/test_dependencies.py` | Declared; enforced by test |
 | 8 | `ruff check .` walked `build/`, a setuptools artifact, and failed on copied sources. | The clean-install test | `extend-exclude` |
 | 9 | The CI workflow tested Python 3.13 against a `requires-python = ">=3.12,<3.13"` pin. | The clean-install test | Matrix removed; 3.12 only |
+| 10 | **TLS 1.3 fixtures were not reproducible across platforms.** Each OpenSSL build chose its own key-exchange group — the developer machine's offered the post-quantum hybrid X25519MLKEM768, Ubuntu's a classical curve — so the engine correctly reported a different method for each and the committed manifest matched one platform only. | The first real CI run | The generator pins TLS 1.3 to X25519; the hybrid classification gets its own deterministic unit test |
+| 11 | The e2e harness hardcoded `.venv/bin/python`, which does not exist on a CI runner. Failed with a bare `spawnSync ENOENT`. | The first real CI run | Resolves `.venv` if present, else `python3`, with a `SECUREMAILSCOPE_PYTHON` override |
 
 ### In my own verification code
 

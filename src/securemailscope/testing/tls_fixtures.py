@@ -420,11 +420,18 @@ def _fixture_d() -> FixtureSpec:
                 server_name_indication=SERVER_IDENTITY,
                 cipher_decomposition_applicable=False,
                 cipher_key_exchange=None,
-                # The local OpenSSL offers X25519MLKEM768 first, a
-                # post-quantum hybrid. It is neither ECDHE nor FFDHE, so the
-                # method is reported as the generic EPHEMERAL rather than
-                # being forced into one of the classical families.
-                key_exchange_method="EPHEMERAL",
+                # The generator pins the group to X25519 so this capture is
+                # the same handshake on every machine -- see
+                # ``live_tls._FIXTURE_GROUP``. X25519 is an ECDHE group, and
+                # the method comes from key_share, not from the suite name
+                # (TLS_AES_128_GCM_SHA256 encodes only an AEAD and a hash).
+                #
+                # The unclassifiable-group case, where a post-quantum hybrid
+                # is reported as the generic EPHEMERAL rather than forced into
+                # a classical family, is covered deterministically by
+                # ``test_tls_wire.py`` instead of depending on which groups
+                # the local OpenSSL happens to prefer.
+                key_exchange_method="ECDHE",
                 key_exchange_source="KEY_SHARE_EXTENSION",
                 forward_secrecy_status="EPHEMERAL_OBSERVED",
                 certificate_visibility="ENCRYPTED_TLS13",
@@ -474,7 +481,9 @@ def _fixture_e() -> FixtureSpec:
                 selected_cipher_suite=suite,
                 server_name_indication=SERVER_IDENTITY,
                 cipher_decomposition_applicable=False,
-                key_exchange_method="EPHEMERAL",
+                # X25519, pinned by the generator so the capture is identical
+                # on every machine. See ``live_tls._FIXTURE_GROUP``.
+                key_exchange_method="ECDHE",
                 key_exchange_source="KEY_SHARE_EXTENSION",
                 forward_secrecy_status="EPHEMERAL_OBSERVED",
                 certificate_visibility="ENCRYPTED_TLS13",

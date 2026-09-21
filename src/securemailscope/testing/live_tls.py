@@ -61,6 +61,12 @@ class HandshakeCapture:
         )
 
 
+#: The group every generated fixture negotiates. X25519 is universally
+#: supported, is an ECDHE group on every OpenSSL that has it, and is not a
+#: hybrid -- so the engine's classification of it does not depend on the build.
+_FIXTURE_GROUP = "X25519"
+
+
 def _context_pair(
     chain: Path,
     key: Path,
@@ -80,6 +86,22 @@ def _context_pair(
     client.verify_mode = ssl.CERT_NONE
     client.minimum_version = version
     client.maximum_version = version
+
+    # Pin the TLS 1.3 key-exchange group on both sides so a fixture is the
+    # same handshake on every machine. Left to itself, each OpenSSL build
+    # offers its own preference list: the developer machine's offers the
+    # post-quantum hybrid X25519MLKEM768 first, while an Ubuntu CI runner's
+    # picks a classical curve. The engine correctly reports a different
+    # key-exchange method for each, so the committed manifest matched one
+    # platform and failed on the other. Pinning makes the capture
+    # reproducible rather than making the expectation vague.
+    #
+    # Only for TLS 1.3. Restricting the group list on a TLS 1.2 server would
+    # leave a DHE suite with no shared group at all.
+    if version is ssl.TLSVersion.TLSv1_3:
+        for context in (client, server):
+            with contextlib.suppress(ssl.SSLError, ValueError):
+                context.set_ecdh_curve(_FIXTURE_GROUP)
     if ciphers:
         if version is ssl.TLSVersion.TLSv1_3:
             server.set_ciphers("@SECLEVEL=0:ALL")

@@ -18,8 +18,21 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const dataDir = mkdtempSync(join(tmpdir(), 'sms-e2e-'))
-const python = join(process.cwd(), '..', '.venv', 'bin', 'python')
 const projectRoot = join(process.cwd(), '..')
+
+/**
+ * The interpreter that has SecureMailScope installed.
+ *
+ * A developer checkout keeps it in `.venv`; a CI runner installs into the
+ * interpreter on PATH and has no `.venv` at all. Hardcoding the first made the
+ * end-to-end job fail with a bare ENOENT from `spawnSync`, which says nothing
+ * about the cause. `SECUREMAILSCOPE_PYTHON` overrides both.
+ */
+const python = (() => {
+  if (process.env.SECUREMAILSCOPE_PYTHON) return process.env.SECUREMAILSCOPE_PYTHON
+  const venv = join(projectRoot, '.venv', 'bin', 'python')
+  return existsSync(venv) ? venv : 'python3'
+})()
 const restartFlag = join(tmpdir(), 'sms-e2e-restart')
 
 const token = execFileSync(

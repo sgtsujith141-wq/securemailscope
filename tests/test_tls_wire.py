@@ -97,6 +97,42 @@ def test_edwards_groups_have_no_invented_security_level() -> None:
     assert hybrid.security_bits is None
 
 
+def test_a_group_family_maps_to_the_key_exchange_method_without_guessing() -> None:
+    """The classification the TLS 1.3 key-exchange method is derived from.
+
+    This used to be covered only by accident: the developer machine's OpenSSL
+    offered the post-quantum hybrid X25519MLKEM768, so a generated fixture
+    happened to exercise the unclassifiable case -- while a CI runner
+    negotiating a classical curve did not, and the committed expectation
+    failed there. The generator now pins the group, so this mapping is checked
+    here instead, where it does not depend on anyone's OpenSSL build.
+    """
+    families = {
+        0x001D: ("x25519", "ECDHE"),  # classical elliptic curve
+        0x0017: ("secp256r1", "ECDHE"),
+        0x0100: ("ffdhe2048", "FFDHE"),  # finite-field
+        0x11EC: ("X25519MLKEM768", "HYBRID"),  # post-quantum hybrid
+    }
+    for value, (name, family) in families.items():
+        info = lookup_named_group(value)
+        assert info is not None, f"{name} (0x{value:04x}) is not in the registry"
+        assert info.family == family, (name, info.family)
+
+    # A hybrid is neither ECDHE nor FFDHE. The method must fall back to the
+    # generic EPHEMERAL rather than being forced into a classical family,
+    # because calling a post-quantum exchange "ECDHE" would be a claim the
+    # wire does not support.
+    def method_for(value: int) -> str:
+        info = lookup_named_group(value)
+        family = info.family if info else None
+        return "ECDHE" if family == "ECDHE" else "DHE" if family == "FFDHE" else "EPHEMERAL"
+
+    assert method_for(0x001D) == "ECDHE"
+    assert method_for(0x0100) == "DHE"
+    assert method_for(0x11EC) == "EPHEMERAL"
+    assert method_for(0xFFFF) == "EPHEMERAL"  # unknown group, not invented
+
+
 # -- extensions --------------------------------------------------------------
 def test_supported_versions_is_a_list_from_the_client() -> None:
     body = bytes([0, 43, 0, 5, 4, 3, 4, 3, 3])

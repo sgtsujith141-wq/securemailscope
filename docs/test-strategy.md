@@ -522,7 +522,18 @@ Stated rather than papered over:
   defaults. The TLS 1.3 fixtures assert the suite OpenSSL itself reports
   negotiating, which is an independent cross-check on our parse of the
   ServerHello rather than a copy of our own output, but a different OpenSSL
-  build may negotiate a different suite or group.
+  build may negotiate a different suite.
+
+  The **group** is no longer left to chance. Until M8 each build chose its own:
+  the developer machine's OpenSSL offered the post-quantum hybrid
+  X25519MLKEM768 first, an Ubuntu CI runner's picked a classical curve, and the
+  engine correctly reported a different key-exchange method for each — so the
+  committed manifest matched one platform and failed on the other. The
+  generator now pins TLS 1.3 handshakes to X25519 (`live_tls._FIXTURE_GROUP`),
+  making the capture the same everywhere. The unclassifiable-group behaviour
+  that the hybrid used to exercise by accident is now covered deliberately by
+  a unit test in `test_tls_wire.py`, where it does not depend on anyone's
+  OpenSSL build.
 - Static RSA key exchange is only exercised while the local OpenSSL still
   offers `kRSA` at `@SECLEVEL=0`. The generator detects that and falls back to
   a constructed handshake, which is recorded in the fixture's `generation`

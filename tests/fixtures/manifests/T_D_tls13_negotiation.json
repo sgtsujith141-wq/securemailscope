@@ -32,7 +32,7 @@
       "server_record_parse_state": "COMPLETE",
       "forward_secrecy_status": "EPHEMERAL_OBSERVED",
       "certificate_visibility": "ENCRYPTED_TLS13",
-      "key_exchange_method": "EPHEMERAL",
+      "key_exchange_method": "ECDHE",
       "selected_version": "TLS 1.3",
       "selected_version_source": "SUPPORTED_VERSIONS_EXTENSION",
       "selected_cipher_suite": "TLS_AES_256_GCM_SHA384",
