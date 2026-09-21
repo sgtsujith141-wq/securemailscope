@@ -550,6 +550,60 @@ as `NOT_VALIDATED`, because its label is a rubric this project wrote. See
 [ml-methodology.md](ml-methodology.md) and
 [ml-model-card.md](ml-model-card.md).
 
+## The application layer (M7)
+
+M7 wraps the engine in a local application: SQLite persistence, a FastAPI
+adapter, a React interface and HTML and PDF reporting. It adds no analysis.
+
+```
+  browser ──► FastAPI adapter ──► SQLite
+                    │
+                    ▼  schedules
+              AnalysisService (bounded pool)
+                    │
+                    ▼
+              the M1-M6 engine, unchanged
+                    │
+                    ▼
+              ReportModel ──► JSON / HTML / PDF
+```
+
+### Two rules that keep it honest
+
+**No second forensic engine.** The API schedules `analyze_batch` and reads
+persisted rows. No endpoint recomputes a score, re-derives a severity or counts
+anything the engine already counted.
+
+**One canonical report model.** All three formats render
+`reporting/report_model.py`, which performs selection and structuring only. A
+template that recalculated a score, or a React component that summed severities
+in JavaScript, would be a second engine with no tests -- and the first time it
+disagreed with the real one, the report would be wrong invisibly. A test
+compares capture ids, session counts, finding ids, severities, policy version,
+score, remediation ids, blast-radius subjects and ML validation status across
+JSON, HTML and PDF.
+
+### PDF is built from the model, not from the HTML
+
+An HTML-to-PDF renderer resolves what a document references, and report content
+derives from untrusted captures. ReportLab's Platypus has no URL resolver at
+all, so the "no external fetch" guarantee is structural rather than a filter
+that has to stay correct.
+
+### Local security model
+
+"It only listens on localhost" is not a security model: a browser sends
+requests to 127.0.0.1 from any page, and DNS rebinding turns an attacker's
+domain into a local address. Both attacks originate locally. So: a Host
+allowlist, an explicit CORS origin list with credentials off, a per-installation
+token stored outside the repository, and error bodies that never carry a stack
+trace or a path.
+
+See [application-architecture.md](application-architecture.md),
+[api-reference.md](api-reference.md), [database.md](database.md),
+[dashboard.md](dashboard.md), [reporting.md](reporting.md) and
+[deployment.md](deployment.md).
+
 ## Planned evolution
 
 The TCP layer is the foundation every later milestone stands on, which is why
@@ -570,5 +624,6 @@ M1 spent its effort there. Later stages attach to it without modifying it:
 - **M6 (done)** adds a locally trained anomaly detector and a posture
   classifier. Output is advisory, labelled as ML on every result, and never
   modifies a deterministic conclusion.
-- **M7–M8** add a local FastAPI adapter and a React UI around the unchanged
-  engine.
+- **M7 (done)** adds a local FastAPI adapter, SQLite persistence, a React
+  interface and HTML and PDF reporting around the unchanged engine.
+- **M8** is hardening; **M9** is submission.

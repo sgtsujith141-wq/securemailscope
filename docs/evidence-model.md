@@ -502,6 +502,37 @@ These extend the earlier rules:
 32. **Rarity is not risk.** A rare configuration may be the strongest one
     present, and the negative-control family exists to keep that testable.
 
+## The application layer (M7)
+
+M7 introduces no new evidence vocabulary. It carries the existing one intact
+through persistence, the API, the interface and three report formats -- which
+is harder than it sounds, because every layer offers an opportunity to
+flatten a distinction into a blank or a zero.
+
+### Rules for the application layer
+
+33. **A missing value is never rendered as zero or blank.** The interface
+    distinguishes `UNKNOWN`, `NOT AVAILABLE`, `NOT APPLICABLE` and an empty
+    collection, and distinguishes NO FINDINGS from NOT ANALYSED from
+    INSUFFICIENT EVIDENCE. A score that is unavailable is shown as unavailable,
+    because a score of zero says the opposite thing.
+34. **Packet references survive persistence.** Canonical engine identifiers are
+    stored, so a reference persisted in the database means what it meant during
+    analysis. Every finding's evidence is checked to be in range for its
+    capture.
+35. **A clickable evidence reference must lead somewhere real.** The evidence
+    component renders a control only when there is evidence to show; a link
+    that leads nowhere implies inspectable evidence that does not exist.
+36. **No layer recomputes an analytical value.** Scores, severities, coverage
+    and counts are copied from the engine. The report model selects and
+    structures; it does not calculate.
+37. **Reports carry metadata, never payload.** Packet numbers, timestamps and
+    stream offsets reach a report; reconstructed bytes, credentials and message
+    bodies never do, in any format.
+38. **A rendering failure is visible.** A blank page cannot be distinguished
+    from an empty investigation, so the interface reports the failure and says
+    the evidence is intact.
+
 ## Rules for future milestones
 
 These apply to every stage added after M1:

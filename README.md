@@ -16,10 +16,10 @@ capture contents anywhere.
 
 ## Current status
 
-This repository is at the end of **M0 + M1**. The table below is the honest
-state of each stage; the same table is emitted into every report so a reader
-never has to guess whether a missing TLS section means "no TLS in the capture"
-or "not built yet".
+This repository is at the end of **M7**. The table below is the honest state of
+each stage; the same table is emitted into every report so a reader never has
+to guess whether a missing TLS section means "no TLS in the capture" or "not
+built yet".
 
 | Stage | Status | Notes |
 |---|---|---|
@@ -35,11 +35,12 @@ or "not built yet".
 | Certificate extraction | **PARTIAL** | TLS ≤ 1.2 only — TLS 1.3 certificates are encrypted |
 | Certificate validation (dates, chain, hostname) | **IMPLEMENTED** | Five independent checks, no defaults assumed |
 | Certificate revocation | NOT IMPLEMENTED | Permanently out of scope: no network requests |
-| Certificate posture assessment | NOT IMPLEMENTED | M4 |
-| Risk assessment and findings | NOT IMPLEMENTED | M4 |
-| Evidence correlation | NOT IMPLEMENTED | M5 |
-| ML-assisted analysis | NOT IMPLEMENTED | M6 |
-| REST backend / web UI | NOT IMPLEMENTED | M7+ |
+| Security rules, scoring, prioritisation, remediation | **IMPLEMENTED** | 25 rules; explainable score; M4 |
+| Cryptographic fingerprints, drift, correlation, blast radius | **IMPLEMENTED** | Multi-capture investigations; M5 |
+| ML anomaly detection | **IMPLEMENTED** | A deterministic rarity baseline was selected over Isolation Forest by measurement; M6 |
+| ML risk classification | **PARTIAL** | Trained and measured, reported `NOT_VALIDATED`; M6 |
+| Local API, SQLite persistence, web interface | **IMPLEMENTED** | FastAPI + React; M7 |
+| JSON / HTML / PDF reporting | **IMPLEMENTED** | One canonical model, parity tested; M7 |
 
 Three things are constants in every report, and are asserted by the test
 suite rather than left to trust: `handshake_analyzed` is `false`,
@@ -234,3 +235,24 @@ payloads, and `make secrets-check` refuses to let capture data be committed.
 
 No licence has been granted. All rights reserved by the authors pending an
 explicit licensing decision.
+
+---
+
+## Quick start
+
+```bash
+python3.12 -m venv .venv
+.venv/bin/pip install -e '.[dev,backend,ml,reporting-tests]'
+
+# The command line, on its own:
+.venv/bin/python -m securemailscope analyze capture.pcap -o report.json
+
+# Or the local application:
+.venv/bin/python -m securemailscope.backend.server     # prints its API token
+cd frontend && npm install && npm run dev              # then open 127.0.0.1:5173
+```
+
+See [docs/deployment.md](docs/deployment.md) for the full workflow: uploading
+captures, running an analysis, viewing evidence, generating reports, where
+private storage lives and how to handle a failed job.
+

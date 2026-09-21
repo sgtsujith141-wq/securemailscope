@@ -525,10 +525,83 @@ stating their status and the milestone that owns them.
 | F8.2 | Posture scoring | `assessment/` | M4 | Score auditable back to packets | `test_assessment.py::test_score_follows_the_published_formula` | **IMPLEMENTED** |
 | F8.3 | Evidence-based correlation | `intelligence/` | M5 | Multi-session findings retain all contributing refs | `test_intelligence.py::test_every_correlation_names_its_basis_and_its_limits` | **IMPLEMENTED** |
 | F8.4 | ML-assisted analysis | `ml/` | M6 | Local scikit-learn; output always `INFERRED` | `test_ml.py::test_ml_output_discloses_that_a_model_produced_it` | **IMPLEMENTED** |
-| F8.5 | Forensic reports | `reporting/` | M1 / M7 | JSON implemented (schema 1.3.0, assessment blocks included). PDF and HTML reports belong to M7 | `test_report.py`, `test_assessment.py::test_schema_is_additive_over_m1_to_m3` | **PARTIAL** |
-| F8.6 | Local SQLite persistence | `backend/` | M7 | — | — | **NOT IMPLEMENTED** |
-| F8.7 | FastAPI backend | `backend/` | M7 | — | — | **NOT IMPLEMENTED** |
-| F8.8 | React + TypeScript + Vite frontend | `frontend/` | M8 | — | — | **NOT IMPLEMENTED** |
+| F8.5 | Forensic reports | `reporting/` | M1 / M7 | JSON, HTML and PDF, all from one canonical model | `test_backend.py::test_all_three_formats_agree_on_the_facts` | **IMPLEMENTED** |
+| F8.6 | Local SQLite persistence | `backend/` | M7 | Investigations survive a restart | `test_backend.py::test_results_survive_a_restart` | **IMPLEMENTED** |
+| F8.7 | FastAPI backend | `backend/` | M7 | Serves the real engine; no second analyzer | `test_backend.py::test_analysis_runs_the_real_engine_and_persists` | **IMPLEMENTED** |
+| F8.8 | React + TypeScript + Vite frontend | `frontend/` | M7 | Nine areas, real data throughout | `frontend/e2e/workflow.spec.ts` | **IMPLEMENTED** |
+
+## F30 — Local API and execution (M7)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F30.1 | FastAPI serves the real forensic engine | `backend/app.py` | M7 | No second analyzer; endpoints read persisted engine output | `test_backend.py::test_analysis_runs_the_real_engine_and_persists` | **IMPLEMENTED** |
+| F30.2 | PCAP and PCAPNG upload | `backend/storage.py` | M7 | Both formats accepted, identified by magic bytes | `test_backend.py::test_a_pcapng_capture_uploads` | **IMPLEMENTED** |
+| F30.3 | The file extension is not trusted | `backend/storage.py` | M7 | A non-capture named `.pcap` is rejected | `test_backend.py::test_a_file_that_is_not_a_capture_is_rejected` | **IMPLEMENTED** |
+| F30.4 | Limits enforced during upload, not after | `backend/storage.py` | M7 | Abandoned mid-stream; the partial file is removed | `test_backend.py::test_the_upload_limit_is_enforced_while_streaming` | **IMPLEMENTED** |
+| F30.5 | Server-generated storage ids; no path traversal | `backend/storage.py` | M7 | A traversing filename cannot escape the store | `test_backend.py::test_a_traversing_filename_cannot_escape_storage` | **IMPLEMENTED** |
+| F30.6 | Captures stored outside the repository | `backend/storage.py` | M7 | Storage root is not under the repository | `test_backend.py::test_storage_is_outside_the_repository` | **IMPLEMENTED** |
+| F30.7 | Analysis does not block the interface | `backend/service.py` | M7 | Bounded worker pool; status polled | `frontend/e2e/workflow.spec.ts` | **IMPLEMENTED** |
+| F30.8 | Real analysis progress | `intelligence/engine.py`, `backend/service.py` | M7 | Captures done out of total, reported by the engine | `test_backend.py::test_job_progress_is_real` | **IMPLEMENTED** |
+| F30.9 | Job states persisted | `backend/database.py` | M7 | QUEUED, RUNNING, COMPLETED, FAILED | `test_backend.py::test_job_progress_is_real` | **IMPLEMENTED** |
+| F30.10 | An interrupted job never looks completed | `backend/database.py` | M7 | Marked FAILED on restart, with the reason | `test_backend.py::test_an_interrupted_job_is_never_reported_as_completed` | **IMPLEMENTED** |
+| F30.11 | Duplicate analysis jobs refused | `backend/service.py` | M7 | 409 rather than two workers on one investigation | `test_backend.py::test_a_duplicate_analysis_is_refused` | **IMPLEMENTED** |
+| F30.12 | A failed capture stays visible | `backend/service.py` | M7 | Present in the inventory with its reason | `test_backend.py::test_a_failed_capture_stays_visible` | **IMPLEMENTED** |
+| F30.13 | Typed, paginated responses | `backend/schemas.py` | M7 | Every collection reports its true total | `test_backend.py::test_sessions_can_be_filtered_and_paginated` | **IMPLEMENTED** |
+| F30.14 | Filtering and sorting on an allowlist | `backend/app.py` | M7 | An unknown sort key is 422, never interpolated | `test_backend.py::test_an_invalid_sort_key_is_rejected` | **IMPLEMENTED** |
+| F30.15 | Cancellation | — | M7 | Not implemented; no CANCELLED status is produced | — | **NOT IMPLEMENTED** (documented in limitations.md) |
+
+## F31 — Persistence (M7)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F31.1 | Records for captures, investigations, jobs, sessions, findings, intelligence, ML and exports | `backend/database.py` | M7 | Eight tables | `test_backend.py::test_results_survive_a_restart` | **IMPLEMENTED** |
+| F31.2 | Canonical identifiers preserved | `backend/service.py` | M7 | Engine ids stored; packet references stay meaningful | `test_backend.py::test_findings_link_to_real_packet_evidence` | **IMPLEMENTED** |
+| F31.3 | Transactional writes | `backend/database.py` | M7 | An investigation's results commit together or not at all | `test_backend.py::test_results_survive_a_restart` | **IMPLEMENTED** |
+| F31.4 | Schema migrations | `backend/database.py` | M7 | `PRAGMA user_version` with ordered steps | `test_backend.py::test_health_reports_real_versions` | **IMPLEMENTED** |
+| F31.5 | No sensitive payload persisted | `backend/service.py` | M7 | Stream records carry counts and offsets only | `test_backend.py::test_session_detail_contains_no_payload_or_credential` | **IMPLEMENTED** |
+| F31.6 | Previous investigations never silently discarded | `backend/app.py` | M7 | Deleting a capture keeps its results | `test_backend.py::test_deleting_a_capture_removes_the_file_but_keeps_results` | **IMPLEMENTED** |
+
+## F32 — Interface (M7)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F32.1 | Nine primary areas, all functional | `frontend/src/pages` | M7 | Every navigation entry reaches a working page | `app.test.tsx::renders every primary area` | **IMPLEMENTED** |
+| F32.2 | Direct navigation, refresh and invalid routes | `frontend/src/App.tsx` | M7 | Deep links work; unknown routes show a real page | `workflow.spec.ts` | **IMPLEMENTED** |
+| F32.3 | Overview shows authentic data | `pages/Overview.tsx` | M7 | Every number comes from the API | `app.test.tsx` (Overview suite) | **IMPLEMENTED** |
+| F32.4 | NO FINDINGS, NOT ANALYSED and INSUFFICIENT EVIDENCE distinguished | `pages/Overview.tsx` | M7 | Never a zero where the answer is unknown | `app.test.tsx::distinguishes NO FINDINGS from a count of zero` | **IMPLEMENTED** |
+| F32.5 | A high-severity finding is never hidden by the score | `pages/Overview.tsx`, `pages/Findings.tsx` | M7 | Stated beside the aggregate | `app.test.tsx::keeps a high-severity finding prominent` | **IMPLEMENTED** |
+| F32.6 | Session explorer with search, sort, filter, pagination | `pages/Sessions.tsx` | M7 | All server-side | `app.test.tsx::passes a filter to the backend` | **IMPLEMENTED** |
+| F32.7 | UNKNOWN and NOT AVAILABLE shown explicitly | `components/ui.tsx` | M7 | A TLS 1.3 certificate is NOT AVAILABLE, not blank | `app.test.tsx::shows NOT AVAILABLE for a TLS 1.3 certificate` | **IMPLEMENTED** |
+| F32.8 | Reusable evidence component | `components/EvidenceLink.tsx` | M7 | Renders only when evidence exists | `app.test.tsx::navigates from a finding to its packet evidence` | **IMPLEMENTED** |
+| F32.9 | Real progress only | `pages/Investigations.tsx` | M7 | Determinate when a proportion exists, indeterminate otherwise | `app.test.tsx::shows determinate progress only when...` | **IMPLEMENTED** |
+| F32.10 | Loading, empty, failure and partial states | `components/ui.tsx` | M7 | Each distinct and tested | `app.test.tsx` (multiple) | **IMPLEMENTED** |
+| F32.11 | Cryptographic intelligence views with caveats | `pages/Intelligence.tsx` | M7 | Fingerprint, drift, correlation and blast-radius caveats in the interface | `workflow.spec.ts` | **IMPLEMENTED** |
+| F32.12 | Timeline with clock disclosure | `pages/Timeline.tsx` | M7 | Multi-capture clock limitation stated | `app.test.tsx::discloses clock limitations` | **IMPLEMENTED** |
+| F32.13 | ML sections kept separate and honest | `pages/MLAnalysis.tsx` | M7 | Rarity baseline never called ML; Isolation Forest marked not in use; classifier NOT_VALIDATED | `app.test.tsx` (ML suite) | **IMPLEMENTED** |
+| F32.14 | Benchmarks loaded from versioned metadata | `pages/MLAnalysis.tsx` | M7 | No metric hardcoded in the frontend | `app.test.tsx::reads benchmark numbers from the evaluation record` | **IMPLEMENTED** |
+| F32.15 | Settings expose only real functionality | `pages/Settings.tsx` | M7 | Validated; reanalysis requirement stated | `test_backend.py::test_settings_are_validated` | **IMPLEMENTED** |
+| F32.16 | A rendering failure is visible, not blank | `components/ErrorBoundary.tsx` | M7 | Error boundary states the evidence is intact | Code review; added after a real blank-page defect | **IMPLEMENTED** |
+
+## F33 — Reporting and local security (M7)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F33.1 | One canonical report model | `reporting/report_model.py` | M7 | Selection and structuring only; nothing recomputed | `test_backend.py::test_all_three_formats_agree_on_the_facts` | **IMPLEMENTED** |
+| F33.2 | JSON export | `backend/app.py` | M7 | Canonical model, deterministic serialisation | `test_backend.py::test_all_three_formats_export` | **IMPLEMENTED** |
+| F33.3 | Standalone HTML export | `reporting/html_report.py` | M7 | No external font, script, stylesheet or image | `test_backend.py::test_the_html_report_is_standalone` | **IMPLEMENTED** |
+| F33.4 | Untrusted text escaped | `reporting/html_report.py` | M7 | Autoescaping on; nothing marked safe | `test_backend.py::test_the_html_report_escapes_untrusted_text` | **IMPLEMENTED** |
+| F33.5 | PDF export, offline renderer | `reporting/pdf_report.py` | M7 | ReportLab Platypus; no URL resolver exists | `test_backend.py::test_the_pdf_renders_correctly` | **IMPLEMENTED** |
+| F33.6 | PDF renders correctly, verified visually | `reporting/pdf_report.py` | M7 | A4, paginated, no blank pages, no margin bleed | `test_backend.py::test_the_pdf_renders_correctly` | **IMPLEMENTED** |
+| F33.7 | Long values wrap rather than clip | `reporting/pdf_report.py` | M7 | Every 71-character capture id survives in full | `test_backend.py::test_long_values_wrap_rather_than_clipping` | **IMPLEMENTED** |
+| F33.8 | Report parity across formats | `reporting/` | M7 | Ids, counts, severities, policy, score, remediations, ML status | `test_backend.py::test_all_three_formats_agree_on_the_facts` | **IMPLEMENTED** |
+| F33.9 | No credentials or payload in any report | `reporting/` | M7 | Checked in JSON, HTML and extracted PDF text | `test_backend.py::test_reports_contain_no_payload_or_credentials` | **IMPLEMENTED** |
+| F33.10 | Bound to 127.0.0.1 by default | `backend/server.py` | M7 | Refuses a non-loopback bind | Code review; `server.py` | **IMPLEMENTED** |
+| F33.11 | Host validation against DNS rebinding | `backend/app.py` | M7 | A foreign Host header is 400 | `test_backend.py::test_a_foreign_host_header_is_refused` | **IMPLEMENTED** |
+| F33.12 | Explicit CORS origins, never permissive | `backend/security.py` | M7 | No wildcard; credentials off | `test_backend.py::test_cors_is_not_permissive` | **IMPLEMENTED** |
+| F33.13 | Local token, never in committed source | `backend/security.py` | M7 | Generated at startup, stored outside the repository | `test_backend.py::test_requests_without_a_token_are_refused` | **IMPLEMENTED** |
+| F33.14 | Error bodies leak nothing | `backend/app.py` | M7 | No traceback, path or database error | `test_backend.py::test_an_error_body_does_not_leak_internals` | **IMPLEMENTED** |
+| F33.15 | Response hardening headers | `backend/app.py` | M7 | nosniff, DENY, CSP, no-referrer | `test_backend.py::test_responses_carry_hardening_headers` | **IMPLEMENTED** |
+| F33.16 | No telemetry, no outbound request | whole application | M7 | None exists | `test_passive.py`, `test_intelligence.py::test_the_engine_opens_no_socket` | **IMPLEMENTED** |
 
 ## NF — Non-functional
 
@@ -553,36 +626,31 @@ stating their status and the milestone that owns them.
 
 ## Summary
 
-| Status | Count | Change since M5 |
+| Status | Count | Change since M6 |
 |---|---|---|
-| IMPLEMENTED | 357 | +64 |
-| PARTIAL | 4 | +1 |
-| NOT IMPLEMENTED | 12 | -1 |
-| **Total requirements tracked** | **373** | +64 |
+| IMPLEMENTED | 413 | +56 |
+| PARTIAL | 3 | -1 |
+| NOT IMPLEMENTED | 10 | -2 |
+| **Total requirements tracked** | **426** | +53 |
 
-As of M6 the implemented set covers capture ingestion, TCP reconstruction, the
-email protocol layer, the TLS and certificate layer, the assessment layer, the
-forensic intelligence layer, and a locally trained machine-learning layer:
-a reproducible synthetic dataset, a 93-column evidence-derived feature schema,
-group-aware splitting with tested leakage controls, an anomaly detector chosen
-by measurement over a baseline that beat it, a supervised classifier, and an
-evaluation harness reporting real metrics with real denominators.
+As of M7 the implemented set covers the whole product: capture ingestion, TCP
+reconstruction, the email protocol layer, the TLS and certificate layer, the
+assessment layer, the forensic intelligence layer, the machine-learning layer,
+and a local application around them — a FastAPI adapter over the unchanged
+engine, SQLite persistence, a React investigation interface and JSON, HTML and
+PDF reporting from one canonical model.
 
-**Reported PARTIAL:** supervised risk classification (F28.8). It is
-implemented, trained and measured — macro-F1 0.562 against a 0.123 baseline —
-and reported as `NOT_VALIDATED` on every prediction because its label is a
-project-authored rubric over synthetic servers. See
-[ml-model-card.md](ml-model-card.md).
+**Reported PARTIAL:** certificate extraction (TLS ≤ 1.2 only — TLS 1.3
+encrypts the Certificate message, permanently), supervised risk classification
+(F28.8, implemented and measured, reported `NOT_VALIDATED`), and pinned
+dependencies (NF13, versions pinned but no hash-locked file).
 
-**Still not claimed anywhere:** SQLite persistence and the FastAPI backend
-(F8.6–F8.7), the React frontend (F8.8), PDF and HTML reports (F8.5, M7), and
-revocation checking (F14.25, permanently out of scope).
+**Reported NOT IMPLEMENTED:** analysis cancellation (F30.15) — a running
+analysis finishes or fails, and there is no way to stop it mid-capture;
+revocation checking (F14.25, permanently out of scope); and performance
+characterisation (NF14, no benchmark has been run and no throughput figure is
+claimed anywhere).
 
-**Constants in every report M6 produces:**
-`handshake_analyzed = false`, `handshakes_cryptographically_verified = 0`,
+**Constants in every report:** `handshake_analyzed = false`,
+`handshakes_cryptographically_verified = 0`,
 `revocation_checks_performed = 0`.
-
-**What the ML layer never claims:** that an anomaly is a vulnerability or an
-attack; that a rare configuration is dangerous; that a model score is a
-probability; that any metric here describes real-world performance. See
-[limitations.md](limitations.md#10-limits-of-the-machine-learning-layer-m6).

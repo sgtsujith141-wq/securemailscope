@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ model.title }}</title>
+<style>
+:root{--bg:#0f1521;--panel:#161d2b;--line:#263449;--ink:#e6edf7;--mute:#93a3bb;
+--crit:#ff6b6b;--high:#ffa657;--med:#ffd479;--low:#7fd1c1;--info:#8ab4f8;--ok:#6bcf9a;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:1100px;margin:0 auto;padding:32px 20px 64px}
+h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:18px;margin:34px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+h3{font-size:15px;margin:20px 0 8px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.sub{color:var(--mute);margin:0 0 18px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:10px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.metric{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.metric .k{color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.07em}
+.metric .v{font-size:22px;font-weight:600;margin-top:3px}
+.metric .n{color:var(--mute);font-size:11px;margin-top:3px}
+table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+tr:last-child td{border-bottom:none}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;word-break:break-all}
+.tag{display:inline-block;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600;
+border:1px solid currentColor;white-space:nowrap}
+.CRITICAL{color:var(--crit)}.HIGH{color:var(--high)}.MEDIUM{color:var(--med)}
+.LOW{color:var(--low)}.INFO{color:var(--info)}
+.muted{color:var(--mute)}
+.note{border-left:3px solid var(--line);padding:6px 0 6px 12px;color:var(--mute);margin:8px 0;font-size:13px}
+ul{margin:6px 0;padding-left:20px}li{margin:3px 0}
+.ev{font-size:12px;color:var(--mute);margin-top:4px}
+footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);color:var(--mute);font-size:12px}
+@media print{body{background:#fff;color:#111}.panel,.metric{background:#fff;border-color:#ccc}}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>{{ model.title }}</h1>
+<p class="sub">
+  {{ model.tool_name }} {{ model.tool_version }} &middot;
+  schema {{ model.schema_version }} &middot;
+  generated {{ model.generated_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+  {%- if model.investigation_id %} &middot; investigation <span class="mono">{{ model.investigation_id }}</span>{% endif %}
+</p>
+<div class="note"><strong>Scope.</strong> {{ model.scope_statement }}</div>
+
+<h2>Executive summary</h2>
+<div class="grid">
+  <div class="metric"><div class="k">Captures analysed</div>
+    <div class="v">{{ model.analysed_captures|length }}</div>
+    {%- if model.failed_captures %}<div class="n">{{ model.failed_captures|length }} failed</div>{% endif %}</div>
+  <div class="metric"><div class="k">Sessions observed</div><div class="v">{{ model.sessions|length }}</div></div>
+  <div class="metric"><div class="k">Security findings</div>
+    <div class="v">{{ model.findings|length }}</div>
+    <div class="n">{% if model.findings %}{% for s,c in model.severity_distribution.items() %}{{ c }} {{ s }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}no findings{% endif %}</div></div>
+  <div class="metric"><div class="k">Posture score</div>
+    {%- if model.posture and model.posture.score is not none %}
+    <div class="v">{{ model.posture.score }}<span class="muted" style="font-size:13px">/100</span></div>
+    <div class="n">{{ model.posture.band }} &middot; coverage {{ '%.0f'|format((model.posture.coverage_ratio or 0)*100) }}%</div>
+    {%- else %}
+    <div class="v muted" style="font-size:15px">Unavailable</div>
+    <div class="n">{{ model.posture.status if model.posture else 'not assessed' }}</div>
+    {%- endif %}</div>
+</div>
+{%- if model.posture and model.posture.score is none and model.posture.explanation %}
+<div class="note"><strong>Why there is no score.</strong> {{ model.posture.explanation }}</div>
+{%- endif %}
+{%- if model.findings %}
+<div class="note">A numeric score summarises weighted control coverage across the analysed
+evidence. It does not supersede an individual finding: the findings below are the substance.</div>
+{%- endif %}
+
+<h2>Investigation scope and capture inventory</h2>
+<table>
+<tr><th>Capture</th><th>Status</th><th>Packets</th><th>Sessions</th><th>Size</th><th>Policy</th></tr>
+{%- for c in model.captures %}
+<tr>
+  <td>{{ c.source_name }}<div class="mono muted">{{ c.capture_id }}</div></td>
+  <td>{{ c.status }}{% if c.failure_reason %}<div class="muted">{{ c.failure_reason }}</div>{% endif %}
+      {%- if c.duplicate_of_source %}<div class="muted">same bytes as {{ c.duplicate_of_source }}</div>{% endif %}</td>
+  <td>{{ c.packet_count }}</td><td>{{ c.session_count }}</td>
+  <td>{{ c.file_size_bytes if c.file_size_bytes is not none else '—' }}</td>
+  <td class="muted">{{ c.policy_id or '—' }}{% if c.policy_version %} {{ c.policy_version }}{% endif %}</td>
+</tr>
+{%- endfor %}
+</table>
+
+<h2>Methodology</h2>
+<div class="panel">
+<p>Analysis is entirely passive. No host observed in a capture was contacted, no
+domain was scanned, and no capture content left this machine. Findings are
+produced by deterministic rules evaluated against reconstructed observations,
+under policy
+<code>{{ model.policy_id or 'n/a' }}</code>{% if model.policy_version %} version <code>{{ model.policy_version }}</code>{% endif %}{% if model.policy_fingerprint %}, fingerprint <code>{{ model.policy_fingerprint }}</code>{% endif %}.</p>
+{%- if model.posture and model.posture.formula %}
+<p>Posture score: <code>{{ model.posture.formula }}</code>. Controls whose evidence was
+unavailable are excluded from both sides of the fraction and reported separately as coverage.</p>
+{%- endif %}
+</div>
+
+{%- if model.protocol_distribution %}
+<h2>Protocol observations</h2>
+<table><tr><th>Protocol</th><th>Sessions</th></tr>
+{%- for name, count in model.protocol_distribution.items() %}
+<tr><td>{{ name }}</td><td>{{ count }}</td></tr>
+{%- endfor %}</table>
+{%- endif %}
+
+{%- if model.sessions %}
+<h2>TLS and certificate intelligence</h2>
+<table>
+<tr><th>Session</th><th>Server</th><th>TLS</th><th>Cipher suite</th><th>Key exchange</th><th>Certificate</th></tr>
+{%- for s in model.sessions %}
+<tr>
+  <td class="mono">{{ s.session_id }}</td>
+  <td class="mono">{{ s.server }}</td>
+  <td>{{ s.tls_version or 'UNKNOWN' }}</td>
+  <td class="mono">{{ s.cipher_suite or 'UNKNOWN' }}</td>
+  <td>{{ s.key_exchange or 'UNKNOWN' }}</td>
+  <td>{{ s.certificate_visibility or 'UNKNOWN' }}
+      {%- if s.certificate_subject %}<div class="mono muted">{{ s.certificate_subject }}</div>{% endif %}</td>
+</tr>
+{%- endfor %}
+</table>
+{%- endif %}
+
+<h2>Security findings</h2>
+{%- if model.findings %}
+{%- for f in model.findings %}
+<div class="panel">
+  <div><span class="tag {{ f.severity }}">{{ f.severity }}</span>
+    <strong>{{ f.title }}</strong>
+    <span class="muted mono">{{ f.rule_id }}</span>
+    {%- if f.priority %}<span class="muted"> · {{ f.priority }}</span>{% endif %}
+    <span class="muted"> · confidence {{ f.confidence }}</span></div>
+  <p>{{ f.description }}</p>
+  <p class="muted"><strong>Impact.</strong> {{ f.technical_impact }}</p>
+  <div class="ev"><strong>Evidence.</strong>
+    session <span class="mono">{{ f.session_id }}</span>,
+    capture <span class="mono">{{ f.capture_id }}</span>,
+    packets
+    {%- for e in f.evidence %} {{ e.packet_number }}{% if not loop.last %},{% endif %}{% else %} —{% endfor %}
+    {%- if f.evidence and f.evidence[0].timestamp %} (first at {{ f.evidence[0].timestamp.strftime('%Y-%m-%d %H:%M:%S.%f') }}){% endif %}
+  </div>
+  {%- if f.standards_references %}
+  <div class="ev"><strong>References.</strong> {{ f.standards_references|join('; ') }}</div>
+  {%- endif %}
+  {%- if f.limitations %}<ul class="muted">{% for l in f.limitations %}<li>{{ l }}</li>{% endfor %}</ul>{% endif %}
+</div>
+{%- endfor %}
+{%- else %}
+<div class="panel muted">No findings were raised. This means no rule failed on the
+evidence available — it is not a statement that the analysed systems are secure,
+and it does not cover anything outside the captures listed above.</div>
+{%- endif %}
+
+{%- if model.remediations %}
+<h2>Prioritised remediations</h2>
+{%- for r in model.remediations %}
+<div class="panel">
+  <div><strong>{{ r.title }}</strong> <span class="muted mono">{{ r.remediation_id }}</span>
+    <span class="muted">· addresses {{ r.related_rule_ids|join(', ') }}</span></div>
+  <p>{{ r.recommended_action }}</p>
+  <p class="muted"><strong>Expected effect.</strong> {{ r.expected_security_effect }}</p>
+  <p class="muted"><strong>Operational considerations.</strong> {{ r.operational_considerations }}</p>
+  {%- if r.validation_steps %}
+  <div class="ev"><strong>How to verify.</strong><ul>{% for v in r.validation_steps %}<li>{{ v }}</li>{% endfor %}</ul></div>
+  {%- endif %}
+</div>
+{%- endfor %}
+{%- endif %}
+
+{%- if model.fingerprints %}
+<h2>Cryptographic fingerprints</h2>
+<div class="note">A fingerprint groups configurations. It does <strong>not</strong> establish
+a unique server identity: two unrelated servers running the same defaults produce the same value.</div>
+<table><tr><th>Fingerprint</th><th>Completeness</th><th>Endpoint</th><th>Session</th><th>Missing</th></tr>
+{%- for f in model.fingerprints %}
+<tr><td class="mono">{{ f.fingerprint_id }}</td><td>{{ f.completeness }}</td>
+    <td class="mono">{{ f.endpoint }}</td><td class="mono">{{ f.session_id }}</td>
+    <td class="muted">{{ f.missing_components|join(', ') or '—' }}</td></tr>
+{%- endfor %}</table>
+{%- endif %}
+
+{%- if model.drift %}
+<h2>Cryptographic drift</h2>
+<table><tr><th>Property</th><th>Status</th><th>Before</th><th>After</th><th>Explanation</th></tr>
+{%- for d in model.drift %}
+<tr><td>{{ d.kind }}</td><td>{{ d.status }}</td>
+    <td class="mono">{{ d.before_value if d.before_observed else 'not observed' }}</td>
+    <td class="mono">{{ d.after_value if d.after_observed else 'not observed' }}</td>
+    <td class="muted">{{ d.explanation }}</td></tr>
+{%- endfor %}</table>
+{%- endif %}
+
+{%- if model.correlations %}
+<h2>Cross-session correlations</h2>
+<table><tr><th>Type</th><th>Basis</th><th>Sessions</th><th>Captures</th><th>Findings</th></tr>
+{%- for c in model.correlations %}
+<tr><td>{{ c.correlation_type }}</td><td class="mono">{{ c.relationship_basis }}</td>
+    <td>{{ c.session_count }}</td><td>{{ c.capture_count }}</td><td>{{ c.finding_count }}</td></tr>
+{%- endfor %}</table>
+<div class="note">A correlation groups shared observations. It establishes no common
+ownership, administration, cause, actor or intent.</div>
+{%- endif %}
+
+{%- if model.blast_radius %}
+<h2>Observed blast radius</h2>
+<table><tr><th>Subject</th><th>Sessions</th><th>Endpoints</th><th>Captures</th><th>Findings</th></tr>
+{%- for b in model.blast_radius %}
+<tr><td class="mono">{{ b.subject }}</td><td>{{ b.session_count }}</td>
+    <td>{{ b.entity_count }}</td><td>{{ b.capture_count }}</td><td>{{ b.finding_count }}</td></tr>
+{%- endfor %}</table>
+<div class="note"><strong>{{ model.blast_radius[0].scope_statement }}</strong>
+{{ model.blast_radius[0].counting_method }}</div>
+{%- endif %}
+
+{%- if model.ml %}
+<h2>Machine-learning analysis</h2>
+<div class="panel">
+<p><strong>Status.</strong> {{ model.ml.ml_status }}</p>
+{%- if model.ml.anomaly_algorithm %}
+<p><strong>Anomaly detection.</strong> The selected detector is
+<code>{{ model.ml.anomaly_algorithm }}</code>
+{%- if model.ml.anomaly_algorithm == 'rarity_baseline' %} — a deterministic frequency
+table, <em>not</em> a machine-learning model. It was selected over the Isolation Forest
+candidate because it performed better on held-out evaluation{% endif %}.
+{% if model.ml.anomaly_training_samples %}Reference population:
+{{ model.ml.anomaly_training_samples }} sessions.{% endif %}</p>
+<p>{{ model.ml.anomalous_session_count }} session(s) flagged as unusual;
+{{ model.ml.not_evaluable_session_count }} not evaluable.</p>
+{%- endif %}
+{%- if model.ml.classifier_model_id %}
+<p><strong>Supervised risk classifier.</strong>
+<code>{{ model.ml.classifier_model_id }}</code> ({{ model.ml.classifier_algorithm }}) —
+status <strong>{{ model.ml.classification_validation_status }}</strong>. Its predictions are
+not confirmed threats and are not calibrated probabilities.</p>
+{%- endif %}
+{%- if model.ml.disclosure %}<div class="note">{{ model.ml.disclosure }}</div>{% endif %}
+{%- if model.ml.evaluation_limitations %}
+<ul class="muted">{% for l in model.ml.evaluation_limitations %}<li>{{ l }}</li>{% endfor %}</ul>
+{%- endif %}
+</div>
+{%- endif %}
+
+{%- if model.timeline %}
+<h2>Evidence appendix — timeline</h2>
+<table><tr><th>#</th><th>Time</th><th>Event</th><th>Session</th><th>Packets</th><th>Status</th></tr>
+{%- for e in model.timeline[:120] %}
+<tr><td class="muted">{{ e.order_index }}</td>
+    <td class="mono">{{ e.timestamp.strftime('%H:%M:%S.%f')[:12] if e.timestamp else 'unknown' }}</td>
+    <td>{{ e.event_type }}<div class="muted">{{ e.description }}</div></td>
+    <td class="mono">{{ e.session_id or '—' }}</td>
+    <td class="mono">{{ e.packet_numbers|join(', ') or '—' }}</td>
+    <td class="muted">{{ e.evidence_status }}</td></tr>
+{%- endfor %}</table>
+{%- if model.timeline|length > 120 %}
+<p class="muted">{{ model.timeline|length - 120 }} further events omitted from this appendix;
+the JSON export carries all of them.</p>
+{%- endif %}
+{%- endif %}
+
+<h2>Limitations</h2>
+<div class="panel">
+<ul>
+{%- for l in model.limitations %}<li>{{ l }}</li>{% endfor %}
+<li>This report covers only the captures listed above. Absence of a finding is not
+evidence that a condition does not exist elsewhere.</li>
+<li>Findings describe observed configuration. They are not evidence of exploitation,
+compromise or attacker activity.</li>
+</ul>
+</div>
+
+{%- if model.warnings %}
+<h2>Analysis warnings</h2>
+<div class="panel"><ul class="muted">
+{%- for w in model.warnings %}<li>{{ w }}</li>{% endfor %}
+</ul></div>
+{%- endif %}
+
+<footer>
+{{ model.tool_name }} {{ model.tool_version }} ·
+report model {{ model.report_model_version }} ·
+generated {{ model.generated_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}.
+This document is self-contained: it loads no external font, script, stylesheet or image,
+and makes no network request.
+</footer>
+</div></body></html>

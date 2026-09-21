@@ -302,7 +302,7 @@ These are milestones, not permanent limits:
 | ~~Cross-session evidence correlation~~ | done in M5 |
 | ~~Cryptographic fingerprinting, drift and blast radius~~ | done in M5 |
 | ~~ML-assisted analysis~~ | done in M6 |
-| REST API and web interface | M7–M8 |
+| ~~REST API and web interface~~ | done in M7 |
 
 Every report embeds `stage_status`, so a reader can always tell "not found"
 from "not looked for".
@@ -476,6 +476,56 @@ is not represented in any measurement on this page.
 
 ---
 
+## 11. Limits of the local application (M7)
+
+### It is a local tool, and its security model says so
+
+The API binds `127.0.0.1`, validates the `Host` header, uses an explicit CORS
+allowlist and requires a per-installation token. That is a **localhost**
+security model. It is not a multi-user service, there are no roles or
+permissions, and anyone with access to the account can read every
+investigation. The server refuses to bind a non-loopback interface rather than
+pretend otherwise.
+
+### Concurrency is deliberately small
+
+Two analysis workers. Analysis is CPU-bound and a local tool has one user, so a
+larger pool would make every job slower. Throughput has not been benchmarked
+and none is claimed.
+
+### Progress is only as granular as the engine reports
+
+Captures finished out of captures submitted is real. Within a single capture
+the engine reports a named stage but no fraction, so the interface shows an
+indeterminate indicator there. It does not estimate.
+
+### Cancellation is not implemented
+
+`CANCELLED` is not a status this application produces. A running analysis
+finishes or fails; there is no way to stop it mid-capture, and pretending there
+were would mean leaving a partially written investigation behind.
+
+### Interrupted jobs are failed, not resumed
+
+A job interrupted by a restart is marked `FAILED` with its reason. It produced
+no results and cannot be resumed from where it stopped. Re-running is the
+remedy.
+
+### Reports cover what was analysed
+
+Every format states its scope. A report says nothing about captures that were
+not submitted, and a report with no findings says explicitly that this is not a
+statement that the analysed systems are secure.
+
+### The interface can fail
+
+An error boundary turns a rendering fault into a visible failure that states
+the analysis data is intact. This is not hypothetical: a rendering bug found
+during end-to-end testing produced a blank page, which is why the boundary
+exists.
+
+---
+
 ## 7. Things this tool will never do
 
 - Connect to a host observed in a capture.
@@ -502,4 +552,9 @@ is not represented in any measurement on this page.
 - Present a model score as a calibrated probability.
 - Report a rare configuration as dangerous because it is rare.
 - Produce a prediction for a session whose evidence is insufficient.
+- Bind a non-loopback interface, or expose itself publicly.
+- Serve a stored capture over HTTP, or place one inside the repository.
+- Fetch a font, script, stylesheet or image while rendering a report.
+- Show a progress bar that is not backed by a real proportion.
+- Render a missing value as a zero or an empty cell.
 - Treat an unavailable observation as either a pass or a finding.

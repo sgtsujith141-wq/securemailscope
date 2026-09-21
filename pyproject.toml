@@ -36,11 +36,20 @@ dev = [
   "ruff==0.7.4",
   "mypy==1.13.0",
 ]
-# Declared, NOT used yet. Present so the dependency surface of later
-# milestones is visible and pinned up front.
 backend = [
   "fastapi==0.115.5",
   "uvicorn==0.32.1",
+  "sqlalchemy==2.0.36",
+  "jinja2==3.1.4",
+  "python-multipart==0.0.17",
+  "reportlab==4.2.5",
+]
+# Verifying a generated PDF: text extraction and page rasterisation. Only the
+# test suite needs these; the application renders without them.
+reporting-tests = [
+  "pypdf==5.1.0",
+  "pypdfium2==4.30.0",
+  "httpx==0.27.2",
 ]
 ml = [
   "scikit-learn==1.5.2",
@@ -81,6 +90,10 @@ ignore = [
 # entry per line, aligned, makes it checkable against the source; wrapping it
 # would make review harder, not easier.
 "src/securemailscope/tls/registry.py" = ["E501"]
+# FastAPI's dependency injection is expressed through call expressions in
+# parameter defaults -- Depends(), Query(), File(). That is the framework's
+# documented idiom and the only way to declare them, so B008 does not apply.
+"src/securemailscope/backend/app.py" = ["B008"]
 
 [tool.mypy]
 python_version = "3.12"

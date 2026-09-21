@@ -336,6 +336,66 @@ Two defects, both found because the expectation was worked out first:
 A third came from a benchmark rather than a test: the model was being reloaded
 per capture, making analysis seventeen times slower.
 
+## The application layer (M7)
+
+Backend tests drive the **real** application over the **real** engine: uploads
+are real captures, analyses run the real pipeline, exports are produced by the
+real renderers. A test of an adapter that fakes what it adapts proves nothing.
+
+### Backend, `tests/test_backend.py`
+
+Security boundaries (foreign `Host`, missing and wrong token, CORS allowlist,
+hardening headers, error bodies that carry no path or traceback) · upload
+validation (magic bytes over extension, empty, streaming size limit, path
+traversal, storage outside the repository) · analysis execution (real progress,
+partial batch failure staying visible, duplicate-job refusal) · persistence
+across a restart, and interrupted jobs never appearing complete · filtering,
+sorting, pagination and an allowlisted sort column · evidence navigation ·
+settings validation · deletion semantics · all three exports, their parity,
+their privacy and the PDF's rendering.
+
+### The PDF is inspected, not just produced
+
+`test_the_pdf_renders_correctly` asserts A4 page geometry, extracts the text
+for expected sections and page numbers, then **rasterises every page** and
+checks each has ink and that nothing bleeds into the margins — which is what
+clipping looks like. `test_long_values_wrap_rather_than_clipping` asserts every
+71-character capture identifier survives in full.
+
+### Frontend, `frontend/src/test/app.test.tsx`
+
+32 component tests with Vitest and React Testing Library. The API module is
+mocked so each test drives a specific backend state, and what is asserted is
+that the interface tells the truth about it: NO FINDINGS against a count of
+zero, INSUFFICIENT EVIDENCE against a score of zero, NOT ANALYSED against
+either, `NOT AVAILABLE` for a TLS 1.3 certificate, determinate progress only
+when a proportion exists, and the ML page never calling the rarity baseline
+machine learning.
+
+Fixtures are copied from real API responses rather than invented.
+
+### Browser end to end, `frontend/e2e/workflow.spec.ts`
+
+Four Playwright tests against the **real backend** — no mocking anywhere. The
+acceptance test is the full workflow: upload a locally generated PCAP → analyse
+→ open the investigation → inspect a session → open a finding → navigate to
+packet evidence → inspect the timeline → export JSON, HTML and PDF, verifying
+each downloaded file.
+
+### What end-to-end testing caught
+
+Two defects that no unit test would have found:
+
+1. **A blank page.** The session detail route crashed because certificate
+   validation entries are objects, not status strings, and React refuses to
+   render an object as a child. Fixed, and an error boundary added so a
+   rendering fault never produces a blank page again — in a forensic tool an
+   analyst cannot distinguish that from an empty investigation.
+2. **A report parity gap.** The HTML template truncated capture identifiers for
+   display while JSON and PDF printed them in full. A forensic identifier that
+   cannot be copied is not much use, and the mismatch broke the parity the
+   report model exists to guarantee.
+
 ## Test files
 
 | File | Scope |
@@ -356,6 +416,9 @@ per capture, making analysis seventeen times slower.
 | `test_assessment.py` | M4: manifest-driven rule outcomes, findings and scores; evidence linkage; finding identifiers; scoring and coverage arithmetic; prioritisation; remediation mapping; duplicate suppression; thirteen false-positive cases; schema compatibility; redaction; CLI; determinism; generated-document freshness |
 | `test_intelligence.py` | M5: fingerprint determinism, canonicalisation and versioning; partial fingerprints; entity resolution; shared-certificate ambiguity; drift classification and client-offer context; correlation and stable ids; timeline ordering and packet provenance; blast-radius arithmetic; capture de-duplication; argument-order independence; policy compatibility; resource limits; redaction; batch CLI |
 | `test_ml.py` | M6: dataset reproducibility, feature determinism and missingness, TLS 1.3 behaviour, group-aware splitting, leakage prevention, training reproducibility, baseline comparison, anomaly detection and negative controls, metric arithmetic, threshold selection, abstention, model availability/version/schema/tampering, evidence provenance, privacy, no network, analyzer-without-ML, CLI, determinism |
+| `test_backend.py` | M7: API security, upload validation, analysis execution, persistence and restart recovery, filtering and pagination, evidence navigation, settings, exports, report parity, report privacy, PDF rendering |
+| `frontend/src/test/app.test.tsx` | M7 frontend: navigation, upload states, empty and failed investigations, session filtering, findings, evidence navigation, timeline, ML presentation, report downloads, unknown evidence, unavailable scores |
+| `frontend/e2e/workflow.spec.ts` | M7 browser end to end against the real backend |
 | `test_tshark_crosscheck.py` | Cross-validation against an independent dissector (optional; executed and passing against TShark 4.6.8) |
 
 ## What "verified" means here

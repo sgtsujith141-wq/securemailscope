@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import hashlib
 from collections import defaultdict
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
@@ -336,11 +337,18 @@ def _timeline_events_for(
 
 
 def analyze_batch(
-    paths: list[Path | str],
+    paths: Sequence[Path | str],
     *,
     config: AnalysisConfig | None = None,
+    on_capture: Callable[[int, int, str], None] | None = None,
 ) -> BatchOutcome:
-    """Analyse several captures together and build an investigation."""
+    """Analyse several captures together and build an investigation.
+
+    ``on_capture(done, total, name)`` is invoked after each capture. It exists
+    so a caller can report *real* progress -- captures finished out of captures
+    submitted -- rather than animating a timer. Exceptions from the callback
+    are not caught: a broken progress reporter is a bug worth seeing.
+    """
     config = config or AnalysisConfig()
     warnings: list[IntelligenceWarning] = []
     inventory: list[CaptureRecord] = []
@@ -360,7 +368,7 @@ def analyze_batch(
                 detail=f"limit={limit}",
             )
         )
-        paths = paths[:limit]
+        paths = list(paths)[:limit]
 
     for path in paths:
         resolved = Path(path)
@@ -389,6 +397,8 @@ def analyze_batch(
                     detail=type(exc).__name__,
                 )
             )
+            if on_capture is not None:
+                on_capture(len(inventory), len(paths), name)
             continue
 
         capture_id = result.capture.capture_id
@@ -413,6 +423,8 @@ def analyze_batch(
                     capture_id=capture_id,
                 )
             )
+            if on_capture is not None:
+                on_capture(len(inventory), len(paths), name)
             continue
 
         seen_hashes[capture_id] = name
@@ -444,6 +456,8 @@ def analyze_batch(
                 )
             )
         results.append(result)
+        if on_capture is not None:
+            on_capture(len(inventory), len(paths), name)
 
     return _build_investigation(results, inventory, warnings, config)
 
