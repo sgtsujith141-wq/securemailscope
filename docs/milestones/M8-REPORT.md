@@ -112,9 +112,17 @@ Four profiles, three repeats each, on Python 3.12.14 / macOS / 16 logical CPUs:
 | large | 6,000 | 4.730 s | 1,268 | 625 MB | 1,000/1,000 |
 | stress | 24,000 | 21.426 s | 1,120 | 1,800 MB | 4,000/4,000 |
 
-**All 14 gated threshold checks passed.** Scaling exponent 1.060 (limit 1.2);
-memory growth 75.7 KB/packet (limit 100) — the narrowest margin and the thing
-most likely to fail first.
+**All 14 gated threshold checks passed** on the clean run. Scaling exponent
+1.060 (limit 1.2); memory growth 75.7 KB/packet (limit 100) — the narrowest
+margin and the thing most likely to fail first.
+
+A confirmation run taken later, while unrelated work held the machine's load
+average between 14 and 20 on 16 logical CPUs, measured 257 packets/second on
+the medium profile and **failed T1**. That result is recorded in
+`docs/performance-benchmarks.md` rather than discarded. Neither the threshold
+nor the published figures were adjusted: T1 stands at 500 packets/second, the
+table reports the clean run and says so, and the contended run is reported as
+what it is — evidence that the tool needs the machine's attention.
 
 Ingestion, TCP reassembly, protocol and TLS analysis dominate at every size.
 The security assessment adds roughly a third on top. ML inference is too small

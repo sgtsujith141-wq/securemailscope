@@ -143,6 +143,28 @@ their own terms.
 
 All fourteen gated checks passed.
 
+### A repeat run on a contended machine
+
+The recorded run above was taken on an otherwise-quiet machine. A confirmation
+run taken later, while unrelated work was holding the load average between 14
+and 20 on 16 logical CPUs, measured **257 packets/second on the medium
+profile** — roughly a fifth of the 1,398 recorded above, and a clear **FAIL**
+against T1's 500 packets/second.
+
+This is recorded rather than discarded, because it establishes something the
+headline figures do not: the throughput threshold is met on an idle machine and
+is not met on a busy one. The run-to-run ratios in that same contended run
+stayed within T7 (1.315, 1.327 and 1.867), so the measurement itself was
+internally consistent — it was consistently slow, not erratic.
+
+Neither the threshold nor the published figures were changed in response. T1
+stands at 500 packets/second, and the numbers in the table above remain those
+of the clean run, labelled as such.
+
+The practical reading: SecureMailScope wants the machine's attention while it
+analyses. On a laptop that is also running a browser, a build and a video call,
+expect materially worse than the table above.
+
 ## What these numbers do not establish
 
 **The thresholds were derived for weaker hardware than the machine that ran
@@ -166,6 +188,10 @@ and longer-lived connections. Nothing here measures those.
 **Concurrency is not benchmarked.** Every figure is one analysis at a time. The
 backend's two-worker pool is exercised for correctness in
 `tests/test_reliability.py`, not for throughput.
+
+**The figures assume the machine is otherwise idle.** See the contended run
+above: unrelated load cut throughput to a fifth and took the medium profile
+below its threshold.
 
 **Continuous integration does not validate these numbers.** The benchmark job
 in CI runs the small and medium profiles to prove the harness works and the

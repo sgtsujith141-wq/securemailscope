@@ -197,7 +197,7 @@ captures) analyses, completes, and exports in all three formats within the
 
 ## Frontend reliability
 
-`frontend/src/test/accessibility.test.tsx` (51 tests) covers:
+`frontend/src/test/accessibility.test.tsx` (53 tests) covers:
 
 - One `<h1>` per view; `navigation` and `main` landmarks present.
 - Every navigation link has an accessible name and an `href`.

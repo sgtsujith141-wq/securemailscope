@@ -544,11 +544,11 @@ storage directories, none capable of exhausting the development machine.
 | module | tests | subject |
 |---|---:|---|
 | `tests/test_robustness.py` | 24 | Malformed containers, TLS records and protocol data; resource limits; the passive-only guarantee. Seven tests are property-based (`hypothesis`, 40 examples each). |
-| `tests/test_reliability.py` | 20 | SQLite integrity and foreign-key enforcement, transactional rollback, restart recovery, six concurrency scenarios, and the tested *absence* of cancellation. |
+| `tests/test_reliability.py` | 24 | SQLite integrity and foreign-key enforcement, schema migrations, transactional rollback, restart recovery, six concurrency scenarios, and the tested *absence* of cancellation. |
 | `tests/test_security_audit.py` | 59 | Authentication, DNS rebinding, CORS, CSRF, hostile identifiers, SQL injection attempts, upload validation and limits, information disclosure. |
 | `tests/test_report_hardening.py` | 35 | Reports under hostile titles, Unicode, long identifiers and a 20-capture investigation; structural PDF action checks. |
 | `tests/test_dependencies.py` | 7 | Every third-party import declared; every declaration pinned and used; the engine's dependency floor enforced by AST scan and by a subprocess import. |
-| `frontend/src/test/accessibility.test.tsx` | 51 | Landmarks, accessible names, keyboard operation, failure announcement, narrow viewports and computed colour contrast. |
+| `frontend/src/test/accessibility.test.tsx` | 53 | Landmarks, accessible names, keyboard operation, failure announcement, narrow viewports, computed colour contrast and upload staging. |
 | `frontend/e2e/acceptance.spec.ts` | 1 (22 steps) | The complete browser-to-backend walkthrough, including stopping and restarting the backend process on the same data directory. |
 
 ### Property-based testing
