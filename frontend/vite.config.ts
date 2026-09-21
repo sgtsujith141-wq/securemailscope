@@ -31,5 +31,11 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Vitest and Playwright both claim `*.spec.ts`. Without this, vitest
+    // collects the browser specs, fails to load them (they import Playwright's
+    // own runner) and reports failing *files* while still printing "32 passed"
+    // for the unit tests -- a green-looking summary over a broken run.
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
   },
 })

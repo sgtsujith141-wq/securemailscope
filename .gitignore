@@ -118,3 +118,7 @@ frontend/playwright-report/
 *.sqlite3-shm
 api-token
 local-evidence/
+
+# Benchmark output: generated captures never enter git; results.json is
+# committed deliberately by the M8 report, so it is not ignored here.
+benchmarks/captures/

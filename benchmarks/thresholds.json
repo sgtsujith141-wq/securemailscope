@@ -1,0 +1,86 @@
+{
+  "schema": "smsbench/1",
+  "defined_on": "2026-09-21",
+  "target_hardware": {
+    "description": "An analyst or developer laptop, not a server. The application is a local-only desktop tool; there is no cluster to fall back on.",
+    "assumed_cores": 4,
+    "assumed_ram_gb": 8,
+    "notes": "Thresholds are derived for a 4-core/8 GB machine. The machine used for the recorded run is more capable (16 logical CPUs), so a passing result here does not prove the same result on the assumed minimum. Only single-capture analysis is budgeted; the backend runs at most two concurrent analyses, so two simultaneous jobs may approach twice the memory figure."
+  },
+  "disclosure": "An exploratory benchmark run was executed before these thresholds were written, so the author had seen approximate figures. The thresholds below are derived from the deployment target rather than from those figures, and are committed before the results they judge. Where a threshold happens to sit close to an observed value, the derivation is stated so a reader can judge it independently.",
+  "thresholds": [
+    {
+      "id": "T1",
+      "name": "Interactive throughput",
+      "applies_to": ["medium"],
+      "metric": "packets_per_second",
+      "operator": ">=",
+      "value": 500,
+      "unit": "packets/second",
+      "justification": "A typical mail-session investigation capture is one to two thousand packets. At 500 packets/second that analysis finishes inside roughly four seconds, which keeps the analyst within the window where a person waits at the screen rather than switching tasks. Below this the tool stops feeling interactive."
+    },
+    {
+      "id": "T2",
+      "name": "Scaling is not super-linear",
+      "applies_to": ["medium", "large"],
+      "metric": "time_scaling_exponent",
+      "operator": "<=",
+      "value": 1.2,
+      "unit": "exponent on packet count",
+      "justification": "Quadratic behaviour in TCP reassembly or session correlation is the standard failure mode for this class of tool: it is invisible on test captures and fatal on real ones. An exponent of 1.2 permits modest super-linearity from correlation work that is genuinely pairwise, while ruling out an O(n^2) blow-up."
+    },
+    {
+      "id": "T3",
+      "name": "Peak memory fits the target machine",
+      "applies_to": ["large"],
+      "metric": "peak_rss_mb",
+      "operator": "<=",
+      "value": 2048,
+      "unit": "MB",
+      "justification": "On the assumed 8 GB machine, roughly 2 GB is taken by the operating system and 2 GB by a browser running the dashboard. That leaves about 4 GB, and the backend may run two analyses at once, so one analysis is budgeted 2 GB. Exceeding this risks swapping on the target hardware."
+    },
+    {
+      "id": "T4",
+      "name": "Memory is bounded per packet",
+      "applies_to": ["medium", "large"],
+      "metric": "rss_growth_kb_per_packet",
+      "operator": "<=",
+      "value": 100,
+      "unit": "KB/packet",
+      "justification": "Derived from T3 rather than from measurement: to analyse a 20,000-packet capture inside a 2 GB budget, marginal cost must stay near 100 KB/packet. This is the threshold most likely to fail, because the full analysis result, the report model and the serialised report are all held in memory at once."
+    },
+    {
+      "id": "T5",
+      "name": "Reports remain openable",
+      "applies_to": ["small", "medium", "large"],
+      "metric": "max_report_bytes",
+      "operator": "<=",
+      "value": 33554432,
+      "unit": "bytes",
+      "justification": "A report that a browser or PDF viewer will not open is not a deliverable. 32 MB is the point beyond which browsers begin to struggle with a single HTML document and PDF viewers become unresponsive on the target machine."
+    },
+    {
+      "id": "T6",
+      "name": "Correctness does not degrade under load",
+      "applies_to": ["small", "medium", "large", "stress"],
+      "metric": "correct",
+      "operator": "==",
+      "value": true,
+      "unit": "boolean",
+      "justification": "Session and TLS handshake counts must match the corpus ground truth exactly at every size. A fast wrong answer is a failure, not a trade-off, and this threshold cannot be relaxed."
+    },
+    {
+      "id": "T7",
+      "name": "Measurements are reproducible",
+      "applies_to": ["small", "medium", "large"],
+      "metric": "max_over_min_ratio",
+      "operator": "<=",
+      "value": 2.0,
+      "unit": "ratio",
+      "justification": "If the slowest run of a profile takes more than twice the fastest, the median is not describing the system and no performance claim based on it is sound. This threshold judges the measurement, not the software."
+    }
+  ],
+  "excluded_from_pass_fail": {
+    "stress": "The stress profile (24,000 packets) is a deliberate over-run past the documented supported size. It is measured and reported, and T6 applies to it, but its timing and memory figures are not gated: the application does not claim to support captures of that size on the target hardware."
+  }
+}
