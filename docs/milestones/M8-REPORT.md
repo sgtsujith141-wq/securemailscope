@@ -1,14 +1,13 @@
 # Milestone 8 — Comprehensive verification, performance benchmarking, security hardening and release readiness
 
-**Status: PARTIAL.** Fifteen of sixteen verification gates are met. One —
-continuous integration — is reported NOT VERIFIED because no GitHub Actions run
-has executed from this session, and claiming CI is green on the strength of
-local passes is precisely the substitution this milestone forbids. Under the
-milestone's own rule ("if any required gate fails, report M8 as PARTIAL"), that
-makes M8 PARTIAL.
+**Status: COMPLETE.** All sixteen verification gates are met, including
+continuous integration — which is reported as met because a run was actually
+observed, not because local tests passed.
 
-Everything else in the milestone is complete, and the work found real defects
-rather than confirming what was already believed.
+That gate was the last to close, and closing it cost two more defect fixes. The
+first CI run failed two of five jobs, both for real reasons, and both are
+recorded below. The milestone did what it was for: it found eleven defects in
+code that a green test suite had been calling healthy.
 
 ---
 
@@ -150,7 +149,7 @@ quoted.
 | 13 | Lock file vs. a fresh resolve | **MET** — 45 packages, zero drift |
 | 14 | Production frontend advisories | **MET** — zero |
 | 15 | Nothing sensitive staged | **MET** |
-| 16 | **Continuous integration green** | **NOT VERIFIED** |
+| 16 | **Continuous integration green** | **MET** — all five jobs green, run 35627938267 on commit `74ee1f1` |
 
 ## 6. New tests
 
@@ -200,7 +199,6 @@ Executed, not asserted. From `git archive HEAD` into a fresh directory:
 
 | Item | Status |
 |---|---|
-| Continuous integration observed to run | **NOT VERIFIED** |
 | Analysis cancellation | **NOT IMPLEMENTED** (deliberate; absence is tested) |
 | Hash-pinned dependencies | **NOT IMPLEMENTED** |
 | Python advisory scanning | **NOT IMPLEMENTED** |
@@ -237,8 +235,11 @@ were made to share a backend. That is an argument for the kind of testing this
 milestone was for: the bugs that survive a green suite are the ones whose
 preconditions the suite never creates.
 
-M8 is **PARTIAL**, on one gate, for one reason: CI has not been observed to
-run. That is the honest status and it is not waived.
+M8 is **COMPLETE**. Every gate is met, and the one that took longest — CI —
+is met because a run was watched to completion, not because local tests passed.
+The first run failed two of five jobs and both failures were real: fixtures
+that were not reproducible across platforms, and a harness that assumed a
+developer's directory layout. Run 35627938267 on commit `74ee1f1` is green on all five.
 
 ## 12. Recommended next
 
@@ -246,10 +247,11 @@ run. That is the honest status and it is not waived.
 
 Before or alongside it, in order of value:
 
-1. Trigger the CI workflow and record the result, closing the only unmet gate.
-2. Widen `mypy` to `tests/` and `scripts/`, or state the exclusion in
+1. Widen `mypy` to `tests/` and `scripts/`, or state the exclusion in
    `pyproject.toml` with a reason.
-3. Migrate vite 5→8 and vitest 2→5, clearing the five remaining advisories.
-4. Add `pip-audit` and hash pinning.
-5. Take one benchmark run on 4-core / 8 GB hardware, turning NFV46 from NOT
+2. Migrate vite 5→8 and vitest 2→5, clearing the five remaining advisories.
+3. Add `pip-audit` and hash pinning.
+4. Take one benchmark run on 4-core / 8 GB hardware, turning NFV46 from NOT
    VERIFIED into a measurement.
+5. Enable TShark in the CI engine job's default path, so the independent
+   cross-check runs on every push rather than only locally.

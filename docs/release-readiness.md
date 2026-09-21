@@ -9,6 +9,8 @@ Assessed on 2026-09-21 at the end of M8.
 
 **Status: READY FOR DEMONSTRATION, NOT READY FOR PRODUCTION DEPLOYMENT.**
 
+All sixteen verification gates are met, including continuous integration.
+
 The application does what it claims on a developer or analyst machine, and the
 claims have been checked rather than asserted. It is not hardened for any
 environment other than the loopback interface of one trusted machine, it has
@@ -37,13 +39,14 @@ Each gate is either met, met with a stated limit, or not met. None is waived.
 | 13 | Lock file matches a fresh resolve | **MET** — 45 packages, zero drift |
 | 14 | Production frontend free of known advisories | **MET** — `npm audit --omit=dev`: zero |
 | 15 | No capture data, key material or secrets staged for commit | **MET** — `make secrets-check` |
-| 16 | Continuous integration green | **NOT VERIFIED** — see below |
+| 16 | Continuous integration green | **MET** — all five jobs green, run 35627938267 on commit `74ee1f1` |
 
-Gate 16 is the only one not met, and it is reported as NOT VERIFIED rather than
-passed: the workflow is committed and every step mirrors a command that was run
-and passed locally, but no run has executed on GitHub Actions from this
-session. Claiming CI is green because local tests pass would be exactly the
-substitution this project is meant to avoid.
+All sixteen gates are met. Gate 16 is reported as met because a run was watched
+to completion on GitHub Actions, not because local tests passed — that
+substitution is exactly what this project is meant to avoid. The first run
+failed two of five jobs; both failures were real defects, both were fixed, and
+the rerun is green on Engine, Clean install, Frontend, End-to-end and
+Benchmarks.
 
 ## What works, verified
 
@@ -94,7 +97,6 @@ substitution this project is meant to avoid.
 | Type checking of tests and scripts | **NOT IMPLEMENTED** | `mypy` covers `src/` only. A widened run reports 161 errors across 13 files, all in test and script code. |
 | Five development-only npm advisories | **ACCEPTED, RECORDED** | vitest (critical), vite (high), esbuild, @vitest/mocker, vite-node. None ships to a browser. All need a semver-major migration. See `docs/dependency-audit.md`. |
 | Benchmarks on the assumed minimum hardware | **NOT VERIFIED** | Thresholds are derived for 4 cores and 8 GB; the recorded run used a machine with 16 logical CPUs. |
-| Continuous integration | **NOT VERIFIED** | Workflow committed; no run observed. |
 | Contrast checking | **PARTIAL** | Computed from design tokens, not sampled from rendered pixels. |
 
 ## Known limits on the claims

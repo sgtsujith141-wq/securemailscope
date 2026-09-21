@@ -16,12 +16,14 @@ capture contents anywhere.
 
 ## Current status
 
-This repository is at the end of **M8**, which is reported **PARTIAL**: fifteen
-of sixteen verification gates are met, and continuous integration is reported
-NOT VERIFIED because no GitHub Actions run has been observed. See
+This repository is at the end of **M8**, which is **COMPLETE**: all sixteen
+verification gates are met, including a continuous-integration run that was
+watched to completion rather than inferred from local passes. That run mattered
+— its first attempt failed two of five jobs, and both failures were real
+defects every local check had missed. See
 [docs/release-readiness.md](docs/release-readiness.md) for the full assessment
-and [docs/milestones/M8-REPORT.md](docs/milestones/M8-REPORT.md) for what that
-milestone found.
+and [docs/milestones/M8-REPORT.md](docs/milestones/M8-REPORT.md) for the eleven
+defects M8 found.
 
 The table below is the honest state of
 each stage; the same table is emitted into every report so a reader never has
@@ -52,7 +54,7 @@ built yet".
 | Security audit and hardening | **IMPLEMENTED** | Internal only — no penetration test, no certification; M8 |
 | Malformed-input and reliability testing | **IMPLEMENTED** | Property-based; database, restart and concurrency; M8 |
 | Analysis cancellation | NOT IMPLEMENTED | Deliberate: an analysis finishes or fails. The absence is tested |
-| Continuous integration | **NOT VERIFIED** | Workflow committed; no run observed; M8 |
+| Continuous integration | **IMPLEMENTED** | Five jobs, all green in an observed run; M8 |
 
 Three things are constants in every report, and are asserted by the test
 suite rather than left to trust: `handshake_analyzed` is `false`,

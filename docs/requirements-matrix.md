@@ -612,6 +612,7 @@ is **NOT VERIFIED**.
 | NFV2 | Acceptance thresholds defined before measurement | `benchmarks/thresholds.json` | M8 | Seven thresholds, each justified by the deployment target, committed before the results | `scripts/check_benchmarks.py`; git history | **IMPLEMENTED** |
 | NFV3 | Correctness does not degrade under load | `benchmarks/harness.py` | M8 | Session and TLS counts match ground truth at every profile | `benchmarks/results.json` (25/25, 200/200, 1000/1000, 4000/4000) | **IMPLEMENTED** |
 | NFV4 | Stage-level timing reported honestly | `benchmarks/harness.py` | M8 | An increment smaller than run-to-run spread is flagged, never presented as a measurement | `scripts/run_benchmarks.py` output | **IMPLEMENTED** |
+| NFV47 | Fixtures reproducible across platforms | `testing/live_tls.py` | M8 | A TLS 1.3 capture is the same handshake on macOS and on an Ubuntu runner | CI Engine job; `test_tls.py::test_key_exchange_and_forward_secrecy_match_manifest` | **IMPLEMENTED** (the key-exchange group is pinned; before M8 each OpenSSL build chose its own and the committed manifest matched one platform only) |
 | NFV5 | Malformed capture containers handled | `ingestion/` | M8 | Stated rejection or empty result; never a crash, never invented evidence | `test_robustness.py` (7 tests, 4 property-based) | **IMPLEMENTED** |
 | NFV6 | Malformed TLS records handled | `tls/` | M8 | Lying lengths, truncated handshakes and arbitrary payloads yield no invented negotiation or certificate | `test_robustness.py` (4 tests, 3 property-based) | **IMPLEMENTED** |
 | NFV7 | Malformed protocol data handled | `protocols/` | M8 | Arbitrary bytes never produce a CONFIRMED credential finding; oversized lines bounded | `test_robustness.py` (2 tests) | **IMPLEMENTED** |
@@ -646,7 +647,7 @@ is **NOT VERIFIED**.
 | NFV36 | Production frontend free of known advisories | `frontend/package.json` | M8 | `npm audit --omit=dev` reports zero | CI job `frontend` | **IMPLEMENTED** |
 | NFV37 | Development frontend advisories recorded | `docs/dependency-audit.md` | M8 | Five remaining advisories listed with severity, scope and reason for deferral | — | **PARTIAL** (recorded and scoped, not remediated; needs a vite 5→8 and vitest 2→5 migration) |
 | NFV38 | Clean installation from a bare checkout | `pyproject.toml` | M8 | Engine-only and full installs from `git archive`, in fresh venvs, on Python 3.12 | Executed 2026-09-21: 1346 passed, 25 skipped; ruff and mypy clean | **IMPLEMENTED** |
-| NFV39 | Continuous integration | `.github/workflows/ci.yml` | M8 | Five jobs; read-only permissions; no secrets; no capture data uploaded | — | **NOT VERIFIED** (the workflow is committed and its steps mirror commands verified locally, but no run has executed on GitHub Actions from this session) |
+| NFV39 | Continuous integration | `.github/workflows/ci.yml` | M8 | Five jobs; read-only permissions; no secrets; no capture data uploaded | GitHub Actions run 35627938267 on `74ee1f1` | **IMPLEMENTED** (all five jobs green in an observed run; the first run failed two jobs and both failures were real defects, now fixed) |
 | NFV40 | Complete browser-to-backend acceptance test | `frontend/e2e/acceptance.spec.ts` | M8 | 22 steps against the real stack, including a backend restart and reopen | `npm run e2e` | **IMPLEMENTED** |
 | NFV41 | Analysis cancellation absent, not faked | `backend/app.py` | M8 | No route, no CANCELLED status, no button | `test_reliability.py::test_cancellation_is_not_offered_because_it_is_not_implemented` | **NOT IMPLEMENTED** (deliberately; the absence is tested) |
 | NFV42 | Hash-pinned dependency lock | — | M8 | `pip install --require-hashes` | — | **NOT IMPLEMENTED** |
@@ -682,11 +683,11 @@ is **NOT VERIFIED**.
 
 | Status | Count | Change since M7 |
 |---|---|---|
-| IMPLEMENTED | 451 | +38 |
+| IMPLEMENTED | 453 | +40 |
 | PARTIAL | 5 | +2 |
 | NOT IMPLEMENTED | 14 | +4 |
-| NOT VERIFIED | 2 | new in M8 |
-| **Total requirements tracked** | **472** | +46 |
+| NOT VERIFIED | 1 | new in M8 |
+| **Total requirements tracked** | **473** | +47 |
 
 The implemented set covers the whole product: capture ingestion, TCP
 reconstruction, the email protocol layer, the TLS and certificate layer, the
@@ -694,8 +695,8 @@ assessment layer, the forensic intelligence layer, the machine-learning layer,
 a local application around them, and — since M8 — a verified account of how all
 of it behaves under adverse conditions.
 
-The count rose by 46 in M8 without a single new product feature. Every new row
-is a verification requirement, and four of them are recorded as gaps rather
+The count rose by 47 in M8 without a single new product feature. Every new row
+is a verification requirement, and five of them are recorded as gaps rather
 than achievements.
 
 **Reported PARTIAL (5):** certificate extraction (TLS ≤ 1.2 only — TLS 1.3
@@ -713,11 +714,15 @@ dependencies (NFV42); Python advisory scanning (NFV43); SBOM generation
 (NFV44); type checking of tests and scripts (NFV45 — `mypy` covers `src/` only;
 a widened run reports 161 errors in 13 files); and eight earlier items.
 
-**Reported NOT VERIFIED (2), a status introduced in M8:** continuous
-integration (NFV39 — the workflow is committed and each of its steps mirrors a
-command that passed locally, but no GitHub Actions run has been observed) and
-benchmarks on the assumed minimum hardware (NFV46 — the thresholds are derived
-for a 4-core, 8 GB machine; the recorded run used one with 16 logical CPUs).
+**Reported NOT VERIFIED (1), a status introduced in M8:** benchmarks on the
+assumed minimum hardware (NFV46). The thresholds are derived for a 4-core, 8 GB
+machine; the recorded run used one with 16 logical CPUs, so a pass there does
+not demonstrate a pass on the minimum.
+
+Continuous integration (NFV39) was NOT VERIFIED for most of M8 and is now
+IMPLEMENTED, because a run was watched to completion rather than inferred from
+local passes. That run mattered: its first attempt failed two of five jobs, and
+both failures were real defects that every local check had missed.
 
 This status exists because "the module is there" is not evidence that the
 requirement is met. Where the only thing supporting a row would be the
