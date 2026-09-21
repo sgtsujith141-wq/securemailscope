@@ -4,6 +4,7 @@
 - **Date:** 2026-09-21
 - **Milestone:** M7 — Production-oriented forensic dashboard, local API, persistence and JSON/PDF/HTML reporting
 - **Baseline (M6):** `e29d0400051939bf3bb3b1a8c1e41af716b70c80`
+- **Commit:** `2044f6f91b01270b4a6665d97766a0c4014562ad`
 - **Result:** **COMPLETE** — all 18 acceptance gates pass.
 
 ---
