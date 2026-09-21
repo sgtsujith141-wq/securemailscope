@@ -222,6 +222,64 @@ engine is worse than no document, because a reader would check the wrong
 thresholds. `test_the_requirements_matrix_summary_is_arithmetically_correct`
 likewise re-counts the requirements matrix against its own summary table.
 
+## The intelligence layer (M5)
+
+M5 is tested through **fixture groups**: small sets of captures built so that
+exactly one intelligence behaviour is under test, each with a hand-derived
+expectation of what the engine must conclude -- and, for most groups, what it
+must refuse to conclude.
+
+### Fixture groups
+
+| Group | Scenario | Principally verifies |
+|---|---|---|
+| A | One endpoint, same config, two captures | `UNCHANGED_WITH_EVIDENCE` across every comparable property |
+| B | Same client offer, server selects TLS 1.2 then 1.0 | `OBSERVED_CHANGE` is attributable when the offer is held constant |
+| C | Same client offer, different suite selected | Cipher drift attributable to the server |
+| D | Different client offers, different selections | `INCONCLUSIVE` -- the conservatism test |
+| E | Renewed certificate on the same key | Certificate changes, key does not; renewal is not a configuration divergence |
+| F | Two IPs presenting one certificate | Two entities stay two, linked by `SHARED_CERTIFICATE` |
+| G | One IP, ports 993 and 465 | Same IP is not the same application |
+| H | TLS 1.3 in both captures | `PARTIAL` fingerprints, `NOT_COMPARABLE` certificate drift |
+| I | Complete capture, then ClientHello only | Missing evidence is never drift |
+| K | The same bytes supplied twice | `DUPLICATE`; counts are not inflated |
+| L | Unrelated servers, identical settings | Only `CONFIGURATION_MATCH` -- the primary false-correlation test |
+| M | Later capture supplied first | Chronology comes from the capture, not the command line |
+| N | Overlapping ranges, two source ports | One endpoint, not two |
+| Q | Same finding on two endpoints | Blast radius of exactly 2 sessions / 2 endpoints / 2 captures |
+| T | A file that is not a capture | `FAILED` in the inventory, with a warning |
+
+Scenarios for a changed assessment policy and for differing coverage are
+exercised by re-analysing a group's captures under different configurations
+rather than by duplicating the capture bytes.
+
+### The negative half
+
+Each group's manifest carries `forbidden_observed_changes`,
+`forbidden_correlation_types` and `forbidden_identity_relations`. Asserting that
+an expected correlation exists proves the engine can group; only asserting that
+an unsupported one does **not** exist proves it does not invent one. Group L is
+the sharpest case: two entirely unrelated servers with the same TLS settings,
+where anything beyond `CONFIGURATION_MATCH` would be a fabricated relationship.
+
+### What hand-derivation caught
+
+Two fixtures disagreed with the engine, and investigating each changed the
+implementation rather than the expectation:
+
+1. **Group B originally varied the client's advertised version as well as the
+   server's selection**, so the engine correctly answered `INCONCLUSIVE`. The
+   fixture builder gained a separate `client_version`, because a genuine
+   server-side change can only be demonstrated with the offer held constant.
+2. **`CONFIGURATION_MATCH` could never fire**, because the certificate was part
+   of the fingerprint and two hosts almost always present different
+   certificates. That led to the separate *configuration fingerprint* over the
+   negotiated settings alone -- which also stopped a routine certificate
+   renewal being reported as a configuration divergence.
+
+A third defect was found by a test rather than a fixture: drift-derived
+timeline events carried a timestamp with no nanosecond value behind it.
+
 ## Test files
 
 | File | Scope |
@@ -240,6 +298,7 @@ likewise re-counts the requirements matrix against its own summary table.
 | `test_tls.py` | Manifest-driven M3: records, messages, version, cipher, key exchange, forward secrecy, certificates, validation |
 | `test_tls_validation.py` | Chain and hostname verification under different configurations, capture-time dates, TLS 1.3 limits, bounds, no-socket guarantee |
 | `test_assessment.py` | M4: manifest-driven rule outcomes, findings and scores; evidence linkage; finding identifiers; scoring and coverage arithmetic; prioritisation; remediation mapping; duplicate suppression; thirteen false-positive cases; schema compatibility; redaction; CLI; determinism; generated-document freshness |
+| `test_intelligence.py` | M5: fingerprint determinism, canonicalisation and versioning; partial fingerprints; entity resolution; shared-certificate ambiguity; drift classification and client-offer context; correlation and stable ids; timeline ordering and packet provenance; blast-radius arithmetic; capture de-duplication; argument-order independence; policy compatibility; resource limits; redaction; batch CLI |
 | `test_tshark_crosscheck.py` | Cross-validation against an independent dissector (optional; executed and passing against TShark 4.6.8) |
 
 ## What "verified" means here

@@ -119,6 +119,26 @@ class AnalysisConfig:
     #: it can travel through an integer environment variable.
     minimum_score_coverage_percent: int = 50
 
+    # --- forensic intelligence, batch mode (M5) -----------------------------
+    #: Captures accepted in one investigation. Exceeding it produces an
+    #: explicit warning; the surplus is never silently dropped, because a
+    #: reader would take the result as covering everything they submitted.
+    max_batch_captures: int = 64
+    #: Sessions considered across the whole batch. Correlation and drift index
+    #: on shared values rather than comparing all pairs, so this bounds memory
+    #: rather than guarding against quadratic time.
+    max_batch_sessions: int = 50_000
+    #: Fingerprints retained. One per session, so this is effectively a cap on
+    #: the size of the fingerprint block in the output.
+    max_batch_fingerprints: int = 50_000
+    #: Correlations reported. Truncation is warned about explicitly.
+    max_batch_correlations: int = 5_000
+    #: Timeline events reported. Truncation is warned about explicitly.
+    max_timeline_events: int = 100_000
+    #: Re-analyse a capture whose content hash was already seen. Off by
+    #: default: two names for one file are not two pieces of evidence.
+    allow_duplicate_captures: bool = False
+
     #: When true the report may carry a short hex preview of payload bytes.
     #: Off by default: reports must be safe to share.
     include_payload_preview: bool = False
@@ -149,6 +169,11 @@ class AnalysisConfig:
             "max_segments_per_direction",
             "max_gaps_per_direction",
             "max_warnings_per_code",
+            "max_batch_captures",
+            "max_batch_sessions",
+            "max_batch_fingerprints",
+            "max_batch_correlations",
+            "max_timeline_events",
         ]
         for name in numeric:
             value = getattr(self, name)

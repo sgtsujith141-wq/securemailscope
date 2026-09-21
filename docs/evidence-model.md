@@ -403,6 +403,59 @@ These extend the rules above, and apply to M5 onward as well:
     identifier, so reports produced under different thresholds cannot appear to
     describe the same finding.
 
+## The forensic intelligence layer (M5)
+
+M5 introduces statements about *relationships between* observations. They are
+weaker than the observations themselves, and the model keeps that visible.
+
+### Three vocabularies, kept apart
+
+| Vocabulary | Grades | Layer |
+| --- | --- | --- |
+| `OBSERVED` / `INFERRED` / `UNKNOWN` / `NOT_AVAILABLE` | an observation | M1-M3 |
+| `FAIL` / `PASS` / `UNKNOWN` / `NOT_APPLICABLE` | a judgement about observations | M4 |
+| `OBSERVED_CHANGE` / `UNCHANGED_WITH_EVIDENCE` / `INCONCLUSIVE` / `NOT_COMPARABLE` | a comparison of observations | M5 |
+
+`NOT_COMPARABLE` is M5's `UNKNOWN`: the honest answer when one side was not
+observed, and never promoted to either "changed" or "unchanged".
+
+### Fingerprint component sources
+
+`CLIENT_OFFERED`, `SERVER_SELECTED`, `CERTIFICATE_OBSERVED`, `INFERRED`,
+`UNKNOWN`. A fingerprint contains only server-attributable components; a test
+asserts no component is ever `CLIENT_OFFERED`.
+
+### Relationships are typed by what was matched
+
+`EXACT_ENDPOINT`, `SHARED_CERTIFICATE`, `SHARED_PUBLIC_KEY`, `OBSERVED_SNI`,
+`CONFIGURATION_MATCH`, `POSSIBLE_RELATION`, `INSUFFICIENT_EVIDENCE`. Each names
+exactly the property that matched. None of them means "the same machine", and
+each carries the limitation that says so.
+
+### Rules for the intelligence layer
+
+These extend the earlier rules and apply to M6 onward:
+
+18. **Entities are merged only on exact endpoint equality.** Every weaker
+    signal is a typed relationship between entities that stay separate.
+19. **A comparison against an unobserved value is `NOT_COMPARABLE`.** Absence
+    is never reported as change, in either direction.
+20. **A negotiated value is a function of two inputs.** A difference is
+    attributed to the server only when the client's offer was the same.
+21. **A fingerprint records its own incompleteness.** Missing components are
+    listed, written explicitly into the canonical form, and reflected in the
+    completeness status.
+22. **A correlation groups observations, never actors.** No attack, campaign,
+    intent, ownership or topology is inferred anywhere.
+23. **Counts name their counting method and their scope.** Every aggregate says
+    how it counted and that it covers the analysed captures only.
+24. **Derived events name what they were derived from.** A timeline event that
+    was computed rather than observed carries `derived_from` and is marked
+    `INFERRED`.
+25. **No timestamp is invented.** An event whose timing the capture does not
+    establish has no timestamp, and file modification times are never
+    substituted.
+
 ## Rules for future milestones
 
 These apply to every stage added after M1:

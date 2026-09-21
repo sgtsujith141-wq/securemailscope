@@ -209,6 +209,49 @@ class SyntheticCA:
             certificate=builder.sign(issuer_key, algorithm), private_key=key
         )
 
+    def reissue(
+        self,
+        original: IssuedCertificate,
+        *,
+        serial: int,
+        not_before_days: int = -1,
+        not_after_days: int = 730,
+    ) -> IssuedCertificate:
+        """Re-issue a certificate for the **same key pair**.
+
+        This is what an ordinary renewal looks like: a new certificate, with a
+        new serial and new validity dates, built on the key the server already
+        had. The certificate fingerprint changes and the SubjectPublicKeyInfo
+        fingerprint does not, which is the only way an observer can tell a
+        renewal from a rekey -- and M5 relies on being able to.
+        """
+        key = original.private_key
+        subject = original.certificate.subject
+        builder = self._base(
+            subject, self.root.certificate.subject, key.public_key(), serial=serial, ca=False
+        )
+        builder = builder.add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(
+                self.root.private_key.public_key()
+            ),
+            critical=False,
+        )
+        # _base already sets basic constraints, key usage and the serverAuth
+        # EKU; only the names carry over from the original.
+        builder = builder.add_extension(
+            original.certificate.extensions.get_extension_for_class(
+                x509.SubjectAlternativeName
+            ).value,
+            critical=False,
+        )
+        builder = builder.not_valid_before(
+            CAPTURE_EPOCH + datetime.timedelta(days=not_before_days)
+        ).not_valid_after(CAPTURE_EPOCH + datetime.timedelta(days=not_after_days))
+        return IssuedCertificate(
+            certificate=builder.sign(self.root.private_key, hashes.SHA256()),
+            private_key=key,
+        )
+
     # -- helpers for the TLS fixture server --------------------------------
     def write_chain(
         self, leaf: IssuedCertificate, directory: Path, *, via_intermediate: bool = False

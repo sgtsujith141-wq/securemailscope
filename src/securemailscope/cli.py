@@ -14,7 +14,7 @@ import json
 import sys
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TextIO
+from typing import Any, TextIO
 
 from . import __version__
 from .config import AnalysisConfig
@@ -176,6 +176,62 @@ def build_parser() -> argparse.ArgumentParser:
     limits.add_argument("--max-literal-bytes", type=int, default=None)
     limits.add_argument("--max-message-body-bytes", type=int, default=None)
 
+    batch = subparsers.add_parser(
+        "analyze-batch",
+        help="Analyse several captures together and correlate the evidence.",
+        description=(
+            "Runs the ordinary single-capture pipeline over each capture, then "
+            "correlates the results: cryptographic fingerprints, server "
+            "entities, drift between captures, cross-session correlations, an "
+            "evidence timeline and blast radius. Every individual capture "
+            "report is carried through unchanged. Captures are identified by "
+            "content hash, so the same file supplied twice is analysed once."
+        ),
+    )
+    batch.add_argument("captures", nargs="+", type=Path, help="Capture files to analyse.")
+    batch.add_argument(
+        "-o", "--output", type=Path, default=None, help="Write the investigation JSON here."
+    )
+    batch.add_argument("--compact", action="store_true", help="Write JSON without indentation.")
+    batch.add_argument(
+        "--no-capture-reports",
+        action="store_true",
+        help="Emit only the investigation, omitting the per-capture forensic reports. "
+        "The reports are complete when included; this only shrinks the file.",
+    )
+    batch.add_argument("--no-segments", action="store_true")
+    batch.add_argument("--no-protocol-events", action="store_true")
+    batch.add_argument("--no-tls-records", action="store_true")
+    batch.add_argument("--no-rule-results", action="store_true")
+    batch.add_argument(
+        "--with-segments",
+        action="store_true",
+        help="Include per-segment provenance in the embedded capture reports.",
+    )
+    batch.add_argument(
+        "--max-batch-captures",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Maximum captures to analyse. Exceeding it warns explicitly.",
+    )
+    batch.add_argument(
+        "--max-timeline-events",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Maximum timeline events to report. Truncation warns explicitly.",
+    )
+    batch.add_argument(
+        "--max-batch-correlations", type=int, default=None, metavar="N"
+    )
+    batch.add_argument("--trust-store", type=Path, default=None)
+    batch.add_argument("--expected-server-identity", default=None)
+    batch.add_argument("--no-assessment", action="store_true")
+    batch.add_argument(
+        "--quiet", action="store_true", help="Suppress the human-readable summary on stderr."
+    )
+
     fixtures = subparsers.add_parser(
         "fixtures",
         help="Regenerate the deterministic synthetic test captures and manifests.",
@@ -220,6 +276,9 @@ def _config_from_args(args: argparse.Namespace) -> AnalysisConfig:
             "max_line_bytes",
             "max_literal_bytes",
             "max_message_body_bytes",
+            "max_batch_captures",
+            "max_batch_correlations",
+            "max_timeline_events",
         )
         if getattr(args, name, None) is not None
     }
@@ -231,7 +290,7 @@ def _config_from_args(args: argparse.Namespace) -> AnalysisConfig:
         overrides["disabled_rules"] = args.disable_rules
     if getattr(args, "minimum_score_coverage", None) is not None:
         overrides["minimum_score_coverage_percent"] = args.minimum_score_coverage
-    if args.trust_store is not None:
+    if getattr(args, "trust_store", None) is not None:
         overrides["trust_store_path"] = str(args.trust_store)
     if getattr(args, "expected_server_identity", None):
         overrides["expected_server_identity"] = args.expected_server_identity
@@ -521,6 +580,126 @@ def _run_status(out: TextIO) -> int:
     return EXIT_OK
 
 
+def _run_analyze_batch(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
+    """Analyse several captures together and report the correlated evidence."""
+    from .intelligence import analyze_batch
+    from .reporting.json_report import investigation_to_dict, write_investigation_report
+
+    config = _config_from_args(args)
+    outcome = analyze_batch(list(args.captures), config=config)
+    investigation = outcome.investigation
+    indent = None if args.compact else 2
+    include_captures = not args.no_capture_reports
+
+    if args.output is not None:
+        path = write_investigation_report(
+            outcome,
+            args.output,
+            indent=indent,
+            include_captures=include_captures,
+            include_segments=args.with_segments,
+            include_protocol_events=not args.no_protocol_events,
+            include_tls_records=not args.no_tls_records,
+            include_rule_results=not args.no_rule_results,
+        )
+        if not args.quiet:
+            print(f"investigation written to {path}", file=err)
+    else:
+        document = investigation_to_dict(
+            outcome,
+            include_captures=include_captures,
+            include_segments=args.with_segments,
+            include_protocol_events=not args.no_protocol_events,
+            include_tls_records=not args.no_tls_records,
+            include_rule_results=not args.no_rule_results,
+        )
+        print(json.dumps(document, indent=indent), file=out)
+
+    if not args.quiet:
+        _print_investigation_summary(investigation, err)
+    return EXIT_OK
+
+
+def _print_investigation_summary(investigation: Any, err: TextIO) -> None:
+    """A short, honest summary. Every count names what it counted."""
+    analysed = [
+        record
+        for record in investigation.capture_inventory
+        if record.status.value == "ANALYZED"
+    ]
+    duplicates = [
+        record
+        for record in investigation.capture_inventory
+        if record.status.value == "DUPLICATE"
+    ]
+    failed = [
+        record
+        for record in investigation.capture_inventory
+        if record.status.value == "FAILED"
+    ]
+
+    print(f"investigation  {investigation.investigation_id}", file=err)
+    print(
+        f"captures       {len(analysed)} analysed"
+        + (f", {len(duplicates)} duplicate" if duplicates else "")
+        + (f", {len(failed)} failed" if failed else ""),
+        file=err,
+    )
+    for record in failed:
+        print(f"  FAILED       {record.source_name}: {record.failure_reason}", file=err)
+    for record in duplicates:
+        print(
+            f"  duplicate    {record.source_name} (same bytes as "
+            f"{record.duplicate_of_source}); counted once",
+            file=err,
+        )
+
+    print(
+        f"endpoints      {len(investigation.server_entities)} observed "
+        "(ip, port); never merged on a shared certificate, key or name",
+        file=err,
+    )
+    complete = sum(
+        1
+        for item in investigation.cryptographic_fingerprints
+        if item.completeness.value == "COMPLETE"
+    )
+    print(
+        f"fingerprints   {len(investigation.cryptographic_fingerprints)} "
+        f"({complete} complete, "
+        f"{len(investigation.cryptographic_fingerprints) - complete} partial or "
+        "insufficient)",
+        file=err,
+    )
+
+    by_status: dict[str, int] = {}
+    for event in investigation.drift_events:
+        by_status[event.status.value] = by_status.get(event.status.value, 0) + 1
+    if by_status:
+        print(
+            "drift          "
+            + ", ".join(f"{count} {status}" for status, count in sorted(by_status.items())),
+            file=err,
+        )
+    for event in investigation.drift_events:
+        if event.status.value == "OBSERVED_CHANGE":
+            print(f"  change       {event.kind.value} on {event.entity_id}", file=err)
+
+    print(f"correlations   {len(investigation.session_correlations)}", file=err)
+    print(f"timeline       {len(investigation.evidence_timeline)} events", file=err)
+    for radius in investigation.blast_radius[:5]:
+        print(
+            f"  {radius.subject:<16} {radius.session_count} session(s) across "
+            f"{radius.entity_count} endpoint(s), {radius.capture_count} capture(s)",
+            file=err,
+        )
+    if len(investigation.blast_radius) > 5:
+        print(f"  ... {len(investigation.blast_radius) - 5} more", file=err)
+    print(f"scope          {investigation.scope_statement}", file=err)
+    for warning in investigation.intelligence_warnings:
+        print(f"warning        {warning.code}: {warning.message}", file=err)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -529,6 +708,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if args.command == "analyze":
             return _run_analyze(args, out, err)
+        if args.command == "analyze-batch":
+            return _run_analyze_batch(args, out, err)
         if args.command == "fixtures":
             return _run_fixtures(args, out, err)
         if args.command == "status":

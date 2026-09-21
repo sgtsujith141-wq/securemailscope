@@ -1,9 +1,13 @@
-"""Evidence correlation across sessions, hosts and time.
+"""Forensic intelligence across sessions, endpoints and captures (M5).
 
-STATUS: NOT IMPLEMENTED (planned for M5).
+STATUS: IMPLEMENTED.
 
-Will correlate observations that are individually weak -- a STARTTLS offer
-that is never taken up, a host that negotiates strong TLS on one port and
-plaintext on another -- into explainable findings, each retaining the packet
-references of every contributing observation.
+Consumes completed forensic and assessment results and correlates them. It
+never reparses packets, never opens a socket and needs no model: every
+statement it makes is traceable to a packet reference produced by an earlier
+layer.
 """
+
+from .engine import INVESTIGATION_SCHEMA_VERSION, BatchOutcome, analyze_batch
+
+__all__ = ["analyze_batch", "BatchOutcome", "INVESTIGATION_SCHEMA_VERSION"]

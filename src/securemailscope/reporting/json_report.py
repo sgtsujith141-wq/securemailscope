@@ -18,7 +18,13 @@ from typing import Any
 
 from ..models.analysis import AnalysisResult
 
-__all__ = ["result_to_dict", "result_to_json", "write_json_report"]
+__all__ = [
+    "result_to_dict",
+    "result_to_json",
+    "write_json_report",
+    "investigation_to_dict",
+    "write_investigation_report",
+]
 
 
 def result_to_dict(
@@ -102,4 +108,65 @@ def write_json_report(
         include_rule_results=include_rule_results,
     )
     path.write_text(payload + "\n", encoding="utf-8")
+    return path
+
+
+def investigation_to_dict(
+    outcome: Any,
+    *,
+    include_captures: bool = True,
+    include_segments: bool = False,
+    include_protocol_events: bool = False,
+    include_tls_records: bool = False,
+    include_rule_results: bool = True,
+) -> dict[str, Any]:
+    """Serialise a multi-capture investigation (M5).
+
+    The individual capture reports are carried unchanged under ``captures``.
+    The intelligence layer adds to the document; it never replaces a forensic
+    result with a summary of it, so a reader who distrusts a correlation can
+    go and check the sessions it was built from in the same file.
+
+    Segments, protocol events and TLS records default to *off* here purely
+    because a batch multiplies them by the number of captures; every one of
+    them can be turned back on, and nothing else is omitted.
+    """
+    document: dict[str, Any] = {
+        "investigation": outcome.investigation.model_dump(mode="json"),
+    }
+    if include_captures:
+        document["captures"] = [
+            result_to_dict(
+                result,
+                include_segments=include_segments,
+                include_protocol_events=include_protocol_events,
+                include_tls_records=include_tls_records,
+                include_rule_results=include_rule_results,
+            )
+            for result in outcome.results
+        ]
+    return document
+
+
+def write_investigation_report(
+    outcome: Any,
+    destination: Path | str,
+    *,
+    indent: int | None = 2,
+    include_captures: bool = True,
+    include_segments: bool = False,
+    include_protocol_events: bool = False,
+    include_tls_records: bool = False,
+    include_rule_results: bool = True,
+) -> Path:
+    path = Path(destination)
+    document = investigation_to_dict(
+        outcome,
+        include_captures=include_captures,
+        include_segments=include_segments,
+        include_protocol_events=include_protocol_events,
+        include_tls_records=include_tls_records,
+        include_rule_results=include_rule_results,
+    )
+    path.write_text(json.dumps(document, indent=indent) + "\n", encoding="utf-8")
     return path

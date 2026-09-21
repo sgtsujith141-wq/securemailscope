@@ -104,6 +104,13 @@ class PublicKeyInfo(_Frozen):
     )
     curve: str | None = Field(default=None, description="Curve name for EC keys.")
     rsa_public_exponent: int | None = None
+    #: SHA-256 over the DER SubjectPublicKeyInfo. Two certificates carrying
+    #: this same value were issued for the same key pair -- which is what a
+    #: renewal looks like, and what distinguishes a renewal from a rekey.
+    #: ``None`` when the installed library cannot serialise the key.
+    spki_sha256: str | None = Field(
+        default=None, description="SHA-256 of the DER SubjectPublicKeyInfo."
+    )
     supported: bool = Field(
         default=True, description="False when the installed library cannot describe this key."
     )

@@ -417,6 +417,79 @@ present and unchanged; the `assessment` block is new and may be omitted
 entirely. See [scoring-methodology.md](scoring-methodology.md) and
 [security-policy.md](security-policy.md).
 
+## The forensic intelligence layer (M5)
+
+M1-M3 say what was observed. M4 says what it means under a policy. M5 says what
+the observations **across several captures** have in common -- and spends most
+of its effort refusing to answer when the evidence does not support an answer.
+
+The layer consumes completed `AnalysisResult` objects. It **never reparses
+packets**: the single-capture pipeline has already done that, and re-doing it
+would risk two components disagreeing about what a capture contained.
+
+```
+   capture 1 ──┐
+   capture 2 ──┼──> the ordinary single-capture pipeline (unchanged) ──┐
+   capture N ──┘                                                       │
+                                                                       v
+        +------------------ intelligence engine -----------------------+
+        |  fingerprints -> entities -> drift -> correlation            |
+        |                       \-> timeline -> blast radius           |
+        +--------------------------------------------------------------+
+                                      |
+                        Investigation + every capture report, unchanged
+```
+
+### Modules
+
+| Module | Responsibility |
+| --- | --- |
+| `intelligence/fingerprints.py` | Versioned, canonical digests of server-observable cryptography, with explicit completeness. |
+| `intelligence/identity.py` | Endpoint entities and typed relationships. Merges nothing. |
+| `intelligence/drift.py` | Cross-capture comparison, with client-offer context. |
+| `intelligence/correlation.py` | Grouping by shared observation, indexed rather than all-pairs. |
+| `intelligence/timeline.py` | Deterministically ordered events anchored to packets. |
+| `intelligence/blast_radius.py` | Observed-scope counting with stated method. |
+| `intelligence/engine.py` | Batch orchestration, capture de-duplication, assembly. |
+
+### The four decisions that shape it
+
+**An endpoint is the unit of identity, and entities are never merged.** A
+`ServerEntity` is one observed `(ip, port)`. Two entities sharing a certificate
+are linked by a typed relationship, never combined: load balancers, shared
+hosting and SNI-based virtual hosting all make the naive merge wrong.
+
+**A fingerprint is an index, not an identity.** Two sessions with the same
+fingerprint were configured alike. Nothing claims they ran on the same host,
+and completeness metadata records how much of the fingerprint the capture
+actually supplied.
+
+**Absence is not change.** A parameter missing from the second capture is
+`NOT_COMPARABLE`. A server that selected differently for a different client
+offer is `INCONCLUSIVE`.
+
+**Counts are scoped to what was analysed.** Every blast-radius number carries
+"Observed within analyzed captures only".
+
+### Batch semantics
+
+A capture is identified by its **content hash**, so the same file submitted
+twice, or under two names, is analysed once and recorded as a `DUPLICATE`. A
+capture that fails to analyse stays in the inventory with its reason, because
+dropping it would let a reader take the surviving results as covering
+everything they submitted. Output does not depend on argument order.
+
+### Output
+
+`analyze-batch` emits an `Investigation` document alongside every individual
+capture report, unchanged. The intelligence layer adds to the document; it
+never replaces a forensic result with a summary of it.
+
+See [cryptographic-fingerprinting.md](cryptographic-fingerprinting.md),
+[drift-methodology.md](drift-methodology.md),
+[correlation-methodology.md](correlation-methodology.md) and
+[blast-radius-methodology.md](blast-radius-methodology.md).
+
 ## Planned evolution
 
 The TCP layer is the foundation every later milestone stands on, which is why
@@ -431,7 +504,9 @@ M1 spent its effort there. Later stages attach to it without modifying it:
 - **M4 (done)** evaluates 25 evidence-based rules against those observations
   and produces an explainable score, a priority order and remediation guidance,
   all in additive report blocks that never replace the observations.
-- **M5–M6** add cross-session correlation and local ML on top, never replacing
-  what came before.
+- **M5 (done)** correlates completed results across sessions, endpoints and
+  captures: fingerprints, entities, drift, correlation, timeline and blast
+  radius. It reparses nothing and replaces nothing.
+- **M6** adds local ML on top, whose output is always `INFERRED`.
 - **M7–M8** add a local FastAPI adapter and a React UI around the unchanged
   engine.

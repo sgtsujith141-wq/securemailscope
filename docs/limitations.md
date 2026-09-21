@@ -299,7 +299,8 @@ These are milestones, not permanent limits:
 | ~~Certificate parsing and assessment (TLS ≤ 1.2 only)~~ | done in M3–M4 |
 | ~~Risk scoring and explainable findings~~ | done in M4 |
 | ~~Threat prioritisation and remediation guidance~~ | done in M4 |
-| Cross-session evidence correlation | M5 |
+| ~~Cross-session evidence correlation~~ | done in M5 |
+| ~~Cryptographic fingerprinting, drift and blast radius~~ | done in M5 |
 | ML-assisted analysis | M6 |
 | REST API and web interface | M7–M8 |
 
@@ -364,6 +365,55 @@ unlike things.
 
 ---
 
+## 9. Limits of the intelligence layer (M5)
+
+The intelligence layer inherits every limit above -- it can only correlate what
+the forensic layers observed -- and adds some of its own.
+
+### A fingerprint is not an identity
+
+Two servers installed from the same distribution package produce the same
+cryptographic fingerprint on day one. A match means *configured alike*, and
+nothing more. A TLS 1.3 session can never produce a complete fingerprint at
+all, because its Certificate message is encrypted.
+
+### An entity is an endpoint, not a machine
+
+A `ServerEntity` is one observed `(ip, port)`. Whether that is a single host, a
+load-balanced pool or a virtual host is **not observable from a capture**, so
+entity counts are counts of observed network endpoints. Nothing is merged on a
+shared certificate, key, name or configuration; those are reported as typed
+relationships instead.
+
+### Drift only sees what was captured
+
+A server may have changed and changed back between two captures. A difference
+in a negotiated value is attributed to the server only when the two clients
+offered the same thing; otherwise it is `INCONCLUSIVE`, which is a statement
+about the evidence rather than about the server.
+
+### Clocks are not synchronised
+
+Timestamps come from the capturing host's clock. Within one capture their order
+is meaningful. **Across captures taken on different hosts the clocks are
+independent**, and no synchronisation is assumed, measured or corrected for, so
+cross-capture ordering may not reflect real-world chronology. A packet's
+capture timestamp is when the capturing host saw it, not when it was sent.
+
+### Counts are observations, not coverage of an estate
+
+Every blast-radius number covers the analysed captures only. Absence from a
+count is absence of observation -- it is not evidence that a host, user or
+session is unaffected. No business criticality is represented or inferred.
+
+### No intent, ever
+
+A correlation groups shared observations. It establishes no attacker, campaign,
+ownership, administration or common cause, and this tool does not detect
+attacks. A weak configuration is a weak configuration.
+
+---
+
 ## 7. Things this tool will never do
 
 - Connect to a host observed in a capture.
@@ -381,4 +431,9 @@ unlike things.
 - Predict what a score would become after a fix.
 - Present a project-defined weight or band as a validated industry benchmark.
 - Infer attack intent from a weak configuration.
+- Merge two observed endpoints into one because they share a certificate, a
+  key, a name or a configuration.
+- Report a parameter missing from a capture as having changed.
+- Invent a timestamp, or substitute a file modification time for a capture one.
+- Claim that unobserved sessions, hosts or users are affected -- or unaffected.
 - Treat an unavailable observation as either a pass or a finding.

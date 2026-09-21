@@ -24,6 +24,7 @@ __all__ = ["CRYPTOGRAPHY_AVAILABLE", "parse_certificate", "load_pem_certificates
 
 try:  # pragma: no cover - exercised by whichever branch the environment takes
     from cryptography import x509
+    from cryptography.exceptions import UnsupportedAlgorithm
     from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.hazmat.primitives.asymmetric import dsa, ec, ed448, ed25519, rsa
 
@@ -43,15 +44,36 @@ _KEY_USAGE_FIELDS = (
 )
 
 
+def _spki_sha256(key: Any) -> str | None:
+    """SHA-256 over the DER SubjectPublicKeyInfo, or None if unserialisable.
+
+    This identifies the *key pair*, not the certificate. A renewal that keeps
+    the key produces a new certificate fingerprint and the same SPKI
+    fingerprint; a rekey changes both. M5 relies on that distinction, so the
+    value is computed here, from the certificate bytes, rather than being
+    re-derived later from a parsed description.
+    """
+    try:
+        der = key.public_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+    except (ValueError, TypeError, UnsupportedAlgorithm):
+        return None
+    return hashlib.sha256(der).hexdigest()
+
+
 def _public_key_info(certificate: Any) -> PublicKeyInfo:
     """Describe the subject public key without inventing a bit length."""
     key = certificate.public_key()
+    spki = _spki_sha256(key)
     if isinstance(key, rsa.RSAPublicKey):
         numbers = key.public_numbers()
         return PublicKeyInfo(
             algorithm="RSA",
             size_bits=key.key_size,
             rsa_public_exponent=numbers.e,
+            spki_sha256=spki,
             notes=describe_public_key("RSA", key.key_size, None),
         )
     if isinstance(key, ec.EllipticCurvePublicKey):
@@ -60,25 +82,34 @@ def _public_key_info(certificate: Any) -> PublicKeyInfo:
             algorithm="EC",
             size_bits=key.curve.key_size,
             curve=curve,
+            spki_sha256=spki,
             notes=describe_public_key("EC", key.curve.key_size, curve),
         )
     if isinstance(key, ed25519.Ed25519PublicKey):
         return PublicKeyInfo(
-            algorithm="Ed25519", size_bits=None, notes=describe_public_key("Ed25519", None, None)
+            algorithm="Ed25519",
+            size_bits=None,
+            spki_sha256=spki,
+            notes=describe_public_key("Ed25519", None, None),
         )
     if isinstance(key, ed448.Ed448PublicKey):
         return PublicKeyInfo(
-            algorithm="Ed448", size_bits=None, notes=describe_public_key("Ed448", None, None)
+            algorithm="Ed448",
+            size_bits=None,
+            spki_sha256=spki,
+            notes=describe_public_key("Ed448", None, None),
         )
     if isinstance(key, dsa.DSAPublicKey):
         return PublicKeyInfo(
             algorithm="DSA",
             size_bits=key.key_size,
+            spki_sha256=spki,
             notes=describe_public_key("DSA", key.key_size, None),
         )
     return PublicKeyInfo(
         algorithm="UNKNOWN",
         size_bits=None,
+        spki_sha256=spki,
         supported=False,
         notes=(
             "The installed cryptography build does not expose a description for this "

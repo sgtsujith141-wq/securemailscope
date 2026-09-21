@@ -346,13 +346,95 @@ stating their status and the milestone that owns them.
 | F19.5 | No fictitious before-and-after scores | `assessment/` | M4 | No projected score exists in any model | Code review; `models/assessment.py` | **IMPLEMENTED** |
 | F19.6 | Generated policy documents cannot drift | `scripts/generate_policy_docs.py` | M4 | Committed files match the generator | `test_assessment.py::test_the_generated_policy_documents_are_current` | **IMPLEMENTED** |
 
+## F20 — Multi-capture analysis (M5)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F20.1 | Analyse several captures together | `intelligence/engine.py` | M5 | `analyze-batch` reuses the single-capture pipeline | `test_intelligence.py::test_cli_batch_analysis_end_to_end` | **IMPLEMENTED** |
+| F20.2 | Capture identity and evidence preserved | `intelligence/engine.py` | M5 | Batched results identical to standalone ones | `test_intelligence.py::test_capture_evidence_survives_the_batch` | **IMPLEMENTED** |
+| F20.3 | Duplicate captures detected by content hash | `intelligence/engine.py` | M5 | Same bytes under two names analysed once | `test_intelligence.py::test_a_duplicate_capture_is_analysed_once` | **IMPLEMENTED** |
+| F20.4 | Failed captures never disappear | `intelligence/engine.py` | M5 | Recorded as `FAILED` with a reason and a warning | `test_intelligence.py::test_a_failed_capture_stays_in_the_inventory` | **IMPLEMENTED** |
+| F20.5 | Empty captures handled explicitly | `intelligence/engine.py` | M5 | Recorded as `EMPTY` with a warning | Fixture manifests | **IMPLEMENTED** |
+| F20.6 | Deterministic, order-independent output | `intelligence/engine.py` | M5 | Reversing the arguments changes nothing | `test_intelligence.py::test_results_do_not_depend_on_argument_order` | **IMPLEMENTED** |
+| F20.7 | Stable investigation identifiers | `intelligence/engine.py` | M5 | Derived from the set of capture hashes | `test_intelligence.py::test_results_do_not_depend_on_argument_order` | **IMPLEMENTED** |
+| F20.8 | Configurable batch resource limits | `config.py` | M5 | Captures, sessions, fingerprints, correlations, timeline events | `test_intelligence.py::test_the_capture_limit_warns_rather_than_dropping_silently` | **IMPLEMENTED** |
+| F20.9 | Limits warn rather than truncate silently | `intelligence/engine.py` | M5 | Every limit emits an `IntelligenceWarning` | `test_intelligence.py::test_the_timeline_limit_warns_rather_than_truncating_silently` | **IMPLEMENTED** |
+| F20.10 | No database server required | whole engine | M5 | Files in, JSON out | Whole suite | **IMPLEMENTED** |
+
+## F21 — Cryptographic fingerprints (M5)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F21.1 | Versioned fingerprint algorithm | `intelligence/fingerprints.py` | M5 | `smsfp/1` in the canonical form and the id | `test_intelligence.py::test_canonical_form_is_ordered_and_versioned` | **IMPLEMENTED** |
+| F21.2 | Deterministic canonicalisation | `intelligence/fingerprints.py` | M5 | Fixed component order; digest recomputable from the report | `test_intelligence.py::test_canonical_form_is_recomputable_from_the_report` | **IMPLEMENTED** |
+| F21.3 | Component-level explanation stored with the hash | `intelligence/fingerprints.py` | M5 | Every component carries source, presence and explanation | `test_intelligence.py::test_a_missing_server_hello_cannot_produce_a_usable_fingerprint` | **IMPLEMENTED** |
+| F21.4 | Client offers never become server components | `intelligence/fingerprints.py` | M5 | No component is `CLIENT_OFFERED` | `test_intelligence.py::test_client_offers_never_become_server_components` | **IMPLEMENTED** |
+| F21.5 | Incidental material excluded | `intelligence/fingerprints.py` | M5 | No port, timestamp or session id contributes | `test_intelligence.py::test_fingerprints_exclude_incidental_session_material` | **IMPLEMENTED** |
+| F21.6 | Explicit completeness metadata | `intelligence/fingerprints.py` | M5 | `COMPLETE` / `PARTIAL` / `INSUFFICIENT` plus missing components | `test_intelligence.py::test_absent_components_are_written_explicitly` | **IMPLEMENTED** |
+| F21.7 | Missing information cannot fabricate completeness | `intelligence/fingerprints.py` | M5 | Absences written as `<ABSENT>`; TLS 1.3 never `COMPLETE` | `test_intelligence.py::test_two_tls13_sessions_never_reach_an_exact_match` | **IMPLEMENTED** |
+| F21.8 | Four comparison outcomes | `intelligence/fingerprints.py` | M5 | Exact, partial, conflicting, insufficient | `test_intelligence.py::test_conflicting_components_are_named` | **IMPLEMENTED** |
+| F21.9 | Partial agreement is not identity | `intelligence/fingerprints.py` | M5 | Carries the limitation; never `EXACT_MATCH` | `test_intelligence.py::test_two_tls13_sessions_never_reach_an_exact_match` | **IMPLEMENTED** |
+| F21.10 | Configuration fingerprint excludes the certificate | `intelligence/fingerprints.py` | M5 | A renewal does not change it | `test_intelligence.py::test_configuration_fingerprint_ignores_the_certificate` | **IMPLEMENTED** |
+| F21.11 | SubjectPublicKeyInfo fingerprint | `certificates/parse.py` | M5 | `spki_sha256` over the DER SPKI | `test_intelligence.py::test_a_renewal_is_distinguishable_from_a_rekey` | **IMPLEMENTED** |
+
+## F22 — Server identity resolution (M5)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F22.1 | Entities are observed `(ip, port)` endpoints | `intelligence/identity.py` | M5 | Source ports do not multiply entities | `test_intelligence.py::test_entities_are_endpoints_not_connections` | **IMPLEMENTED** |
+| F22.2 | Shared certificate never merges endpoints | `intelligence/identity.py` | M5 | Two entities, one typed relationship | `test_intelligence.py::test_a_shared_certificate_never_merges_endpoints` | **IMPLEMENTED** |
+| F22.3 | Same IP is not the same application | `intelligence/identity.py` | M5 | Two ports are two entities | `test_intelligence.py::test_one_address_with_two_services_is_two_entities` | **IMPLEMENTED** |
+| F22.4 | Seven typed identity relations | `models/intelligence.py` | M5 | Each names the property matched | `test_intelligence.py::test_identity_relations_match_expectation` | **IMPLEMENTED** |
+| F22.5 | Every relationship carries evidence and limitations | `intelligence/identity.py` | M5 | Basis, supporting sessions, limitations | `test_intelligence.py::test_a_shared_certificate_never_merges_endpoints` | **IMPLEMENTED** |
+| F22.6 | Weak evidence never merges entities | `intelligence/identity.py` | M5 | Identical config alone yields only `CONFIGURATION_MATCH` | `test_intelligence.py::test_identical_configuration_alone_is_not_a_relation_claim` | **IMPLEMENTED** |
+| F22.7 | Stable, order-independent entity ids | `intelligence/identity.py` | M5 | Derived from the endpoint alone | `test_intelligence.py::test_entity_ids_are_stable_and_order_independent` | **IMPLEMENTED** |
+
+## F23 — Cryptographic drift (M5)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F23.1 | Four drift statuses | `models/intelligence.py` | M5 | Observed / unchanged / inconclusive / not comparable | `test_intelligence.py::test_expected_drift_is_classified_correctly` | **IMPLEMENTED** |
+| F23.2 | Missing evidence is never drift | `intelligence/drift.py` | M5 | A parameter absent in one capture is `NOT_COMPARABLE` | `test_intelligence.py::test_changes_the_evidence_does_not_support_are_absent` | **IMPLEMENTED** |
+| F23.3 | Different client offers handled conservatively | `intelligence/drift.py` | M5 | `INCONCLUSIVE` with the offers recorded | `test_intelligence.py::test_a_different_client_offer_blocks_attribution` | **IMPLEMENTED** |
+| F23.4 | Identical offers permit attribution | `intelligence/drift.py` | M5 | `OBSERVED_CHANGE` when the offer is constant | `test_intelligence.py::test_an_identical_client_offer_permits_attribution` | **IMPLEMENTED** |
+| F23.5 | Certificate drift ignores the client offer | `intelligence/drift.py` | M5 | `client_offers_comparable` is null there | `test_intelligence.py::test_certificate_drift_does_not_consult_the_client_offer` | **IMPLEMENTED** |
+| F23.6 | Renewal distinguishable from rekey | `intelligence/drift.py` | M5 | Certificate changes, public key does not | `test_intelligence.py::test_a_renewal_is_distinguishable_from_a_rekey` | **IMPLEMENTED** |
+| F23.7 | Chronology from capture timestamps | `intelligence/drift.py` | M5 | Argument order is irrelevant | `test_intelligence.py::test_drift_follows_capture_time_not_argument_order` | **IMPLEMENTED** |
+| F23.8 | Score drift only across compatible policies | `intelligence/drift.py` | M5 | Differing policy fingerprints give `NOT_COMPARABLE` | `test_intelligence.py::test_score_drift_across_different_policies_is_not_comparable` | **IMPLEMENTED** |
+| F23.9 | A withheld score is reported as incomparable | `intelligence/drift.py` | M5 | Not silently omitted | `test_intelligence.py::test_a_withheld_score_is_reported_as_incomparable` | **IMPLEMENTED** |
+| F23.10 | Score drift kept separate from cryptographic drift | `intelligence/drift.py` | M5 | Distinct kind, with its own limitations | `test_intelligence.py::test_every_drift_event_explains_and_qualifies_itself` | **IMPLEMENTED** |
+
+## F24 — Correlation, timeline and blast radius (M5)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F24.1 | Eight correlation types over shared observations | `intelligence/correlation.py` | M5 | Each names its shared property and value | `test_intelligence.py::test_every_correlation_names_its_basis_and_its_limits` | **IMPLEMENTED** |
+| F24.2 | Stable, order-independent correlation ids | `intelligence/correlation.py` | M5 | Derived from type and basis only | `test_intelligence.py::test_correlation_ids_are_stable_and_order_independent` | **IMPLEMENTED** |
+| F24.3 | Evidence de-duplicated within a correlation | `intelligence/correlation.py` | M5 | Unique by packet number and timestamp | `test_intelligence.py::test_evidence_is_deduplicated_within_a_correlation` | **IMPLEMENTED** |
+| F24.4 | No intent, ownership or topology inferred | `intelligence/correlation.py` | M5 | No accusatory language anywhere | `test_intelligence.py::test_correlations_never_claim_intent_or_ownership` | **IMPLEMENTED** |
+| F24.5 | Mixed policy versions disclosed | `intelligence/correlation.py` | M5 | `policy_versions` plus an extra limitation | `test_intelligence.py::test_mixed_policy_versions_are_disclosed` | **IMPLEMENTED** |
+| F24.6 | Bounded algorithms, no all-pairs comparison | `intelligence/correlation.py` | M5 | Grouping by index on the shared value | Code review; `correlation.py` | **IMPLEMENTED** |
+| F24.7 | Deterministic timeline ordering | `intelligence/timeline.py` | M5 | Dense indices; stable for equal timestamps | `test_intelligence.py::test_timeline_ordering_is_stable_for_equal_timestamps` | **IMPLEMENTED** |
+| F24.8 | Timeline events carry packet provenance | `intelligence/timeline.py` | M5 | Every reference in range with a real timestamp | `test_intelligence.py::test_timeline_events_carry_real_packet_provenance` | **IMPLEMENTED** |
+| F24.9 | Derived events name their sources | `intelligence/engine.py` | M5 | `derived_from` populated; marked `INFERRED` | `test_intelligence.py::test_derived_timeline_events_name_their_sources` | **IMPLEMENTED** |
+| F24.10 | No invented timestamps | `intelligence/timeline.py` | M5 | Unknown timing yields null, sorted last | `test_intelligence.py::test_no_timestamp_is_invented` | **IMPLEMENTED** |
+| F24.11 | Clock limitations documented in the report | `intelligence/timeline.py` | M5 | Carried in `Investigation.limitations` | `test_intelligence.py::test_clock_limitations_are_stated` | **IMPLEMENTED** |
+| F24.12 | Blast radius counts endpoints conservatively | `intelligence/blast_radius.py` | M5 | By `(ip, port)`, not by connection | `test_intelligence.py::test_blast_radius_counts_one_endpoint_per_service` | **IMPLEMENTED** |
+| F24.13 | Duplicate captures do not inflate counts | `intelligence/blast_radius.py` | M5 | Counted by content hash | `test_intelligence.py::test_blast_radius_never_double_counts_a_duplicate_capture` | **IMPLEMENTED** |
+| F24.14 | Counting method and scope stated | `intelligence/blast_radius.py` | M5 | Verbatim scope statement on every result | `test_intelligence.py::test_blast_radius_states_its_scope_and_method` | **IMPLEMENTED** |
+| F24.15 | No enterprise-wide claim | `intelligence/blast_radius.py` | M5 | No such language anywhere | `test_intelligence.py::test_blast_radius_claims_nothing_about_the_wider_estate` | **IMPLEMENTED** |
+| F24.16 | Business criticality never invented | `intelligence/blast_radius.py` | M5 | Not represented at all | `test_intelligence.py::test_blast_radius_states_its_scope_and_method` | **IMPLEMENTED** |
+| F24.17 | Additive investigation output contract | `reporting/json_report.py` | M5 | Nine required blocks; capture reports unchanged | `test_intelligence.py::test_individual_capture_reports_are_preserved_unchanged` | **IMPLEMENTED** |
+| F24.18 | No credential material in an investigation | whole engine | M5 | M2 redaction holds through the new layer | `test_intelligence.py::test_no_credential_material_reaches_an_investigation` | **IMPLEMENTED** |
+| F24.19 | The intelligence layer opens no socket | whole engine | M5 | Passive, like every layer beneath it | `test_intelligence.py::test_the_engine_opens_no_socket` | **IMPLEMENTED** |
+
 ## F8 — Assessment, correlation, ML, reporting, UI
 
 | ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
 |---|---|---|---|---|---|---|
 | F8.1 | Explainable security findings | `assessment/` | M4 | Every finding cites its observations and their statuses | `test_assessment.py::test_every_finding_cites_a_real_packet` | **IMPLEMENTED** |
 | F8.2 | Posture scoring | `assessment/` | M4 | Score auditable back to packets | `test_assessment.py::test_score_follows_the_published_formula` | **IMPLEMENTED** |
-| F8.3 | Evidence-based correlation | `intelligence/` | M5 | Multi-session findings retain all contributing refs | — | **NOT IMPLEMENTED** |
+| F8.3 | Evidence-based correlation | `intelligence/` | M5 | Multi-session findings retain all contributing refs | `test_intelligence.py::test_every_correlation_names_its_basis_and_its_limits` | **IMPLEMENTED** |
 | F8.4 | ML-assisted analysis | `ml/` | M6 | Local scikit-learn; output always `INFERRED` | — | **NOT IMPLEMENTED** |
 | F8.5 | Forensic reports | `reporting/` | M1 / M7 | JSON implemented (schema 1.3.0, assessment blocks included). PDF and HTML reports belong to M7 | `test_report.py`, `test_assessment.py::test_schema_is_additive_over_m1_to_m3` | **PARTIAL** |
 | F8.6 | Local SQLite persistence | `backend/` | M7 | — | — | **NOT IMPLEMENTED** |
@@ -382,28 +464,28 @@ stating their status and the milestone that owns them.
 
 ## Summary
 
-| Status | Count | Change since M3 |
+| Status | Count | Change since M4 |
 |---|---|---|
-| IMPLEMENTED | 235 | +37 |
+| IMPLEMENTED | 293 | +58 |
 | PARTIAL | 3 | 0 |
-| NOT IMPLEMENTED | 14 | -2 |
-| **Total requirements tracked** | **252** | +35 |
+| NOT IMPLEMENTED | 13 | -1 |
+| **Total requirements tracked** | **309** | +57 |
 
-As of M4 the implemented set covers capture ingestion, TCP reconstruction, the
-email protocol layer, the TLS and certificate layer, and the assessment layer:
-25 evidence-based security rules across five categories, an explainable posture
-score with published arithmetic, deterministic threat prioritisation and a
-remediation catalogue.
+As of M5 the implemented set covers capture ingestion, TCP reconstruction, the
+email protocol layer, the TLS and certificate layer, the assessment layer, and
+the forensic intelligence layer: multi-capture batch analysis, versioned
+cryptographic fingerprints, endpoint entity resolution, cross-capture drift,
+cross-session correlation, an evidence timeline and observed-scope blast radius.
 
-**Still not claimed anywhere:** evidence correlation across sessions (F8.3),
-ML-assisted analysis (F8.4), SQLite persistence and the FastAPI backend
-(F8.6–F8.7), the React frontend (F8.8), PDF and HTML reports (F8.5, M7), and
-revocation checking (F14.25, permanently out of scope).
+**Still not claimed anywhere:** ML-assisted analysis (F8.4), SQLite persistence
+and the FastAPI backend (F8.6-F8.7), the React frontend (F8.8), PDF and HTML
+reports (F8.5, M7), and revocation checking (F14.25, permanently out of scope).
 
-**Constants in every report M4 produces:**
+**Constants in every report M5 produces:**
 `handshake_analyzed = false`, `handshakes_cryptographically_verified = 0`,
 `revocation_checks_performed = 0`.
 
-**What the posture score is not:** a project-defined analytical metric over one
-capture, not an independently validated measure of enterprise-wide security.
-See [scoring-methodology.md](scoring-methodology.md).
+**What the intelligence layer does not claim:** no attacker, campaign, intent,
+ownership or network topology; no identity from a fingerprint match; no
+coverage beyond the analysed captures. See
+[limitations.md](limitations.md#9-limits-of-the-intelligence-layer-m5).
