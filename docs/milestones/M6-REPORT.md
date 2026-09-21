@@ -4,6 +4,7 @@
 - **Date:** 2026-09-21
 - **Milestone:** M6 — Machine learning, anomaly detection, risk classification and scientific validation
 - **Baseline (M5):** `3ee7c891efc63d5fff6edb8c48e766798837e976`
+- **Commit:** `0df1b2060c31ae8799175992fb0359af7f628e76`
 - **Result:** **COMPLETE, with supervised classification reported PARTIAL** — 17 of 18 acceptance gates pass outright; gate 9 is met in its second form ("or its limitations are explicitly recorded").
 
 ---
