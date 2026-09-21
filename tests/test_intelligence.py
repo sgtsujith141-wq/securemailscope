@@ -1106,7 +1106,7 @@ def test_individual_capture_reports_are_preserved_unchanged(
         for key in ("capture", "sessions", "tls", "inventory", "assessment"):
             assert key in capture, f"M1-M4 block {key} was dropped in batch mode"
         assert capture["tls"][0]["cipher_suite"]["selected"] is not None
-        assert capture["tool"]["report_schema_version"] == "1.3.0"
+        assert capture["tool"]["report_schema_version"] == "1.4.0"
 
 
 def test_cli_batch_analysis_end_to_end(
@@ -1200,3 +1200,90 @@ def test_a_selection_is_never_dated_before_the_message_that_made_it(
                 "the negotiated parameters were dated before the ServerHello"
             )
     assert checked, "no session had both events, so nothing was checked"
+
+
+# ---------------------------------------------------------------------------
+# M5 corrective audit: correlation identifier scope
+# ---------------------------------------------------------------------------
+def test_disjoint_groups_of_the_same_type_do_not_share_an_id(
+    group_dir: Path, groups: dict
+) -> None:
+    """Regression: correlation ids must be scoped to their members.
+
+    Derived from type and basis alone, two investigations that each contain
+    sessions failing ``TLS-PROTO-001`` produced the *same* identifier for two
+    entirely disjoint groups. Anyone diffing the reports would have read them
+    as one correlation that had grown.
+    """
+    first = analyze_batch(
+        paths_for(group_dir, groups["Q_same_finding_across_endpoints"])
+    ).investigation
+    second = analyze_batch(
+        paths_for(group_dir, groups["B_version_downgrade"])
+    ).investigation
+
+    def by_rule(investigation: Investigation) -> dict[str, tuple[str, frozenset[str]]]:
+        return {
+            item.relationship_basis: (
+                item.correlation_id,
+                frozenset(item.related_session_ids),
+            )
+            for item in investigation.session_correlations
+            if item.correlation_type.value == "SHARED_RULE_FAILURE"
+        }
+
+    left, right = by_rule(first), by_rule(second)
+    shared_bases = set(left) & set(right)
+    assert shared_bases, "the fixtures must share at least one failing rule"
+    for basis in shared_bases:
+        left_id, left_members = left[basis]
+        right_id, right_members = right[basis]
+        assert left_members.isdisjoint(right_members), (
+            "precondition: the two groups must have no session in common"
+        )
+        assert left_id != right_id, (
+            f"{basis}: disjoint correlations share the identifier {left_id}"
+        )
+
+
+def test_the_same_grouping_keeps_its_id_across_runs(
+    group_dir: Path, groups: dict
+) -> None:
+    """The property scoping was added to preserve: identical groupings diff."""
+    paths = paths_for(group_dir, groups["Q_same_finding_across_endpoints"])
+    first = analyze_batch(paths).investigation
+    second = analyze_batch(list(reversed(paths))).investigation
+    assert [item.correlation_id for item in first.session_correlations] == [
+        item.correlation_id for item in second.session_correlations
+    ]
+
+
+def test_a_correlation_id_changes_when_its_membership_changes(
+    group_dir: Path, groups: dict
+) -> None:
+    """Adding a session to a group makes it a different correlation."""
+    from securemailscope.intelligence.engine import _build_investigation
+
+    two = paths_for(group_dir, groups["Q_same_finding_across_endpoints"])
+    results = [analyze_capture(path) for path in two]
+    smaller = _build_investigation(results, [], [], AnalysisConfig()).investigation
+
+    extra = paths_for(group_dir, groups["K_duplicate_capture"])[:1]
+    larger = _build_investigation(
+        [*results, analyze_capture(extra[0])], [], [], AnalysisConfig()
+    ).investigation
+
+    def ids_by_basis(investigation: Investigation) -> dict[str, str]:
+        return {
+            item.relationship_basis: item.correlation_id
+            for item in investigation.session_correlations
+            if item.correlation_type.value == "SHARED_RULE_FAILURE"
+        }
+
+    before, after = ids_by_basis(smaller), ids_by_basis(larger)
+    grown = [
+        basis
+        for basis in set(before) & set(after)
+        if before[basis] != after[basis]
+    ]
+    assert grown, "a correlation that gained a member must get a new identifier"

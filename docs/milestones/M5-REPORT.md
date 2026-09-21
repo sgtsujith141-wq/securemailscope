@@ -128,7 +128,26 @@ skips.
 
 ## 5. Fixture inventory
 
-15 groups, each a small set of captures isolating one behaviour, with
+**15 capture-based groups.** Their letters are taken from the directive's
+scenario list and are therefore *not contiguous*: the inventory is A, B, C, D,
+E, F, G, H, I, K, L, M, N, Q, T. Writing "15 groups (A-T)" in an earlier draft
+of this report implied a contiguous range of twenty and was corrected during
+the M6 baseline audit.
+
+Five directive scenarios are covered by tests over existing groups rather than
+by dedicated capture sets, which is why their letters are absent:
+
+| Scenario | Covered by |
+|---|---|
+| J — two sessions with the same finding | group Q, which does exactly this across two endpoints |
+| O — assessment policy changed between captures | re-analysing a group's captures under a different policy (`test_score_drift_across_different_policies_is_not_comparable`) |
+| P — different assessment coverage | re-analysing under a different coverage floor (`test_a_withheld_score_is_reported_as_incomparable`) |
+| R — incomplete evidence preventing correlation | group I, whose second capture holds only a ClientHello |
+| S — same-timestamp timeline events | group A, where the whole server flight shares one packet (`test_timeline_ordering_is_stable_for_equal_timestamps`) |
+
+No fixtures were manufactured to make the count reach twenty.
+
+Each group is a small set of captures isolating one behaviour, with
 hand-derived expectations including the **negative** half.
 
 | Group | Scenario | Verifies |
@@ -261,8 +280,11 @@ Fixture `Q_same_finding_across_endpoints`:
 }
 ```
 
-The id is derived from the type and basis only, so it is stable across runs and
-independent of argument order. `policy_versions` is listed because findings
+The id covers the type, the basis **and the member identities**, so it is
+stable across runs and independent of argument order while still being
+different for a different grouping. (An earlier version derived it from type
+and basis alone; see the correction note below.) `policy_versions` is listed
+because findings
 correlated across captures may have been judged by different criteria; where
 they are, an extra limitation says so.
 
@@ -332,6 +354,28 @@ two names: every count is 1.
 `captures`, which carries **every individual capture report unchanged** at
 schema 1.3.0. A test asserts the M1–M4 blocks survive. No existing field
 changed meaning. No PDF, HTML or frontend work was done.
+
+---
+
+## 12a. Correction issued during the M6 baseline audit
+
+This report originally stated that correlation identifiers are "derived from
+the type and basis only, so the same grouping in two investigations carries the
+same identifier". The first half was accurate and the conclusion was not.
+
+Type and basis alone do not identify a grouping. Two investigations that each
+contain sessions failing `TLS-PROTO-001` both produced
+`corr-5272c9972ccf` for `SHARED_RULE_FAILURE` / `rule_id=TLS-KEX-001`, with
+**entirely disjoint member sets**. Anyone diffing the two reports would have
+read them as one correlation that had grown.
+
+The identifier now covers the type, the basis and the sorted member session and
+capture identities. The property the original design was reaching for — the
+same grouping analysed twice diffs cleanly — is preserved, and a different
+grouping is now a different correlation. Three regression tests were added:
+`test_disjoint_groups_of_the_same_type_do_not_share_an_id`,
+`test_the_same_grouping_keeps_its_id_across_runs` and
+`test_a_correlation_id_changes_when_its_membership_changes`.
 
 ---
 

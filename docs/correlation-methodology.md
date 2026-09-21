@@ -34,10 +34,17 @@ A test asserts that no correlation's text uses "attacker", "adversary",
 
 ## Identifiers
 
-`correlation_id` is derived from the correlation's **type and shared value**
-only — not from which sessions happened to be in the batch, and not from
-argument order. The same grouping in two investigations carries the same
-identifier, so two reports can be diffed.
+`correlation_id` covers the correlation's **type, shared value and member
+identities** — the sorted session and capture ids — and nothing else. It does
+not depend on argument order.
+
+Type and basis alone are not enough, and an earlier implementation that used
+only those was wrong in a way worth recording. Two investigations that each
+contained sessions failing `TLS-PROTO-001` produced the same identifier for two
+entirely disjoint groups, so a diff between the reports would have read as one
+correlation that had grown. Including the members keeps the property that
+matters — the same grouping analysed twice diffs cleanly — while making a
+different grouping a different correlation.
 
 ## Evidence de-duplication
 

@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .assessment import AssessmentResult
 from .capture import CaptureMetadata
 from .evidence import AnalysisWarning
+from .ml import MLAnalysis
 from .protocol import ProtocolInventory, ProtocolSessionAnalysis
 from .tcp import TCPSession
 from .tls import TLSInventory, TLSSessionAnalysis
@@ -36,12 +37,19 @@ __all__ = [
 #: observations are reported unchanged alongside the assessment rather than
 #: being replaced by it.
 #:
+#: 1.4.0 (M6) adds the top-level ``ml`` object carrying anomaly results,
+#: risk classification, model metadata and ML warnings. Additive and
+#: **removable**: every forensic and assessment result is complete without it,
+#: no ML output enters a SecurityFinding, and a report produced with the ML
+#: layer disabled differs from one produced with it only by the absence of
+#: this block.
+#:
 #: 1.2.0 (M3) adds the top-level ``tls`` array and ``tls_inventory`` object,
 #: adds optional M3 fields to ``TLSRecordObservation``, and adds further
 #: ``stage_status`` members. Still backward compatible: every 1.0.0 and 1.1.0
 #: field keeps its name, type and meaning, and the M1 TCP and M2 protocol
 #: models are unchanged. An older consumer can ignore the new keys.
-REPORT_SCHEMA_VERSION = "1.3.0"
+REPORT_SCHEMA_VERSION = "1.4.0"
 
 
 class AnalysisStage(StrEnum):
@@ -104,7 +112,7 @@ STAGE_STATUS: dict[AnalysisStage, str] = {
     # across sessions and hosts, which is M5.
     AnalysisStage.RISK_ASSESSMENT: "PARTIAL",
     AnalysisStage.EVIDENCE_CORRELATION: "NOT_IMPLEMENTED",
-    AnalysisStage.ML_ANALYSIS: "NOT_IMPLEMENTED",
+    AnalysisStage.ML_ANALYSIS: "IMPLEMENTED",
 }
 
 
@@ -202,6 +210,16 @@ class AnalysisResult(_Frozen):
             "Security assessment of the observations above (M4). Present when "
             "assessment is enabled. The forensic evidence is reported unchanged "
             "alongside it, never replaced by it."
+        ),
+    )
+
+    ml: MLAnalysis | None = Field(
+        default=None,
+        description=(
+            "Machine-learning inferences (M6). Additive and removable: "
+            "everything above is complete without it, no ML output enters a "
+            "SecurityFinding or changes a score, and each result says on its "
+            "face that a model produced it."
         ),
     )
 

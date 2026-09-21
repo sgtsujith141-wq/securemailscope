@@ -36,7 +36,7 @@ __all__ = ["SyntheticCA", "IssuedCertificate", "CAPTURE_EPOCH"]
 #: "not yet valid at capture time" are stable facts rather than clock-dependent.
 CAPTURE_EPOCH = datetime.datetime(2026, 6, 1, 12, 0, 0, tzinfo=datetime.UTC)
 
-KeyKind = Literal["ec256", "ec384", "rsa2048", "ed25519"]
+KeyKind = Literal["ec256", "ec384", "rsa1024", "rsa2048", "ed25519"]
 
 
 def _make_key(kind: KeyKind) -> Any:
@@ -44,6 +44,14 @@ def _make_key(kind: KeyKind) -> Any:
         return ec.generate_private_key(ec.SECP256R1())
     if kind == "ec384":
         return ec.generate_private_key(ec.SECP384R1())
+    if kind == "rsa1024":
+        # Deliberately below the policy minimum. Generated only for synthetic
+        # fixtures that need a weak key to be observable; never used to
+        # protect anything.
+        return rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=1024,  # noqa: S505 - weak on purpose, never used to protect anything
+        )
     if kind == "rsa2048":
         return rsa.generate_private_key(public_exponent=65537, key_size=2048)
     if kind == "ed25519":

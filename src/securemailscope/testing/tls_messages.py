@@ -35,6 +35,7 @@ __all__ = [
 ]
 
 TLS10: Final = 0x0301
+TLS11: Final = 0x0302
 TLS12: Final = 0x0303
 TLS13: Final = 0x0304
 

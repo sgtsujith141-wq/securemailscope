@@ -280,6 +280,62 @@ implementation rather than the expectation:
 A third defect was found by a test rather than a fixture: drift-derived
 timeline events carried a timestamp with no nanosecond value behind it.
 
+## The machine-learning layer (M6)
+
+ML tests are written against **properties that must hold**, not against a
+score. Expected metrics are computed independently: the metric functions are
+checked against hand-worked confusion matrices, never against numbers read back
+out of the model's own evaluation record.
+
+A model that scored well by memorising its training servers, or by treating a
+truncated capture as suspicious, would pass a naive accuracy assertion and fail
+every test below.
+
+### Leakage controls, each with a test
+
+| Control | Test |
+|---|---|
+| Split before fitting, grouped by server | `test_splitting_is_group_aware` |
+| No certificate spans two partitions | `test_no_certificate_spans_two_partitions` |
+| A server's sessions stay together | `test_duplicate_sessions_of_one_server_stay_together` |
+| Whole families withheld | `test_family_holdout_withholds_whole_families` |
+| No identity, hash or id in the features | `test_prohibited_identifiers_are_absent_from_features` |
+| No M4 output in the features | `test_the_dataset_is_built_with_the_assessment_layer_off` |
+| The label is not recoverable from the family | `test_no_family_is_a_proxy_for_the_label` |
+| The label genuinely differs from the session | `test_labels_are_not_derived_from_the_assessment_engine` |
+
+### Model safety
+
+Version mismatch, feature-schema mismatch, a tampered artifact and a manifest
+pointing outside the model directory are each asserted to be **refusals**, and
+a rejected model is asserted not to fail the analysis.
+
+### Metric arithmetic, computed by hand
+
+`test_binary_metrics_match_a_hand_worked_matrix` and
+`test_multiclass_metrics_match_a_hand_worked_matrix` work a confusion matrix
+out on paper in the docstring and assert each value.
+`test_undefined_metrics_are_reported_as_undefined_not_zero` asserts that a
+0/0 precision is `None` with a reason, not `0.0` -- the difference between
+"predicted nothing" and "got everything wrong".
+
+### What hand-derivation caught
+
+Two defects, both found because the expectation was worked out first:
+
+1. **The dataset was not byte-reproducible.** 320 of 608 captures differed
+   between runs by a byte or two. The cause is legitimate -- the synthetic
+   authority mints a fresh key per certificate and ECDSA signatures vary in DER
+   length -- but the original digest hashed capture bytes and so claimed a
+   reproducibility the dataset did not have. The digest now covers the
+   dataset's *content*, and the byte-level variation is measured by
+   `capture_size_profile` rather than hidden.
+2. **`--no-ml` omitted the block entirely** instead of reporting `DISABLED`,
+   leaving a reader to work out whether ML had found nothing or never run.
+
+A third came from a benchmark rather than a test: the model was being reloaded
+per capture, making analysis seventeen times slower.
+
 ## Test files
 
 | File | Scope |
@@ -299,6 +355,7 @@ timeline events carried a timestamp with no nanosecond value behind it.
 | `test_tls_validation.py` | Chain and hostname verification under different configurations, capture-time dates, TLS 1.3 limits, bounds, no-socket guarantee |
 | `test_assessment.py` | M4: manifest-driven rule outcomes, findings and scores; evidence linkage; finding identifiers; scoring and coverage arithmetic; prioritisation; remediation mapping; duplicate suppression; thirteen false-positive cases; schema compatibility; redaction; CLI; determinism; generated-document freshness |
 | `test_intelligence.py` | M5: fingerprint determinism, canonicalisation and versioning; partial fingerprints; entity resolution; shared-certificate ambiguity; drift classification and client-offer context; correlation and stable ids; timeline ordering and packet provenance; blast-radius arithmetic; capture de-duplication; argument-order independence; policy compatibility; resource limits; redaction; batch CLI |
+| `test_ml.py` | M6: dataset reproducibility, feature determinism and missingness, TLS 1.3 behaviour, group-aware splitting, leakage prevention, training reproducibility, baseline comparison, anomaly detection and negative controls, metric arithmetic, threshold selection, abstention, model availability/version/schema/tampering, evidence provenance, privacy, no network, analyzer-without-ML, CLI, determinism |
 | `test_tshark_crosscheck.py` | Cross-validation against an independent dissector (optional; executed and passing against TShark 4.6.8) |
 
 ## What "verified" means here

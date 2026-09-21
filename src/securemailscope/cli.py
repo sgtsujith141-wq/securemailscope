@@ -94,6 +94,20 @@ def build_parser() -> argparse.ArgumentParser:
         "policy. The observations themselves are reported unchanged either way.",
     )
     assessment.add_argument(
+        "--no-ml",
+        action="store_true",
+        help="Skip the machine-learning layer. The forensic and assessment "
+        "results are complete either way; this only removes the 'ml' block.",
+    )
+    assessment.add_argument(
+        "--model-directory",
+        type=Path,
+        default=None,
+        metavar="DIR",
+        help="Load model artifacts from this directory instead of the packaged "
+        "one. Artifacts are integrity-checked and version-checked either way.",
+    )
+    assessment.add_argument(
         "--no-assessment",
         action="store_true",
         help="Skip the assessment layer and report forensic observations only.",
@@ -228,6 +242,7 @@ def build_parser() -> argparse.ArgumentParser:
     batch.add_argument("--trust-store", type=Path, default=None)
     batch.add_argument("--expected-server-identity", default=None)
     batch.add_argument("--no-assessment", action="store_true")
+    batch.add_argument("--no-ml", action="store_true")
     batch.add_argument(
         "--quiet", action="store_true", help="Suppress the human-readable summary on stderr."
     )
@@ -284,6 +299,10 @@ def _config_from_args(args: argparse.Namespace) -> AnalysisConfig:
     }
     if getattr(args, "no_assessment", False):
         overrides["assess_security"] = False
+    if getattr(args, "no_ml", False):
+        overrides["enable_ml"] = False
+    if getattr(args, "model_directory", None) is not None:
+        overrides["model_directory"] = str(args.model_directory)
     if getattr(args, "policy_reference_time", "capture") == "current":
         overrides["assess_at_current_time"] = True
     if getattr(args, "disable_rules", None):
@@ -502,6 +521,52 @@ def _summarise(result: AnalysisResult, stream: TextIO) -> None:
             print(
                 "remediations : "
                 + ", ".join(item.remediation_id for item in assessment.remediations),
+                file=stream,
+            )
+
+    ml = result.ml
+    if ml is not None:
+        if ml.ml_status.value != "COMPLETED":
+            print(f"ml           : {ml.ml_status.value}", file=stream)
+            for warning in ml.ml_warnings:
+                print(f"               {warning.code}: {warning.message}", file=stream)
+        else:
+            anomalous = [
+                item for item in ml.anomaly_results if item.status.value == "ANOMALOUS"
+            ]
+            skipped = [
+                item
+                for item in ml.anomaly_results
+                if item.status.value == "NOT_EVALUABLE"
+            ]
+            model = ml.anomaly_model
+            print(
+                "ml           : "
+                + (
+                    f"{len(anomalous)} session(s) unusual against the model's "
+                    f"reference population"
+                    if anomalous
+                    else "no session unusual against the model's reference population"
+                )
+                + (f"; {len(skipped)} not evaluable" if skipped else ""),
+                file=stream,
+            )
+            if model is not None:
+                print(
+                    f"               model {model.model_id} {model.model_version} "
+                    f"({model.algorithm}), trained on "
+                    f"{model.training_sample_count} synthetic sessions",
+                    file=stream,
+                )
+            for item in anomalous[:3]:
+                print(
+                    f"               unusual: session {item.session_id} "
+                    f"(seen in {item.raw_score:.1%} of the reference population)",
+                    file=stream,
+                )
+            print(
+                "               ML inferences, not observations. They change no "
+                "finding or score above.",
                 file=stream,
             )
 

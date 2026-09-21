@@ -490,6 +490,66 @@ See [cryptographic-fingerprinting.md](cryptographic-fingerprinting.md),
 [correlation-methodology.md](correlation-methodology.md) and
 [blast-radius-methodology.md](blast-radius-methodology.md).
 
+## The machine-learning layer (M6)
+
+Runs **last**, after the deterministic assessment and the forensic
+intelligence, and changes neither. The ordering is the whole design: ML sees
+the observations, never the other way round, so nothing a model says can feed
+back into a finding, a score or an observation.
+
+```
+observations -> features -> eligibility gate -> model -> interpretation -> ml block
+```
+
+### Modules
+
+| Module | Responsibility |
+|---|---|
+| `ml/dataset.py` | Generates synthetic servers, clients and captures from fixed seeds; assigns the latent posture label |
+| `ml/features.py` | 93-column evidence-derived schema (`smsfeat/1`) with explicit missingness |
+| `ml/preprocessing.py` | Dataset assembly, group-aware splitting, family holdout |
+| `ml/anomaly.py` | Isolation Forest and the rarity baseline, under one threshold protocol |
+| `ml/classification.py` | Baseline, logistic regression and random forest candidates |
+| `ml/evaluation.py` | Metrics, with denominators and undefined-as-undefined |
+| `ml/explanations.py` | Frequency statements grounded in the training reference population |
+| `ml/registry.py` | Artifact persistence with integrity and version checks |
+| `ml/training.py` | The training protocol, start to finish |
+| `ml/inference.py` | Local inference, caching and status reporting |
+
+### Four guarantees
+
+**The analyzer works without it.** No model, no scikit-learn, a rejected
+artifact — each is a reported status, and the rest of the report is unaffected.
+A forensic tool that stopped working because a model file was missing would be
+a worse tool.
+
+**Nothing feeds back.** No ML output enters a `SecurityFinding`, changes a
+posture score or upgrades an observation's evidence status. A test asserts the
+analysis is byte-identical with and without the layer.
+
+**Nothing is silently dropped.** Every outcome, including every refusal, is
+reported with a reason.
+
+**It is local, bounded and deterministic.** No network at any point, no
+download, no GPU; one model cached per process; 0.43 ms per session.
+
+### Model loading is deserialisation
+
+joblib executes what an artifact tells it to, so `registry.py` treats loading
+as a security boundary: artifacts come only from the packaged directory with
+the path resolved and confined, the SHA-256 is verified **before** the file is
+opened, and version and schema mismatches are refusals rather than best
+efforts.
+
+### Honest model selection
+
+Isolation Forest was the a priori candidate for anomaly detection and **lost**
+to a frequency table on the held-out split — 0.64 F1 against 1.00. The simpler
+model ships. Supervised classification is implemented, measured and reported
+as `NOT_VALIDATED`, because its label is a rubric this project wrote. See
+[ml-methodology.md](ml-methodology.md) and
+[ml-model-card.md](ml-model-card.md).
+
 ## Planned evolution
 
 The TCP layer is the foundation every later milestone stands on, which is why
@@ -507,6 +567,8 @@ M1 spent its effort there. Later stages attach to it without modifying it:
 - **M5 (done)** correlates completed results across sessions, endpoints and
   captures: fingerprints, entities, drift, correlation, timeline and blast
   radius. It reparses nothing and replaces nothing.
-- **M6** adds local ML on top, whose output is always `INFERRED`.
+- **M6 (done)** adds a locally trained anomaly detector and a posture
+  classifier. Output is advisory, labelled as ML on every result, and never
+  modifies a deterministic conclusion.
 - **M7–M8** add a local FastAPI adapter and a React UI around the unchanged
   engine.

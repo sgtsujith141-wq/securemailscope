@@ -73,14 +73,33 @@ _PATTERN_RULES: Final = {
 }
 
 
-def _correlation_id(kind: CorrelationType, basis: str) -> str:
-    """Stable across runs and independent of input order.
+def _correlation_id(
+    kind: CorrelationType,
+    basis: str,
+    session_ids: list[str],
+    capture_ids: list[str],
+) -> str:
+    """Stable across runs, independent of input order, and scoped to members.
 
-    Derived from the correlation's *type and shared value* only, so the same
-    grouping in two investigations carries the same identifier and two reports
-    can be diffed.
+    The identifier covers the correlation's type, its shared value **and the
+    identities of its members**. Type and basis alone are not enough: two
+    investigations that each contain sessions failing ``TLS-PROTO-001`` would
+    otherwise produce the same identifier for two entirely disjoint groups,
+    and anyone diffing the reports would read them as the same correlation.
+
+    Including the members keeps the property that actually matters -- the same
+    grouping, analysed twice, carries the same identifier -- while making a
+    different grouping a different correlation. Members are sorted, so the id
+    does not depend on the order captures were supplied in.
     """
-    material = f"{kind.value}|{basis}"
+    material = "|".join(
+        (
+            kind.value,
+            basis,
+            "sessions=" + ",".join(sorted(session_ids)),
+            "captures=" + ",".join(sorted(capture_ids)),
+        )
+    )
     return "corr-" + hashlib.sha256(material.encode("utf-8")).hexdigest()[:12]
 
 
@@ -121,7 +140,7 @@ def _build(
         )
 
     return SessionCorrelation(
-        correlation_id=_correlation_id(kind, basis),
+        correlation_id=_correlation_id(kind, basis, sessions, captures),
         correlation_type=kind,
         related_session_ids=tuple(sessions),
         related_capture_ids=tuple(captures),

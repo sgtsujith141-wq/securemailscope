@@ -441,4 +441,25 @@ def analyze_capture_with_payloads(
         result = result.model_copy(
             update={"assessment": assess_capture(result, policy=_policy_for(config))}
         )
+    # ML runs last and sees everything above. The ordering is deliberate:
+    # nothing a model says can feed back into an observation, a finding or a
+    # score. The import is local so the engine still works with the ML extra
+    # uninstalled -- which the whole layer is designed to tolerate.
+    # Always called, including when disabled: the block then carries the
+    # status DISABLED. An omitted block would leave a reader to work out
+    # whether ML found nothing or never ran, which are different facts. The
+    # disabled path returns before importing scikit-learn or touching a model.
+    from .ml.inference import analyse_with_ml
+
+    result = result.model_copy(
+        update={
+            "ml": analyse_with_ml(
+                result,
+                config=config,
+                directory=(
+                    Path(config.model_directory) if config.model_directory else None
+                ),
+            )
+        }
+    )
     return AnalysisArtifacts(result=result, payload_runs=payload_runs)

@@ -1,0 +1,324 @@
+{
+  "anomaly_metrics": {
+    "family_holdout": {
+      "heldout_families": [
+        "legacy_compatible",
+        "hardened_uncommon"
+      ],
+      "metrics": {
+        "f1": null,
+        "false_negatives": 0,
+        "false_positive_rate": 0.0,
+        "false_positives": 0,
+        "measurement_context": "Controlled-environment measurement over locally generated synthetic captures. Not a measurement of real-world detection performance, and not evidence of prevalence, breach likelihood or operational risk.",
+        "precision": null,
+        "recall": null,
+        "support_negative": 123,
+        "support_positive": 0,
+        "true_negatives": 123,
+        "true_positives": 0,
+        "undefined_reasons": {
+          "f1": "undefined: precision or recall is undefined or both are zero.",
+          "precision": "undefined: the model made no positive predictions, so the denominator is zero. This is not the same as being wrong.",
+          "recall": "undefined: there are no positive samples in this split, so the denominator is zero."
+        }
+      },
+      "note": "Whole families withheld from fitting. The held-out families contain no injected anomalies, so recall is undefined here and the meaningful number is the false-positive rate on kinds of server the detector has never seen.",
+      "samples": 123
+    },
+    "isolation_forest_test": {
+      "f1": 0.6399999999999999,
+      "false_negatives": 0,
+      "false_positive_rate": 0.0967741935483871,
+      "false_positives": 9,
+      "measurement_context": "Controlled-environment measurement over locally generated synthetic captures. Not a measurement of real-world detection performance, and not evidence of prevalence, breach likelihood or operational risk.",
+      "precision": 0.47058823529411764,
+      "recall": 1.0,
+      "support_negative": 93,
+      "support_positive": 8,
+      "true_negatives": 84,
+      "true_positives": 8,
+      "undefined_reasons": {}
+    },
+    "rarity_baseline_test": {
+      "f1": 1.0,
+      "false_negatives": 0,
+      "false_positive_rate": 0.0,
+      "false_positives": 0,
+      "measurement_context": "Controlled-environment measurement over locally generated synthetic captures. Not a measurement of real-world detection performance, and not evidence of prevalence, breach likelihood or operational risk.",
+      "precision": 1.0,
+      "recall": 1.0,
+      "support_negative": 93,
+      "support_positive": 8,
+      "true_negatives": 93,
+      "true_positives": 8,
+      "undefined_reasons": {}
+    },
+    "test_anomaly_count": 8,
+    "test_normal_count": 93,
+    "test_sample_count": 101
+  },
+  "anomaly_selection": {
+    "candidates": [
+      "IsolationForest",
+      "rarity_baseline"
+    ],
+    "isolation_forest_hyperparameters": {
+      "contamination": 0.05,
+      "max_samples": 246,
+      "n_estimators": 200,
+      "random_state": 20260921
+    },
+    "isolation_forest_validation": {
+      "max_false_positive_rate": 0.2,
+      "threshold": 0.012480899496623676,
+      "validation_anomaly_count": 5.0,
+      "validation_f1": 0.6666666666666666,
+      "validation_false_positive_rate": 0.053763440860215055,
+      "validation_normal_count": 93.0,
+      "validation_recall": 1.0
+    },
+    "rarity_baseline_validation": {
+      "max_false_positive_rate": 0.2,
+      "threshold": 0.0,
+      "validation_anomaly_count": 5.0,
+      "validation_f1": 0.7499999999999999,
+      "validation_false_positive_rate": 0.0,
+      "validation_normal_count": 93.0,
+      "validation_recall": 0.6
+    },
+    "selected": "rarity_baseline",
+    "selected_on": "validation split only",
+    "selection_rule": "highest validation F1 among cuts with validation false-positive rate at or below 20%; ties to the lower false-positive rate",
+    "separation_auc_note": "Isolation Forest ranks the injected anomalies below normal sessions well; its cost is precision at the chosen operating point, not ranking."
+  },
+  "artifacts": {
+    "anomaly": "tls-anomaly-1.0.0.joblib",
+    "classifier": "tls-posture-1.0.0.joblib"
+  },
+  "classification_metrics": {
+    "baseline_most_frequent_test": {
+      "accuracy": 0.32673267326732675,
+      "confusion": {
+        "CRITICAL": {
+          "CRITICAL": 0,
+          "HIGH": 0,
+          "LOW": 10,
+          "MODERATE": 0
+        },
+        "HIGH": {
+          "CRITICAL": 0,
+          "HIGH": 0,
+          "LOW": 35,
+          "MODERATE": 0
+        },
+        "LOW": {
+          "CRITICAL": 0,
+          "HIGH": 0,
+          "LOW": 33,
+          "MODERATE": 0
+        },
+        "MODERATE": {
+          "CRITICAL": 0,
+          "HIGH": 0,
+          "LOW": 23,
+          "MODERATE": 0
+        }
+      },
+      "macro_f1": 0.12313432835820895,
+      "measurement_context": "Controlled-environment measurement over locally generated synthetic captures. Not a measurement of real-world detection performance, and not evidence of prevalence, breach likelihood or operational risk.",
+      "per_class": {
+        "CRITICAL": {
+          "f1": null,
+          "precision": null,
+          "recall": 0.0
+        },
+        "HIGH": {
+          "f1": null,
+          "precision": null,
+          "recall": 0.0
+        },
+        "LOW": {
+          "f1": 0.4925373134328358,
+          "precision": 0.32673267326732675,
+          "recall": 1.0
+        },
+        "MODERATE": {
+          "f1": null,
+          "precision": null,
+          "recall": 0.0
+        }
+      },
+      "support": {
+        "CRITICAL": 10,
+        "HIGH": 35,
+        "LOW": 33,
+        "MODERATE": 23
+      },
+      "total": 101,
+      "undefined_reasons": {
+        "CRITICAL.f1": "undefined: precision or recall is undefined or zero.",
+        "CRITICAL.precision": "undefined: nothing was predicted as CRITICAL.",
+        "HIGH.f1": "undefined: precision or recall is undefined or zero.",
+        "HIGH.precision": "undefined: nothing was predicted as HIGH.",
+        "MODERATE.f1": "undefined: precision or recall is undefined or zero.",
+        "MODERATE.precision": "undefined: nothing was predicted as MODERATE."
+      }
+    },
+    "test": {
+      "accuracy": 0.5247524752475248,
+      "confusion": {
+        "CRITICAL": {
+          "CRITICAL": 9,
+          "HIGH": 1,
+          "LOW": 0,
+          "MODERATE": 0
+        },
+        "HIGH": {
+          "CRITICAL": 3,
+          "HIGH": 12,
+          "LOW": 3,
+          "MODERATE": 17
+        },
+        "LOW": {
+          "CRITICAL": 0,
+          "HIGH": 0,
+          "LOW": 16,
+          "MODERATE": 17
+        },
+        "MODERATE": {
+          "CRITICAL": 2,
+          "HIGH": 0,
+          "LOW": 5,
+          "MODERATE": 16
+        }
+      },
+      "macro_f1": 0.5624399182888729,
+      "measurement_context": "Controlled-environment measurement over locally generated synthetic captures. Not a measurement of real-world detection performance, and not evidence of prevalence, breach likelihood or operational risk.",
+      "per_class": {
+        "CRITICAL": {
+          "f1": 0.75,
+          "precision": 0.6428571428571429,
+          "recall": 0.9
+        },
+        "HIGH": {
+          "f1": 0.5000000000000001,
+          "precision": 0.9230769230769231,
+          "recall": 0.34285714285714286
+        },
+        "LOW": {
+          "f1": 0.5614035087719298,
+          "precision": 0.6666666666666666,
+          "recall": 0.48484848484848486
+        },
+        "MODERATE": {
+          "f1": 0.4383561643835616,
+          "precision": 0.32,
+          "recall": 0.6956521739130435
+        }
+      },
+      "support": {
+        "CRITICAL": 10,
+        "HIGH": 35,
+        "LOW": 33,
+        "MODERATE": 23
+      },
+      "total": 101,
+      "undefined_reasons": {}
+    },
+    "test_sample_count": 101
+  },
+  "classification_selection": {
+    "candidates": [
+      "baseline_most_frequent",
+      "logistic_regression",
+      "random_forest"
+    ],
+    "hyperparameters": {
+      "class_weight": "balanced",
+      "max_iter": 2000,
+      "random_state": 20260921
+    },
+    "selected": "logistic_regression",
+    "selected_on": "validation split only",
+    "selection_rule": "highest macro-F1 on the validation split",
+    "validation_macro_f1": {
+      "baseline_most_frequent": 0.0847457627118644,
+      "logistic_regression": 0.6191187007403869,
+      "random_forest": 0.5944174771357819
+    }
+  },
+  "dataset": {
+    "capture_fingerprint": "60f1f270a9ce1c79",
+    "class_distribution_all": {
+      "CRITICAL": 64,
+      "HIGH": 176,
+      "LOW": 216,
+      "MODERATE": 152
+    },
+    "class_distribution_eligible": {
+      "CRITICAL": 56,
+      "HIGH": 150,
+      "LOW": 175,
+      "MODERATE": 131
+    },
+    "dataset_id": "securemailscope-synthetic-tls",
+    "dataset_version": "1.0.0",
+    "eligible_sessions": 512,
+    "excluded_below_evidence_floor": 96,
+    "feature_count": 93,
+    "feature_schema_version": "smsfeat/1",
+    "generated_sessions": 608,
+    "independent_groups": 152
+  },
+  "generated_at": "2026-09-21T10:52:08+00:00",
+  "split": {
+    "group_overlap": {
+      "train_test": [],
+      "train_validation": [],
+      "validation_test": []
+    },
+    "grouped_by": "server instance (server_id)",
+    "heldout_families": [
+      "legacy_compatible",
+      "hardened_uncommon"
+    ],
+    "reference_population_for_anomaly": 246,
+    "split_seed": 4242,
+    "test": {
+      "classes": {
+        "CRITICAL": 10,
+        "HIGH": 35,
+        "LOW": 33,
+        "MODERATE": 23
+      },
+      "groups": 31,
+      "samples": 101
+    },
+    "train": {
+      "classes": {
+        "CRITICAL": 35,
+        "HIGH": 94,
+        "LOW": 122,
+        "MODERATE": 62
+      },
+      "groups": 91,
+      "samples": 313
+    },
+    "validation": {
+      "classes": {
+        "CRITICAL": 11,
+        "HIGH": 21,
+        "LOW": 20,
+        "MODERATE": 46
+      },
+      "groups": 30,
+      "samples": 98
+    }
+  },
+  "timings": {
+    "anomaly_fit_seconds": 0.793,
+    "classifier_fit_seconds": 0.519,
+    "dataset_build_seconds": 12.794
+  }
+}

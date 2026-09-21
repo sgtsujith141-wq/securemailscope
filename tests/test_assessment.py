@@ -816,7 +816,7 @@ def test_schema_is_additive_over_m1_to_m3(fixtures: dict[str, Fixture]) -> None:
     result = assess(fixtures["AA_tls10_static_rsa_multiple_findings"].path)
     document = result_to_dict(result)
     assert document["tool"]["report_schema_version"] == REPORT_SCHEMA_VERSION
-    assert REPORT_SCHEMA_VERSION == "1.3.0"
+    assert REPORT_SCHEMA_VERSION == "1.4.0"
     # M1-M3 blocks survive untouched.
     for key in ("capture", "sessions", "protocols", "tls", "inventory"):
         assert key in document, f"M1-M3 block {key} disappeared"

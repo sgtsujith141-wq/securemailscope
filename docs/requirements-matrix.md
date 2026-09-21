@@ -428,6 +428,95 @@ stating their status and the milestone that owns them.
 | F24.18 | No credential material in an investigation | whole engine | M5 | M2 redaction holds through the new layer | `test_intelligence.py::test_no_credential_material_reaches_an_investigation` | **IMPLEMENTED** |
 | F24.19 | The intelligence layer opens no socket | whole engine | M5 | Passive, like every layer beneath it | `test_intelligence.py::test_the_engine_opens_no_socket` | **IMPLEMENTED** |
 
+## F25 — ML dataset and ground truth (M6)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F25.1 | Reproducible dataset from fixed seeds | `ml/dataset.py` | M6 | Same seeds give the same servers, negotiations and labels | `test_ml.py::test_dataset_generation_is_reproducible` | **IMPLEMENTED** |
+| F25.2 | Versioned dataset manifest with real counts | `docs/ml-dataset.md` | M6 | 608 sessions, 152 groups, actual class distribution | `test_ml.py::test_population_is_reproducible_and_spans_families` | **IMPLEMENTED** |
+| F25.3 | Samples are real captures through the real pipeline | `ml/preprocessing.py` | M6 | Generator writes pcap; M1–M5 reconstructs it | `test_ml.py::test_feature_extraction_is_deterministic` | **IMPLEMENTED** |
+| F25.4 | Controlled configuration families | `ml/dataset.py` | M6 | Seven families spanning TLS 1.2/1.3, suites, certificates, clients | `test_ml.py::test_population_is_reproducible_and_spans_families` | **IMPLEMENTED** |
+| F25.5 | The class is not encoded by family or fixture name | `ml/dataset.py` | M6 | Families span several posture classes | `test_ml.py::test_no_family_is_a_proxy_for_the_label` | **IMPLEMENTED** |
+| F25.6 | Forensic truth, policy label and ML label kept separate | `ml/dataset.py` | M6 | Three distinct concepts, documented | `test_ml.py::test_labels_are_not_derived_from_the_assessment_engine` | **IMPLEMENTED** |
+| F25.7 | ML labels never derived from the M4 engine | `ml/preprocessing.py` | M6 | Assessment disabled while building; latent target | `test_ml.py::test_the_dataset_is_built_with_the_assessment_layer_off` | **IMPLEMENTED** |
+| F25.8 | Held-out anomaly scenarios declared before training | `ml/dataset.py` | M6 | Injected-anomaly family and negative control fixed in code | `test_ml.py::test_rare_but_legitimate_configurations_are_not_flagged` | **IMPLEMENTED** |
+| F25.9 | Realistic negative controls | `ml/dataset.py` | M6 | `hardened_uncommon`: rare, legitimate, labelled not anomalous | `test_ml.py::test_rare_but_legitimate_configurations_are_not_flagged` | **IMPLEMENTED** |
+| F25.10 | No downloaded, private or confidential data | `ml/dataset.py` | M6 | Generated locally; no network in generation | `test_ml.py::test_inference_opens_no_socket` | **IMPLEMENTED** |
+| F25.11 | Byte-level reproducibility limits disclosed | `ml/dataset.py` | M6 | Content digest plus a measured size profile | `test_ml.py::test_dataset_generation_is_reproducible` | **IMPLEMENTED** |
+
+## F26 — Feature engineering (M6)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F26.1 | Versioned feature schema | `ml/features.py` | M6 | `smsfeat/1`, 93 columns, fixed order | `test_ml.py::test_every_feature_vector_has_the_schema_width` | **IMPLEMENTED** |
+| F26.2 | Features derived from M1–M5 observations | `ml/features.py` | M6 | Every feature carries a provenance string | `test_ml.py::test_every_explanation_is_traceable_to_an_observation` | **IMPLEMENTED** |
+| F26.3 | Categorical encoding; no raw code points as magnitudes | `ml/features.py` | M6 | One-hot against frozen vocabularies | `test_ml.py::test_feature_extraction_is_deterministic` | **IMPLEMENTED** |
+| F26.4 | Missing values are not numeric zero | `ml/features.py` | M6 | Explicit `*_missing` indicator per numeric | `test_ml.py::test_missing_values_carry_an_indicator_not_a_zero` | **IMPLEMENTED** |
+| F26.5 | UNKNOWN, NOT_AVAILABLE and NOT_APPLICABLE distinguished | `ml/features.py` | M6 | `AbsenceReason` as a feature | `test_ml.py::test_tls13_absent_certificate_is_not_the_same_as_a_missing_one` | **IMPLEMENTED** |
+| F26.6 | No invented certificate properties for TLS 1.3 | `ml/features.py` | M6 | All certificate features MISSING, absence `NOT_AVAILABLE` | `test_ml.py::test_no_certificate_property_is_invented_for_tls13` | **IMPLEMENTED** |
+| F26.7 | Minimum-evidence eligibility rule | `ml/features.py` | M6 | `ML_NOT_EVALUABLE` without version and suite | `test_ml.py::test_insufficient_evidence_is_not_evaluated` | **IMPLEMENTED** |
+| F26.8 | Incomplete captures are not automatically anomalous | `ml/features.py` | M6 | Excluded by the gate, never scored | `test_ml.py::test_incomplete_captures_are_not_treated_as_anomalies` | **IMPLEMENTED** |
+| F26.9 | Prohibited leakage features excluded | `ml/features.py` | M6 | No ids, hashes, scores, severities, names or addresses | `test_ml.py::test_prohibited_identifiers_are_absent_from_features` | **IMPLEMENTED** |
+| F26.10 | Fingerprint digests never used as magnitudes | `ml/features.py` | M6 | Structure used; digest excluded | `test_ml.py::test_prohibited_identifiers_are_absent_from_features` | **IMPLEMENTED** |
+
+## F27 — Training, splitting and leakage prevention (M6)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F27.1 | Split before fitting preprocessing | `ml/preprocessing.py` | M6 | Split first; scales are hand-set constants | `test_ml.py::test_splitting_is_group_aware` | **IMPLEMENTED** |
+| F27.2 | Group-aware splitting by server instance | `ml/preprocessing.py` | M6 | No group in two partitions | `test_ml.py::test_splitting_is_group_aware` | **IMPLEMENTED** |
+| F27.3 | Certificates never span partitions | `ml/preprocessing.py` | M6 | Grouping by server carries the certificate | `test_ml.py::test_no_certificate_spans_two_partitions` | **IMPLEMENTED** |
+| F27.4 | Sessions from one configuration stay together | `ml/preprocessing.py` | M6 | All four sessions of a server on one side | `test_ml.py::test_duplicate_sessions_of_one_server_stay_together` | **IMPLEMENTED** |
+| F27.5 | Held-out configuration-family test | `ml/preprocessing.py` | M6 | Two families withheld entirely | `test_ml.py::test_family_holdout_withholds_whole_families` | **IMPLEMENTED** |
+| F27.6 | Train/validation/test partitions used correctly | `ml/training.py` | M6 | Selection on validation; test touched once | `test_ml.py::test_threshold_selection_uses_only_the_split_it_is_given` | **IMPLEMENTED** |
+| F27.7 | Fixed, documented seeds | `ml/dataset.py`, `ml/preprocessing.py` | M6 | Population, session, split and model seeds | `test_ml.py::test_the_split_is_reproducible` | **IMPLEMENTED** |
+| F27.8 | Training is reproducible | `ml/anomaly.py` | M6 | Same data and seed, identical scores | `test_ml.py::test_training_is_reproducible` | **IMPLEMENTED** |
+| F27.9 | Small-sample limitations reported | `docs/ml-evaluation.md` | M6 | 31 test groups stated; no narrow intervals claimed | Documentation review | **IMPLEMENTED** |
+
+## F28 — Models and evaluation (M6)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F28.1 | A genuine anomaly model is trained | `ml/anomaly.py` | M6 | Isolation Forest and a rarity baseline, both fitted | `test_ml.py::test_the_anomaly_detector_finds_the_injected_anomalies` | **IMPLEMENTED** |
+| F28.2 | Algorithm choice justified by measurement | `docs/ml-methodology.md` | M6 | Baseline won on validation and ships | `test_ml.py::test_a_baseline_is_always_compared` | **IMPLEMENTED** |
+| F28.3 | Threshold selected on validation and frozen | `ml/anomaly.py` | M6 | One rule, applied identically to both candidates | `test_ml.py::test_threshold_selection_respects_the_false_positive_cap` | **IMPLEMENTED** |
+| F28.4 | Reference population recorded with the model | `ml/registry.py` | M6 | In every manifest and every report | `test_ml.py::test_manifests_record_reproducibility_metadata` | **IMPLEMENTED** |
+| F28.5 | Four anomaly statuses | `models/ml.py` | M6 | ANOMALOUS / NOT_ANOMALOUS / NOT_EVALUABLE / MODEL_UNAVAILABLE | `test_ml.py::test_inference_abstains_on_insufficient_evidence` | **IMPLEMENTED** |
+| F28.6 | Legitimate rare configurations not flagged | `ml/anomaly.py` | M6 | Zero false positives on the negative control | `test_ml.py::test_rare_but_legitimate_configurations_are_not_flagged` | **IMPLEMENTED** |
+| F28.7 | Supervised classifier trained and compared | `ml/classification.py` | M6 | Baseline, logistic regression, random forest | `test_ml.py::test_classification_is_reported_as_not_validated` | **IMPLEMENTED** |
+| F28.8 | Classification reported as NOT_VALIDATED | `ml/inference.py` | M6 | Status on every prediction, with reasons | `test_ml.py::test_classification_is_reported_as_not_validated` | **PARTIAL** (implemented and measured; not independently validated — by design, see model card) |
+| F28.9 | No calibrated-probability claim | `ml/classification.py` | M6 | Relative scores; stated in the model card | `test_ml.py::test_classification_is_reported_as_not_validated` | **IMPLEMENTED** |
+| F28.10 | Class imbalance documented and handled | `ml/classification.py` | M6 | Balanced weights; macro-averaged metrics | Documentation; `docs/ml-evaluation.md` | **IMPLEMENTED** |
+| F28.11 | Metrics with real denominators | `ml/evaluation.py` | M6 | Support and confusion matrices reported | `test_ml.py::test_binary_metrics_match_a_hand_worked_matrix` | **IMPLEMENTED** |
+| F28.12 | Undefined metrics reported as undefined | `ml/evaluation.py` | M6 | `None` with a reason, never zero | `test_ml.py::test_undefined_metrics_are_reported_as_undefined_not_zero` | **IMPLEMENTED** |
+| F28.13 | Trivial baselines included | `ml/classification.py` | M6 | `DummyClassifier` reported alongside | `test_ml.py::test_a_baseline_is_always_compared` | **IMPLEMENTED** |
+| F28.14 | Metrics labelled as synthetic | `ml/evaluation.py` | M6 | Measurement context on every result | `test_ml.py::test_every_metric_result_states_it_is_synthetic` | **IMPLEMENTED** |
+| F28.15 | Failure cases reported | `docs/ml-evaluation.md` | M6 | Nine false positives and HIGH recall analysed | Documentation review | **IMPLEMENTED** |
+
+## F29 — Persistence, inference and output (M6)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F29.1 | Reproducibility metadata in every manifest | `ml/registry.py` | M6 | Versions, digest, hyperparameters, libraries | `test_ml.py::test_manifests_record_reproducibility_metadata` | **IMPLEMENTED** |
+| F29.2 | Artifacts loaded only from a controlled path | `ml/registry.py` | M6 | Resolved and confined; a manifest cannot redirect | `test_ml.py::test_an_artifact_outside_the_model_directory_is_refused` | **IMPLEMENTED** |
+| F29.3 | Integrity verified before deserialisation | `ml/registry.py` | M6 | SHA-256 checked before joblib opens the file | `test_ml.py::test_a_tampered_artifact_is_never_deserialised` | **IMPLEMENTED** |
+| F29.4 | Incompatible feature schemas refused | `ml/registry.py` | M6 | Mismatch raises, never loads | `test_ml.py::test_a_feature_schema_mismatch_is_refused` | **IMPLEMENTED** |
+| F29.5 | Unsupported model versions refused | `ml/registry.py` | M6 | Version allowlist | `test_ml.py::test_an_unsupported_model_version_is_refused` | **IMPLEMENTED** |
+| F29.6 | No model is ever downloaded | `ml/registry.py` | M6 | No URL or network path exists | `test_ml.py::test_inference_opens_no_socket` | **IMPLEMENTED** |
+| F29.7 | The analyzer works with no model | `ml/inference.py` | M6 | Status reported; analysis unaffected | `test_ml.py::test_a_missing_model_is_reported_not_raised_into_the_analysis` | **IMPLEMENTED** |
+| F29.8 | A rejected model does not fail the analysis | `ml/inference.py` | M6 | `MODEL_REJECTED` warning; assessment survives | `test_ml.py::test_a_rejected_model_does_not_fail_the_analysis` | **IMPLEMENTED** |
+| F29.9 | ML never modifies a deterministic result | `pipeline.py` | M6 | Identical analysis with and without | `test_ml.py::test_ml_never_modifies_a_deterministic_result` | **IMPLEMENTED** |
+| F29.10 | No ML output in a SecurityFinding | `models/ml.py` | M6 | Separate block; asserted absent from the assessment | `test_ml.py::test_no_ml_prediction_enters_a_security_finding` | **IMPLEMENTED** |
+| F29.11 | Inference is deterministic | `ml/inference.py` | M6 | Repeated runs byte-identical | `test_ml.py::test_repeated_inference_is_identical` | **IMPLEMENTED** |
+| F29.12 | Explanations are evidence-linked | `ml/explanations.py` | M6 | Provenance and packet references on every result | `test_ml.py::test_every_explanation_is_traceable_to_an_observation` | **IMPLEMENTED** |
+| F29.13 | Output discloses that ML produced it | `models/ml.py` | M6 | Disclosure on the block and in each explanation | `test_ml.py::test_ml_output_discloses_that_a_model_produced_it` | **IMPLEMENTED** |
+| F29.14 | No credential material in the ML block | `ml/features.py` | M6 | M2 redaction holds through the layer | `test_ml.py::test_no_credential_material_reaches_the_ml_block` | **IMPLEMENTED** |
+| F29.15 | No identity in the ML block | `ml/features.py` | M6 | No address, host name, SNI or subject | `test_ml.py::test_no_identity_reaches_the_ml_block` | **IMPLEMENTED** |
+| F29.16 | Additive JSON contract | `models/analysis.py` | M6 | Schema 1.4.0; `ml` block removable | `test_ml.py::test_cli_reports_ml_end_to_end` | **IMPLEMENTED** |
+| F29.17 | End-to-end CLI inference | `cli.py` | M6 | `analyze` reports ML; `--no-ml` disables it | `test_ml.py::test_cli_reports_ml_end_to_end` | **IMPLEMENTED** |
+| F29.18 | Bounded, local, no GPU | `ml/inference.py` | M6 | 0.43 ms/session, one cached model, `n_jobs=1` | `docs/ml-evaluation.md` | **IMPLEMENTED** |
+| F29.19 | Measured training and inference performance | `docs/ml-evaluation.md` | M6 | Real hardware, timings and artifact sizes | Documentation review | **IMPLEMENTED** |
+
 ## F8 — Assessment, correlation, ML, reporting, UI
 
 | ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
@@ -435,7 +524,7 @@ stating their status and the milestone that owns them.
 | F8.1 | Explainable security findings | `assessment/` | M4 | Every finding cites its observations and their statuses | `test_assessment.py::test_every_finding_cites_a_real_packet` | **IMPLEMENTED** |
 | F8.2 | Posture scoring | `assessment/` | M4 | Score auditable back to packets | `test_assessment.py::test_score_follows_the_published_formula` | **IMPLEMENTED** |
 | F8.3 | Evidence-based correlation | `intelligence/` | M5 | Multi-session findings retain all contributing refs | `test_intelligence.py::test_every_correlation_names_its_basis_and_its_limits` | **IMPLEMENTED** |
-| F8.4 | ML-assisted analysis | `ml/` | M6 | Local scikit-learn; output always `INFERRED` | — | **NOT IMPLEMENTED** |
+| F8.4 | ML-assisted analysis | `ml/` | M6 | Local scikit-learn; output always `INFERRED` | `test_ml.py::test_ml_output_discloses_that_a_model_produced_it` | **IMPLEMENTED** |
 | F8.5 | Forensic reports | `reporting/` | M1 / M7 | JSON implemented (schema 1.3.0, assessment blocks included). PDF and HTML reports belong to M7 | `test_report.py`, `test_assessment.py::test_schema_is_additive_over_m1_to_m3` | **PARTIAL** |
 | F8.6 | Local SQLite persistence | `backend/` | M7 | — | — | **NOT IMPLEMENTED** |
 | F8.7 | FastAPI backend | `backend/` | M7 | — | — | **NOT IMPLEMENTED** |
@@ -464,28 +553,36 @@ stating their status and the milestone that owns them.
 
 ## Summary
 
-| Status | Count | Change since M4 |
+| Status | Count | Change since M5 |
 |---|---|---|
-| IMPLEMENTED | 293 | +58 |
-| PARTIAL | 3 | 0 |
-| NOT IMPLEMENTED | 13 | -1 |
-| **Total requirements tracked** | **309** | +57 |
+| IMPLEMENTED | 357 | +64 |
+| PARTIAL | 4 | +1 |
+| NOT IMPLEMENTED | 12 | -1 |
+| **Total requirements tracked** | **373** | +64 |
 
-As of M5 the implemented set covers capture ingestion, TCP reconstruction, the
-email protocol layer, the TLS and certificate layer, the assessment layer, and
-the forensic intelligence layer: multi-capture batch analysis, versioned
-cryptographic fingerprints, endpoint entity resolution, cross-capture drift,
-cross-session correlation, an evidence timeline and observed-scope blast radius.
+As of M6 the implemented set covers capture ingestion, TCP reconstruction, the
+email protocol layer, the TLS and certificate layer, the assessment layer, the
+forensic intelligence layer, and a locally trained machine-learning layer:
+a reproducible synthetic dataset, a 93-column evidence-derived feature schema,
+group-aware splitting with tested leakage controls, an anomaly detector chosen
+by measurement over a baseline that beat it, a supervised classifier, and an
+evaluation harness reporting real metrics with real denominators.
 
-**Still not claimed anywhere:** ML-assisted analysis (F8.4), SQLite persistence
-and the FastAPI backend (F8.6-F8.7), the React frontend (F8.8), PDF and HTML
-reports (F8.5, M7), and revocation checking (F14.25, permanently out of scope).
+**Reported PARTIAL:** supervised risk classification (F28.8). It is
+implemented, trained and measured — macro-F1 0.562 against a 0.123 baseline —
+and reported as `NOT_VALIDATED` on every prediction because its label is a
+project-authored rubric over synthetic servers. See
+[ml-model-card.md](ml-model-card.md).
 
-**Constants in every report M5 produces:**
+**Still not claimed anywhere:** SQLite persistence and the FastAPI backend
+(F8.6–F8.7), the React frontend (F8.8), PDF and HTML reports (F8.5, M7), and
+revocation checking (F14.25, permanently out of scope).
+
+**Constants in every report M6 produces:**
 `handshake_analyzed = false`, `handshakes_cryptographically_verified = 0`,
 `revocation_checks_performed = 0`.
 
-**What the intelligence layer does not claim:** no attacker, campaign, intent,
-ownership or network topology; no identity from a fingerprint match; no
-coverage beyond the analysed captures. See
-[limitations.md](limitations.md#9-limits-of-the-intelligence-layer-m5).
+**What the ML layer never claims:** that an anomaly is a vulnerability or an
+attack; that a rare configuration is dangerous; that a model score is a
+probability; that any metric here describes real-world performance. See
+[limitations.md](limitations.md#10-limits-of-the-machine-learning-layer-m6).

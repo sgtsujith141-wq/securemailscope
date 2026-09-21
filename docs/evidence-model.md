@@ -456,6 +456,52 @@ These extend the earlier rules and apply to M6 onward:
     establish has no timestamp, and file modification times are never
     substituted.
 
+## The machine-learning layer (M6)
+
+ML adds a fourth kind of statement, and it is the weakest of the four.
+
+| Vocabulary | Grades | Layer |
+|---|---|---|
+| `OBSERVED` / `INFERRED` / `UNKNOWN` / `NOT_AVAILABLE` | an observation | M1-M3 |
+| `FAIL` / `PASS` / `UNKNOWN` / `NOT_APPLICABLE` | a judgement about observations | M4 |
+| `OBSERVED_CHANGE` / `UNCHANGED_WITH_EVIDENCE` / `INCONCLUSIVE` / `NOT_COMPARABLE` | a comparison of observations | M5 |
+| `ANOMALOUS` / `NOT_ANOMALOUS` / `NOT_EVALUABLE` / `MODEL_UNAVAILABLE` | a model's opinion about observations | M6 |
+
+Every ML result carries a disclosure that a model produced it, and every ML
+result is `INFERRED` by construction. Rule 3 of this document -- no stage may
+upgrade another stage's status -- applies with full force here.
+
+### Absence has reasons, and the model is told which
+
+`AbsenceReason` distinguishes `OBSERVED`, `UNKNOWN`, `NOT_AVAILABLE` and
+`NOT_APPLICABLE` as an explicit feature. A certificate absent from a TLS 1.3
+session is `NOT_AVAILABLE` -- the protocol encrypts it; a certificate absent
+from a truncated session is `UNKNOWN`. Collapsing both to a zero would teach a
+model that TLS 1.3 servers have no certificate.
+
+### Rules for the ML layer
+
+These extend the earlier rules:
+
+26. **A model's output is never an observation.** It lives in the `ml` block,
+    is labelled as ML on its face, and modifies nothing above it.
+27. **Insufficient evidence produces abstention, never a fallback.** A session
+    without an observed negotiation is `ML_NOT_EVALUABLE`; scoring it anyway
+    would report the capture's limits as the subject's.
+28. **A model is never trained on another layer's conclusions.** No M4 score,
+    severity or rule outcome is a feature or a target, or the model would be an
+    opaque reimplementation of a deterministic engine that already exists.
+29. **An identity is never a feature.** No address, host name, SNI or
+    certificate subject, so a model cannot memorise entities and present it as
+    generalisation.
+30. **A score is not a probability unless calibration was fitted and
+    validated.** It has not been, so model outputs are reported as relative
+    scores.
+31. **An anomaly is relative to a stated population.** The reference population
+    is recorded with the model, because "unusual" has no meaning without it.
+32. **Rarity is not risk.** A rare configuration may be the strongest one
+    present, and the negative-control family exists to keep that testable.
+
 ## Rules for future milestones
 
 These apply to every stage added after M1:

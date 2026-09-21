@@ -139,6 +139,14 @@ class AnalysisConfig:
     #: default: two names for one file are not two pieces of evidence.
     allow_duplicate_captures: bool = False
 
+    # --- machine learning (M6) ----------------------------------------------
+    #: Run the ML layer. On by default when a model is installed; the layer
+    #: reports its own status and never fails the analysis.
+    enable_ml: bool = True
+    #: Directory to load model artifacts from. None means the package default,
+    #: which is the only location models are ever read from.
+    model_directory: str | None = None
+
     #: When true the report may carry a short hex preview of payload bytes.
     #: Off by default: reports must be safe to share.
     include_payload_preview: bool = False

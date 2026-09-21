@@ -1,0 +1,33 @@
+{
+  "algorithm": "rarity_baseline",
+  "artifact_filename": "tls-anomaly-1.0.0.joblib",
+  "artifact_sha256": "d94e6ab6e5eaf3a48cf769f5826c094a217bd3af2d8942b8ffacf072a0d287d7",
+  "classes": null,
+  "dataset_id": "securemailscope-synthetic-tls",
+  "dataset_version": "1.0.0",
+  "decision_threshold": 0.0,
+  "evaluation_report": "docs/ml-evaluation.md",
+  "feature_schema_version": "smsfeat/1",
+  "format_version": "smsmodel/1",
+  "hyperparameters": {
+    "keyed_on": "version|encryption|key_exchange",
+    "threshold": 0.0
+  },
+  "library_versions": {
+    "joblib": "1.6.0",
+    "numpy": "2.1.3",
+    "platform": "macOS-26.6.2-x86_64-i386-64bit",
+    "python": "3.12.14",
+    "scipy": "1.18.1",
+    "sklearn": "1.5.2"
+  },
+  "limitations": [
+    "Trained on locally generated synthetic captures only.",
+    "An anomaly is a configuration unusual relative to the recorded reference population. It is not a vulnerability and not an attack."
+  ],
+  "model_id": "tls-anomaly",
+  "model_version": "1.0.0",
+  "reference_population": "246 eligible sessions from the five reference configuration families, training split only",
+  "trained_at": "2026-09-21T10:52:08+00:00",
+  "training_sample_count": 246
+}
