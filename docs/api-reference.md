@@ -31,15 +31,32 @@ constant-time.
 
 | Status | Meaning |
 |---|---|
-| 400 | The `Host` header is not a permitted local name |
-| 401 | Missing or wrong token |
-| 404 | The resource does not exist |
-| 409 | The request conflicts with current state — an analysis already running, or an export of an investigation with no analysed captures |
-| 422 | The request was understood and rejected: a bad file, an invalid sort key, an out-of-range setting |
-| 500 | An unexpected error. The reason goes to the local log; the response says only that it failed |
+| Status | `error` code | Meaning |
+|---|---|---|
+| 400 | `bad_request`, `host_not_allowed` | The `Host` header is not a permitted local name |
+| 401 | `unauthorised` | Missing or wrong token |
+| 404 | `not_found` | The resource does not exist |
+| 405 | `method_not_allowed` | No such method on this path |
+| 409 | `conflict` | The request conflicts with current state — an analysis already running, or an export of an investigation with no analysed captures |
+| 413 | `payload_too_large` | The upload exceeds the configured size limit |
+| 422 | `invalid_request` | The request was understood and rejected: a bad file, an invalid sort key, an out-of-range setting |
+| 500 | `internal_error` | An unexpected error. The reason goes to the local log; the response says only that it failed |
 
-`detail` is written for a person. Stack traces, absolute paths and database
-errors never appear in a response body.
+**One error shape.** Since M8 every error — from the middleware, from a handler
+and from request validation — answers with the same three fields. Before M8 the
+host and token guards used this shape while handlers used Starlette's
+`{"detail": ...}`, so a client had to understand two contracts. `detail` is
+retained, so anything already reading it still works.
+
+The `error` code is the stable part of the contract and is what a client should
+match on. `detail` is written for a person and may be reworded. Stack traces,
+absolute paths and database errors never appear in a response body.
+
+**A sub-collection of an investigation that does not exist answers 404**, not
+an empty page. Before M8, `/jobs`, `/sessions`, `/findings` and `/exports`
+answered `200` with `{"items": [], "total": 0}` for an unknown id, which reads
+as "this investigation has no findings" rather than "there is no such
+investigation".
 
 ## Pagination
 
@@ -93,7 +110,10 @@ the file's magic bytes.
 Uploading identical bytes twice returns the existing capture: the same bytes
 are the same evidence.
 
-- `422` — not a capture, empty, or over the limit.
+- `413` — over the configured size limit. The partial file is deleted; nothing
+  is stored. Distinguished from `422` so a client can tell the user to split
+  the capture rather than to check its format.
+- `422` — not a pcap or pcapng container, or empty.
 
 ### `GET /api/captures?offset&limit`
 

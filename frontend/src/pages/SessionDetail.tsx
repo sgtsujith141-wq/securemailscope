@@ -1,5 +1,7 @@
 /** One session, in full (§11). UNKNOWN and NOT AVAILABLE are shown as such. */
 import { Link, useParams } from 'react-router-dom'
+
+import { useInvestigationContext } from '../lib/context'
 import { api } from '../lib/api'
 import { formatTime, useAsync } from '../lib/hooks'
 import { EvidenceLink } from '../components/EvidenceLink'
@@ -20,9 +22,10 @@ function Field({ label, value, kind = 'unknown', mono = false }: {
 
 export function SessionDetailPage() {
   const { sessionId } = useParams()
+  const { selected } = useInvestigationContext()
   const detail = useAsync(
-    () => (sessionId ? api.getSession(sessionId) : Promise.resolve(null)),
-    [sessionId],
+    () => (sessionId ? api.getSession(sessionId, selected) : Promise.resolve(null)),
+    [sessionId, selected],
   )
 
   if (detail.loading) return <Loading what="session" />
@@ -251,7 +254,8 @@ export function SessionDetailPage() {
 function FindingBlock({ findingId, title, severity, ruleId, confidence }: {
   findingId: string; title: string; severity: string; ruleId: string; confidence: string
 }) {
-  const detail = useAsync(() => api.getFinding(findingId), [findingId])
+  const { selected } = useInvestigationContext()
+  const detail = useAsync(() => api.getFinding(findingId, selected), [findingId, selected])
   return (
     <div className="panel bg-ink-900/50 p-3" data-testid="session-finding">
       <div className="flex flex-wrap items-center gap-2">

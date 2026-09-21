@@ -31,14 +31,16 @@ export function Panel({ title, children, actions, className = '' }: {
   )
 }
 
-export function Metric({ label, value, note, tone = 'default' }: {
+export function Metric({ label, value, note, tone = 'default', testId }: {
   label: string
   value: ReactNode
   note?: ReactNode
   tone?: 'default' | 'unknown'
+  /** Set where an end-to-end test needs to read this value back. */
+  testId?: string
 }) {
   return (
-    <div className="panel px-4 py-3">
+    <div className="panel px-4 py-3" data-testid={testId}>
       <div className="label">{label}</div>
       <div className={`text-2xl font-semibold mt-1 ${tone === 'unknown' ? 'text-mist-300 text-base' : ''}`}>
         {value}

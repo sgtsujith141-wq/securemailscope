@@ -157,7 +157,8 @@ export function Findings() {
 }
 
 function FindingDetailBlock({ findingId }: { findingId: string }) {
-  const detail = useAsync(() => api.getFinding(findingId), [findingId])
+  const { selected } = useInvestigationContext()
+  const detail = useAsync(() => api.getFinding(findingId, selected), [findingId, selected])
   if (detail.loading) return <div className="px-3 pb-3"><Loading what="finding detail" /></div>
   if (detail.error) return <div className="px-3 pb-3"><Failure title="Could not load detail" detail={detail.error} /></div>
   if (!detail.data) return null

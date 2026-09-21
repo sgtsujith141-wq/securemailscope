@@ -39,13 +39,15 @@ export function InvestigationWorkspace({ investigationId }: { investigationId: s
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <Metric label="Captures analysed" value={inv.analysed_capture_count}
                 note={inv.failed_capture_count > 0 ? `${inv.failed_capture_count} failed` : undefined} />
-        <Metric label="Sessions" value={inv.session_count} />
+        <Metric label="Sessions" value={inv.session_count} testId="session-count" />
         <Metric
           label="Findings"
+          testId="finding-count"
           value={inv.finding_count === 0 ? <span className="text-sev-ok text-base">NO FINDINGS</span> : inv.finding_count}
           tone={inv.finding_count === 0 ? 'unknown' : 'default'} />
         <Metric
           label="Posture score"
+          testId="posture-score"
           value={inv.posture_score === null
             ? <span className="text-mist-300 text-base">{inv.status === 'COMPLETED' ? 'INSUFFICIENT EVIDENCE' : 'NOT ANALYSED'}</span>
             : <>{inv.posture_score}<span className="text-mist-400 text-sm">/100</span></>}

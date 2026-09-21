@@ -64,7 +64,7 @@ __all__ = [
 ]
 
 #: Bumped with every migration step below.
-SCHEMA_VERSION: Final = 1
+SCHEMA_VERSION: Final = 2
 
 
 def utcnow() -> datetime:
@@ -180,8 +180,15 @@ class SessionRow(Base):
 
     __tablename__ = "sessions"
 
+    # Composite key. ``session_id`` is a deterministic digest of the session
+    # itself, so the same capture analysed in two investigations produces the
+    # same value twice. Keyed on ``session_id`` alone, the second investigation
+    # failed to persist with a UNIQUE constraint violation and was marked
+    # FAILED -- a capture could belong to exactly one investigation, for ever.
     session_id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    investigation_id: Mapped[str] = mapped_column(String(64), index=True)
+    investigation_id: Mapped[str] = mapped_column(
+        String(64), primary_key=True, index=True
+    )
     capture_id: Mapped[str] = mapped_column(String(80), index=True)
     client: Mapped[str] = mapped_column(String(64))
     server: Mapped[str] = mapped_column(String(64), index=True)
@@ -214,8 +221,13 @@ class FindingRow(Base):
 
     __tablename__ = "findings"
 
+    # Composite key, for the same reason as SessionRow: ``finding_id`` is a
+    # digest of the rule, the session and the policy, so it repeats whenever
+    # the same capture is analysed again in a different investigation.
     finding_id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    investigation_id: Mapped[str] = mapped_column(String(64), index=True)
+    investigation_id: Mapped[str] = mapped_column(
+        String(64), primary_key=True, index=True
+    )
     capture_id: Mapped[str] = mapped_column(String(80), index=True)
     session_id: Mapped[str] = mapped_column(String(64), index=True)
     rule_id: Mapped[str] = mapped_column(String(32), index=True)
@@ -298,8 +310,57 @@ def _migration_1(connection: Any) -> None:
     Base.metadata.create_all(connection)
 
 
+def _migration_2(connection: Any) -> None:
+    """Widen the primary key of ``sessions`` and ``findings``.
+
+    Both ids are deterministic digests of their content, so analysing the same
+    capture in a second investigation produced the same ids again and the
+    insert failed on the old single-column primary key. The investigation was
+    marked FAILED with a raw database error, and the capture was effectively
+    locked to whichever investigation used it first.
+
+    SQLite cannot alter a primary key, so each table is rebuilt: create the new
+    shape, copy the rows, drop the old table, rename. Existing rows all satisfy
+    the wider key -- the old one was strictly stricter -- so nothing is lost.
+    """
+    for table in ("sessions", "findings"):
+        info = connection.execute(text(f"PRAGMA table_info({table})")).fetchall()
+        if not info:
+            continue
+        key = {row[1] for row in info if row[5]}
+        if "investigation_id" in key:
+            # Already the new shape: a database created after this migration
+            # existed gets it from the model metadata in migration 1.
+            continue
+
+        columns = [row[1] for row in info]
+        names = ", ".join(f'"{column}"' for column in columns)
+
+        # SQLite carries a table's indexes across a RENAME, so they have to go
+        # before the new table recreates them under the same names.
+        indexes = connection.execute(
+            text(
+                "SELECT name FROM sqlite_master WHERE type='index' "
+                "AND tbl_name=:table AND name NOT LIKE 'sqlite_%'"
+            ),
+            {"table": table},
+        ).fetchall()
+
+        connection.execute(text(f"ALTER TABLE {table} RENAME TO {table}_old"))
+        for (index_name,) in indexes:
+            connection.execute(text(f'DROP INDEX IF EXISTS "{index_name}"'))
+        Base.metadata.tables[table].create(connection)
+        # `table` comes from the literal tuple above and `names` from PRAGMA
+        # table_info on that same table. Neither is user input, and SQLite does
+        # not accept a bound parameter for an identifier, so the statement has
+        # to be composed.
+        copy = f"INSERT INTO {table} ({names}) SELECT {names} FROM {table}_old"  # noqa: S608
+        connection.execute(text(copy))
+        connection.execute(text(f"DROP TABLE {table}_old"))
+
+
 #: Ordered. Index i applies when user_version == i, then sets it to i + 1.
-_MIGRATIONS: Final = (_migration_1,)
+_MIGRATIONS: Final = (_migration_1, _migration_2)
 
 
 @event.listens_for(Engine, "connect")

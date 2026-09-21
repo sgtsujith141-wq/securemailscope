@@ -88,6 +88,11 @@ filterwarnings = ["error::DeprecationWarning:securemailscope.*"]
 line-length = 100
 target-version = "py312"
 src = ["src", "tests", "scripts"]
+# setuptools copies the package into build/ when a wheel or an editable
+# install is made, so `ruff check .` would lint the same files twice -- and
+# fail, because the copies are not formatted to this configuration. They are
+# build output, not source.
+extend-exclude = ["build", "dist", ".venv-engine"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "RUF", "S"]

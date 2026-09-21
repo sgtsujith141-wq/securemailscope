@@ -18,11 +18,12 @@ status.
 | **IMPLEMENTED** | Built, tested against hand-derived expectations, and working |
 | **PARTIAL** | Something real exists but the requirement is not met in full; the gap is stated |
 | **NOT IMPLEMENTED** | No code exists. Not started. |
+| **NOT VERIFIED** | Code exists and may well work, but nothing in this repository proves it. Added in M8 to stop "the module exists" being read as "the requirement is met". |
 
 Nothing in this table is marked complete on the strength of a placeholder
-module. Five packages (`tls/`, `certificates/`, `assessment/`,
-`intelligence/`, `ml/`) still contain no code at all -- only a docstring
-stating their status and the milestone that owns them.
+module, and nothing is marked complete merely because the relevant module
+exists. Where the evidence is a module rather than a passing test, the status
+is **NOT VERIFIED**.
 
 ---
 
@@ -603,6 +604,59 @@ stating their status and the milestone that owns them.
 | F33.15 | Response hardening headers | `backend/app.py` | M7 | nosniff, DENY, CSP, no-referrer | `test_backend.py::test_responses_carry_hardening_headers` | **IMPLEMENTED** |
 | F33.16 | No telemetry, no outbound request | whole application | M7 | None exists | `test_passive.py`, `test_intelligence.py::test_the_engine_opens_no_socket` | **IMPLEMENTED** |
 
+## NF-V — Verification, performance and release readiness (M8)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| NFV1 | Reproducible benchmark harness | `benchmarks/harness.py`, `corpus.py` | M8 | Fixed-seed corpus with ground truth; repeated runs; median, min and max reported | `scripts/run_benchmarks.py` | **IMPLEMENTED** |
+| NFV2 | Acceptance thresholds defined before measurement | `benchmarks/thresholds.json` | M8 | Seven thresholds, each justified by the deployment target, committed before the results | `scripts/check_benchmarks.py`; git history | **IMPLEMENTED** |
+| NFV3 | Correctness does not degrade under load | `benchmarks/harness.py` | M8 | Session and TLS counts match ground truth at every profile | `benchmarks/results.json` (25/25, 200/200, 1000/1000, 4000/4000) | **IMPLEMENTED** |
+| NFV4 | Stage-level timing reported honestly | `benchmarks/harness.py` | M8 | An increment smaller than run-to-run spread is flagged, never presented as a measurement | `scripts/run_benchmarks.py` output | **IMPLEMENTED** |
+| NFV5 | Malformed capture containers handled | `ingestion/` | M8 | Stated rejection or empty result; never a crash, never invented evidence | `test_robustness.py` (7 tests, 4 property-based) | **IMPLEMENTED** |
+| NFV6 | Malformed TLS records handled | `tls/` | M8 | Lying lengths, truncated handshakes and arbitrary payloads yield no invented negotiation or certificate | `test_robustness.py` (4 tests, 3 property-based) | **IMPLEMENTED** |
+| NFV7 | Malformed protocol data handled | `protocols/` | M8 | Arbitrary bytes never produce a CONFIRMED credential finding; oversized lines bounded | `test_robustness.py` (2 tests) | **IMPLEMENTED** |
+| NFV8 | Resource limits engage visibly | `config.py`, `engine.py` | M8 | Session limit warns; packet limit marks the result truncated; evidence preserved | `test_robustness.py` (4 tests) | **IMPLEMENTED** |
+| NFV9 | Passive operation proven, not asserted | whole engine | M8 | Socket constructors replaced with raising stubs across analysis, batch and all three renderers; no outbound client library imported | `test_robustness.py` (7 tests) | **IMPLEMENTED** |
+| NFV10 | Token required on every data endpoint | `backend/app.py`, `security.py` | M8 | 13 endpoints answer 401 without a valid token | `test_security_audit.py` (13 parametrised + 3) | **IMPLEMENTED** |
+| NFV11 | DNS rebinding refused | `backend/app.py` | M8 | Non-local `Host` answers 400 before the body is read | `test_security_audit.py` (2 tests) | **IMPLEMENTED** |
+| NFV12 | CORS never permissive | `backend/security.py` | M8 | Fixed origin list, no wildcard, credentials off | `test_security_audit.py` (2 tests) | **IMPLEMENTED** |
+| NFV13 | CSRF structurally impossible | `backend/app.py` | M8 | No cookies; four state-changing endpoints refused from a token-less cross-origin client | `test_security_audit.py::test_there_are_no_cookies_so_there_is_no_cookie_csrf` | **IMPLEMENTED** |
+| NFV14 | Hostile identifiers refused without leaking | `backend/app.py` | M8 | 12 hostile strings × 5 endpoint templates: never 200, never a traceback, path or SQL error | `test_security_audit.py` (12 parametrised) | **IMPLEMENTED** |
+| NFV15 | No SQL injection via sort or search | `backend/app.py` | M8 | Sort looked up in a fixed dict (422 otherwise); search bound; row count unchanged afterwards | `test_security_audit.py` (12 parametrised) | **IMPLEMENTED** |
+| NFV16 | Collection responses bounded | `backend/app.py` | M8 | Every collection has a `le=` ceiling; over-limit, zero, negative and negative offset all refused | `test_security_audit.py::test_collection_responses_are_bounded` | **IMPLEMENTED** |
+| NFV17 | Upload validation and limits | `backend/storage.py` | M8 | Magic bytes not extension; server-generated paths; oversized answers 413 and is not stored | `test_security_audit.py` (4 tests) | **IMPLEMENTED** |
+| NFV18 | No information disclosure in errors | `backend/app.py` | M8 | An exception carrying the data path and the token leaks neither | `test_security_audit.py` (3 tests) | **IMPLEMENTED** |
+| NFV19 | Reports execute nothing | `reporting/` | M8 | 13 hostile titles escaped but not discarded; PDF catalogue free of actions | `test_report_hardening.py` (16 tests) | **IMPLEMENTED** |
+| NFV20 | Reports fetch nothing | `reporting/html_report.py` | M8 | `find_external_references` raises rather than shipping a report that loads a resource | `test_report_hardening.py` (3 tests) | **IMPLEMENTED** |
+| NFV21 | No finding hidden by an aggregate score | `reporting/` | M8 | Every CRITICAL/HIGH finding in the JSON export present in HTML and PDF, by `finding_id` | `test_report_hardening.py` (2 tests) | **IMPLEMENTED** |
+| NFV22 | Reports survive Unicode and long identifiers | `reporting/` | M8 | Round trip through all three formats; identifiers printed in full | `test_report_hardening.py` (16 tests) | **IMPLEMENTED** |
+| NFV23 | SQLite integrity and foreign keys enforced | `backend/database.py` | M8 | `integrity_check` ok, `foreign_key_check` empty, `foreign_keys` on, violation raises | `test_reliability.py` (3 tests) | **IMPLEMENTED** |
+| NFV24 | Persistence is atomic | `backend/service.py` | M8 | A failure mid-transaction restores the previous results exactly; a first failure stores nothing | `test_reliability.py` (4 tests) | **IMPLEMENTED** |
+| NFV25 | Restart never fabricates success | `backend/database.py` | M8 | Interrupted jobs marked FAILED with a reason; completed investigations survive byte-for-byte | `test_reliability.py` (3 tests) | **IMPLEMENTED** |
+| NFV26 | Concurrency safe | `backend/service.py` | M8 | Simultaneous uploads, duplicate uploads, reads during analysis, concurrent exports, duplicate analyses | `test_reliability.py` (6 tests) | **IMPLEMENTED** |
+| NFV27 | Worker model documented truthfully | `backend/service.py` | M8 | `ThreadPoolExecutor(max_workers=2)`, asserted by test so docs cannot drift | `test_reliability.py::test_the_worker_model_is_a_bounded_thread_pool` | **IMPLEMENTED** |
+| NFV28 | Frontend landmarks and headings | `frontend/src/App.tsx` | M8 | One `<h1>`; `navigation` and `main` landmarks | `accessibility.test.tsx` (3 tests) | **IMPLEMENTED** |
+| NFV29 | Every control has an accessible name | `frontend/src/pages/` | M8 | All controls on 8 pages; 6 placeholder-only controls fixed | `accessibility.test.tsx` (16 tests) | **IMPLEMENTED** |
+| NFV30 | Keyboard operable | `frontend/src/` | M8 | Navigation reachable by tab; no enabled control out of the tab order; no focus trap | `accessibility.test.tsx` (4 tests) | **IMPLEMENTED** |
+| NFV31 | Failure announced, never shown as zero | `frontend/src/pages/` | M8 | 7 pages announce `role="alert"` on error and claim nothing while loading | `accessibility.test.tsx` (14 tests) | **IMPLEMENTED** |
+| NFV32 | Usable at narrow widths | `frontend/src/` | M8 | Navigation intact at 320, 480, 768 and 1024 px | `accessibility.test.tsx` (4 tests) | **IMPLEMENTED** |
+| NFV33 | Colour contrast meets WCAG 2.1 AA | `frontend/tailwind.config.js` | M8 | 9 token pairs computed with the relative-luminance formula | `accessibility.test.tsx` (10 tests) | **PARTIAL** (token-level check; rendered pixels are not sampled, so a colour changed without updating the test would not be caught) |
+| NFV34 | Every third-party import declared | `pyproject.toml` | M8 | AST scan of `src/`, `tests/`, `scripts/` against declared extras | `test_dependencies.py` (5 tests) | **IMPLEMENTED** |
+| NFV35 | Engine dependency floor enforced | `src/securemailscope/` | M8 | No engine module imports the web or ML stack; importing the pipeline loads neither | `test_dependencies.py` (2 tests) | **IMPLEMENTED** |
+| NFV36 | Production frontend free of known advisories | `frontend/package.json` | M8 | `npm audit --omit=dev` reports zero | CI job `frontend` | **IMPLEMENTED** |
+| NFV37 | Development frontend advisories recorded | `docs/dependency-audit.md` | M8 | Five remaining advisories listed with severity, scope and reason for deferral | — | **PARTIAL** (recorded and scoped, not remediated; needs a vite 5→8 and vitest 2→5 migration) |
+| NFV38 | Clean installation from a bare checkout | `pyproject.toml` | M8 | Engine-only and full installs from `git archive`, in fresh venvs, on Python 3.12 | Executed 2026-09-21: 1346 passed, 25 skipped; ruff and mypy clean | **IMPLEMENTED** |
+| NFV39 | Continuous integration | `.github/workflows/ci.yml` | M8 | Five jobs; read-only permissions; no secrets; no capture data uploaded | — | **NOT VERIFIED** (the workflow is committed and its steps mirror commands verified locally, but no run has executed on GitHub Actions from this session) |
+| NFV40 | Complete browser-to-backend acceptance test | `frontend/e2e/acceptance.spec.ts` | M8 | 22 steps against the real stack, including a backend restart and reopen | `npm run e2e` | **IMPLEMENTED** |
+| NFV41 | Analysis cancellation absent, not faked | `backend/app.py` | M8 | No route, no CANCELLED status, no button | `test_reliability.py::test_cancellation_is_not_offered_because_it_is_not_implemented` | **NOT IMPLEMENTED** (deliberately; the absence is tested) |
+| NFV42 | Hash-pinned dependency lock | — | M8 | `pip install --require-hashes` | — | **NOT IMPLEMENTED** |
+| NFV43 | Python advisory scanning | — | M8 | `pip-audit` or Dependabot in CI | — | **NOT IMPLEMENTED** |
+| NFV44 | SBOM generation | — | M8 | A machine-readable bill of materials | — | **NOT IMPLEMENTED** |
+| NFV45 | Type checking of tests and scripts | `pyproject.toml` | M8 | `mypy` covers `src/` only (116 files); `tests/` and `scripts/` are outside its scope | — | **NOT IMPLEMENTED** (a widened run reports 161 errors in 13 files, all in test and script code) |
+| NFV46 | Benchmarks on the assumed minimum hardware | — | M8 | A run on 4 cores / 8 GB | — | **NOT VERIFIED** (thresholds are derived for that machine; the recorded run used 16 logical CPUs) |
+
+---
+
 ## NF — Non-functional
 
 | ID | Requirement | Where | Milestone | Acceptance criterion | Test | Status |
@@ -619,37 +673,55 @@ stating their status and the milestone that owns them.
 | NF10 | No broad exception swallowing | whole package | M1 | No bare `except Exception` in the analysis path | Code review; `ruff` `B` rules | **IMPLEMENTED** |
 | NF11 | Captures and secrets never committed | `.gitignore`, `scripts/check_staged.sh` | M0 | Both controls present and exercised | `make secrets-check` | **IMPLEMENTED** |
 | NF12 | Reproducible execution commands | `Makefile`, `README.md` | M0 | Documented and working | Manual | **IMPLEMENTED** |
-| NF13 | Pinned dependencies | `pyproject.toml` | M0 | Exact versions | — | **PARTIAL** (versions pinned; no hash-pinned lock file) |
-| NF14 | Performance characterisation | — | deferred | — | — | **NOT IMPLEMENTED** (no benchmark has been run; no throughput figure is claimed anywhere) |
+| NF13 | Pinned dependencies | `pyproject.toml`, `requirements-lock.txt` | M0/M8 | Exact versions; fully-resolved lock file | `test_dependencies.py::test_every_declared_dependency_is_pinned_exactly`, `::test_the_lock_file_matches_what_is_declared` | **PARTIAL** (45 packages pinned and locked, zero drift on a clean install; hashes still not pinned) |
+| NF14 | Performance characterisation | `benchmarks/`, `scripts/run_benchmarks.py` | M8 | Reproducible harness, ground-truth corpus, repeated runs, variation reported | `scripts/run_benchmarks.py`; `benchmarks/results.json` | **IMPLEMENTED** (four profiles, 3 repeats each, measured on one machine only — see `docs/performance-benchmarks.md` for what the figures do not establish) |
 
 ---
 
 ## Summary
 
-| Status | Count | Change since M6 |
+| Status | Count | Change since M7 |
 |---|---|---|
-| IMPLEMENTED | 413 | +56 |
-| PARTIAL | 3 | -1 |
-| NOT IMPLEMENTED | 10 | -2 |
-| **Total requirements tracked** | **426** | +53 |
+| IMPLEMENTED | 451 | +38 |
+| PARTIAL | 5 | +2 |
+| NOT IMPLEMENTED | 14 | +4 |
+| NOT VERIFIED | 2 | new in M8 |
+| **Total requirements tracked** | **472** | +46 |
 
-As of M7 the implemented set covers the whole product: capture ingestion, TCP
+The implemented set covers the whole product: capture ingestion, TCP
 reconstruction, the email protocol layer, the TLS and certificate layer, the
 assessment layer, the forensic intelligence layer, the machine-learning layer,
-and a local application around them — a FastAPI adapter over the unchanged
-engine, SQLite persistence, a React investigation interface and JSON, HTML and
-PDF reporting from one canonical model.
+a local application around them, and — since M8 — a verified account of how all
+of it behaves under adverse conditions.
 
-**Reported PARTIAL:** certificate extraction (TLS ≤ 1.2 only — TLS 1.3
-encrypts the Certificate message, permanently), supervised risk classification
-(F28.8, implemented and measured, reported `NOT_VALIDATED`), and pinned
-dependencies (NF13, versions pinned but no hash-locked file).
+The count rose by 46 in M8 without a single new product feature. Every new row
+is a verification requirement, and four of them are recorded as gaps rather
+than achievements.
 
-**Reported NOT IMPLEMENTED:** analysis cancellation (F30.15) — a running
-analysis finishes or fails, and there is no way to stop it mid-capture;
-revocation checking (F14.25, permanently out of scope); and performance
-characterisation (NF14, no benchmark has been run and no throughput figure is
-claimed anywhere).
+**Reported PARTIAL (5):** certificate extraction (TLS ≤ 1.2 only — TLS 1.3
+encrypts the Certificate message, permanently); supervised risk classification
+(F28.8, implemented and measured, reported `NOT_VALIDATED`); pinned
+dependencies (NF13 — 45 packages pinned and locked with zero drift on a clean
+install, but bytes are not hash-pinned); colour contrast (NFV33 — computed from
+design tokens, not sampled from rendered pixels); and the five remaining
+development-only npm advisories (NFV37 — recorded and scoped, not remediated).
+
+**Reported NOT IMPLEMENTED (14):** analysis cancellation (F30.15, NFV41 — a
+running analysis finishes or fails, and the absence is tested rather than
+disguised); revocation checking (F14.25, permanently out of scope); hash-pinned
+dependencies (NFV42); Python advisory scanning (NFV43); SBOM generation
+(NFV44); type checking of tests and scripts (NFV45 — `mypy` covers `src/` only;
+a widened run reports 161 errors in 13 files); and eight earlier items.
+
+**Reported NOT VERIFIED (2), a status introduced in M8:** continuous
+integration (NFV39 — the workflow is committed and each of its steps mirrors a
+command that passed locally, but no GitHub Actions run has been observed) and
+benchmarks on the assumed minimum hardware (NFV46 — the thresholds are derived
+for a 4-core, 8 GB machine; the recorded run used one with 16 logical CPUs).
+
+This status exists because "the module is there" is not evidence that the
+requirement is met. Where the only thing supporting a row would be the
+existence of code, the row says NOT VERIFIED.
 
 **Constants in every report:** `handshake_analyzed = false`,
 `handshakes_cryptographically_verified = 0`,

@@ -31,12 +31,11 @@ env:
 
 jobs:
   engine:
-    name: Engine (Python ${{ matrix.python }})
+    # One version, matching the `requires-python = ">=3.12,<3.13"` floor in
+    # pyproject.toml. Testing 3.13 here would fail at the install step and
+    # claiming to support it would be untrue until the pin is widened.
+    name: Engine (Python 3.12)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,7 +43,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python }}
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
           cache-dependency-path: pyproject.toml
 
@@ -98,7 +97,6 @@ jobs:
         run: pytest -q
 
       - name: Install TShark and cross-check the dissection
-        if: matrix.python == '3.12'
         run: |
           sudo apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq tshark

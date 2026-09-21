@@ -7,11 +7,45 @@ Tailwind and Recharts.
 
 Calm dark navy, restrained security-status colour, high information density
 without clutter. Colour carries meaning — severity, status — and is not used
-decoratively. Layouts are responsive and contrast meets an accessible ratio
-against the dark background.
+decoratively.
 
 There are no fake terminals, no decorative network graphs, no random
 animations, no invented statistics and no controls that do nothing.
+
+## Accessibility
+
+Verified in M8 by `frontend/src/test/accessibility.test.tsx` (53 tests):
+
+- One `<h1>` per view; `navigation` and `main` landmarks present; every
+  navigation link carries an accessible name and an `href`.
+- Every button, link, select, textbox and checkbox across the eight main pages
+  has an accessible name. This found six controls whose only label was a
+  `placeholder` — which is not an accessible name and disappears the moment the
+  analyst types. All six now carry an `aria-label`.
+- Every table has a header row.
+- The navigation is reachable by tabbing; no enabled control is removed from
+  the tab order; focus is not trapped in any single control.
+- Seven pages announce a load failure with `role="alert"` rather than rendering
+  an empty panel, and none claims a result while still loading.
+- The navigation survives at 320, 480, 768 and 1024 pixels wide.
+- Nine foreground/background token pairs meet the WCAG 2.1 AA contrast
+  minimum, computed with the relative-luminance formula rather than judged by
+  eye. The formula itself is checked against black-on-white (21:1) and
+  white-on-white (1:1).
+
+**Limit:** contrast is checked at the design-token level, not sampled from
+rendered pixels. A colour changed in `tailwind.config.js` without updating the
+test would not be caught. No screen-reader testing with an actual assistive
+technology has been performed.
+
+## Upload staging
+
+Selecting files appends to the staging list rather than replacing it. Before
+M8 a fresh selection discarded everything staged before it, so choosing one
+more file after two successful uploads removed those two from the list and took
+the Analyse button with them — while the backend was still holding the
+captures. Identical bytes staged twice are listed once when the investigation
+is created, matching the backend, which stores identical bytes as one capture.
 
 ## Areas
 

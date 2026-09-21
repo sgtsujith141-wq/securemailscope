@@ -558,3 +558,54 @@ exists.
 - Show a progress bar that is not backed by a real proportion.
 - Render a missing value as a zero or an empty cell.
 - Treat an unavailable observation as either a pass or a finding.
+- Report a stage timing smaller than the measurement noise as though it were a
+  measurement of that stage.
+- Claim a benchmark figure applies to hardware it was not measured on.
+- Claim continuous integration is green because local tests passed.
+- Mark a requirement complete because the module implementing it exists.
+
+## Limits established in M8
+
+**Memory, not speed, is the binding constraint.** Peak resident memory grows at
+roughly 76 KB per packet: 625 MB for a 6,000-packet capture, 1.8 GB for a
+24,000-packet one. Two analyses share one process. On the 8 GB machine the
+thresholds assume, a single large analysis fits and two concurrent ones may
+not. The application does not claim to handle 24,000-packet captures on that
+hardware.
+
+**Every performance figure is from one machine and one synthetic corpus.** The
+thresholds in `benchmarks/thresholds.json` are derived for 4 cores and 8 GB;
+the recorded run used a machine with 16 logical CPUs. A pass there does not
+demonstrate a pass on the assumed minimum, and no run on that minimum has been
+taken.
+
+**Synthetic captures are not real traffic.** The benchmark corpus uses seven
+cipher suites with a regular session structure and no retransmissions,
+out-of-order segments or long-lived connections. Nothing measured here
+describes behaviour on those.
+
+**The security audit is internal.** No third-party assessment, no penetration
+test, no certification, no fuzzing campaign against a deployed instance. The
+application is not safe to expose to a network and is not claimed to be.
+
+**Five development-only npm advisories are open**, including one rated
+critical. None ships to a browser; all require semver-major migrations of the
+build toolchain. They are recorded in `docs/dependency-audit.md` rather than
+waived.
+
+**Dependency bytes are not pinned.** Versions are pinned and fully locked
+across 45 packages with zero drift on a clean install, but `--require-hashes`
+is not used, so an index serving different bytes under the same version would
+not be detected.
+
+**`mypy` covers `src/` only.** Test and script code is outside its configured
+scope; a widened run reports 161 errors across 13 files.
+
+**Colour contrast is checked at the token level**, computed from the palette
+with the WCAG relative-luminance formula. Rendered pixels are not sampled, so a
+colour changed in `tailwind.config.js` without updating the test would not be
+caught.
+
+**Continuous integration has not been observed to run.** The workflow is
+committed and each of its steps mirrors a command verified locally, but no
+GitHub Actions run has executed. This is recorded as NOT VERIFIED.

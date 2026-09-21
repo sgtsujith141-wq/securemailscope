@@ -65,9 +65,14 @@ rather than re-derived from the analysis document on every page view.
 
 ### `findings`
 
-One row per finding with its severity, confidence, category, priority, rank,
-policy version and `evidence_json` — the packet references, which are metadata
-only.
+One row per finding **per investigation**, with its severity, confidence,
+category, priority, rank, policy version and `evidence_json` — the packet
+references, which are metadata only. The primary key is
+`(finding_id, investigation_id)`: the id identifies the finding, the pair
+identifies the row. `GET /api/findings/{finding_id}` accepts an optional
+`investigation_id` to say which investigation's copy is wanted; without it any
+copy is returned, which is unambiguous because the rows differ only in the
+investigation they belong to.
 
 ### `intelligence`, `ml_results`, `report_exports`
 
@@ -82,12 +87,38 @@ interface cannot render a classifier prediction without it.
 `PRAGMA user_version` plus an ordered list of steps in `database.py`:
 
 ```python
-_MIGRATIONS = (_migration_1,)
+_MIGRATIONS = (_migration_1, _migration_2)
 ```
 
 Each step applies when `user_version` equals its index and then increments it.
 Adding a migration means appending a function and bumping `SCHEMA_VERSION`;
 they run automatically on start and are idempotent.
+
+### `_migration_2` — composite keys on `sessions` and `findings`
+
+Added in M8, fixing a defect that made a capture usable in exactly one
+investigation. Both `session_id` and `finding_id` are deterministic digests of
+their own content — that is the point of them, and it is what makes a finding
+citable across a report, a dashboard and a JSON export. But while each was a
+single-column primary key, analysing the same capture in a second
+investigation produced the same ids again, the insert failed with
+`UNIQUE constraint failed: findings.finding_id`, the whole persist transaction
+rolled back, and the second investigation was marked FAILED carrying a raw
+SQLAlchemy error.
+
+The key on each table is now `(session_id, investigation_id)` and
+`(finding_id, investigation_id)`. SQLite cannot alter a primary key, so the
+migration rebuilds each table: drop the indexes SQLite carries across a
+`RENAME`, create the new shape from the model metadata, copy every row, drop
+the old table. Every existing row satisfies the wider key, because the old one
+was strictly stricter, so nothing is lost. The step is a no-op on a database
+that already has the composite key, which is what a freshly created one gets
+from `_migration_1`.
+
+`tests/test_reliability.py` covers both directions: a version-1 database built
+by narrowing the real DDL is migrated with its rows intact and no leftover
+scaffolding, and re-running the migration on a current database changes
+nothing.
 
 Alembic would be the usual answer and would be a great deal of machinery for a
 single-file local database.

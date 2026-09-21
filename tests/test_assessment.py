@@ -1014,14 +1014,18 @@ def test_the_requirements_matrix_summary_is_arithmetically_correct() -> None:
         encoding="utf-8"
     )
     body, summary = text.split("## Summary", 1)
-    counted = {"IMPLEMENTED": 0, "PARTIAL": 0, "NOT IMPLEMENTED": 0}
+    counted = {"IMPLEMENTED": 0, "PARTIAL": 0, "NOT IMPLEMENTED": 0, "NOT VERIFIED": 0}
     for line in body.splitlines():
         if not line.startswith("| ") or "|---" in line:
             continue
         cells = [cell.strip() for cell in line.strip("|").split("|")]
         if len(cells) < 7:
             continue
-        match = re.search(r"\*\*(NOT IMPLEMENTED|IMPLEMENTED|PARTIAL)\*\*", cells[-1])
+        # Longest alternatives first: "NOT IMPLEMENTED" must not be read as
+        # "IMPLEMENTED".
+        match = re.search(
+            r"\*\*(NOT IMPLEMENTED|NOT VERIFIED|IMPLEMENTED|PARTIAL)\*\*", cells[-1]
+        )
         if match:
             counted[match.group(1)] += 1
 

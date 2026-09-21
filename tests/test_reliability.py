@@ -22,6 +22,7 @@ from sqlalchemy import text
 
 from securemailscope.backend.app import AppState, create_app
 from securemailscope.backend.database import (
+    Base,
     CaptureRow,
     Database,
     FindingRow,
@@ -540,3 +541,185 @@ def test_a_capture_file_removed_behind_the_application_fails_visibly(
     detail = client.get(f"/api/investigations/{identifier}").json()
     assert detail["investigation"]["status"] == "FAILED"
     assert detail["investigation"]["session_count"] == 0
+
+
+# ---------------------------------------------------------------------------
+# A capture may belong to more than one investigation
+# ---------------------------------------------------------------------------
+def test_one_capture_can_be_analysed_in_two_investigations(
+    client: TestClient, state: AppState
+) -> None:
+    """Regression: the deterministic ids used to lock a capture to one investigation.
+
+    ``session_id`` and ``finding_id`` are digests of their own content, so
+    analysing the same capture again produces the same ids. While those were
+    single-column primary keys, the second investigation's persist failed with
+    ``UNIQUE constraint failed: findings.finding_id``, the whole transaction
+    rolled back, and the investigation was marked FAILED with a raw database
+    error. A capture could belong to exactly one investigation, for ever.
+    """
+    capture = upload(client, "aa_tls10_static_rsa.pcap")
+
+    first = analyse(client, state, [capture])
+    second_id = client.post(
+        "/api/investigations",
+        json={"name": "the same capture again", "capture_ids": [capture]},
+    ).json()["investigation_id"]
+    client.post(f"/api/investigations/{second_id}/analyze")
+    state.service.wait(second_id)
+
+    for identifier in (first, second_id):
+        detail = client.get(f"/api/investigations/{identifier}").json()
+        assert detail["investigation"]["status"] == "COMPLETED", (
+            f"{identifier}: {detail['jobs'][-1].get('error')}"
+        )
+        assert detail["investigation"]["finding_count"] > 0
+
+    a = client.get(f"/api/investigations/{first}/findings").json()
+    b = client.get(f"/api/investigations/{second_id}/findings").json()
+    assert a["total"] == b["total"]
+    # The same capture under the same policy yields the same finding ids --
+    # that is the point of a deterministic id, and both investigations keep
+    # their own copy of the row.
+    assert [f["finding_id"] for f in a["items"]] == [
+        f["finding_id"] for f in b["items"]
+    ]
+
+    with state.database.engine.connect() as connection:
+        assert connection.execute(text("PRAGMA integrity_check")).scalar_one() == "ok"
+        assert connection.execute(text("PRAGMA foreign_key_check")).fetchall() == []
+
+
+def test_a_finding_lookup_can_be_scoped_to_an_investigation(
+    client: TestClient, state: AppState
+) -> None:
+    """With the same id in two investigations, the caller can say which."""
+    capture = upload(client, "aa_tls10_static_rsa.pcap")
+    first = analyse(client, state, [capture])
+    second_id = client.post(
+        "/api/investigations", json={"name": "again", "capture_ids": [capture]}
+    ).json()["investigation_id"]
+    client.post(f"/api/investigations/{second_id}/analyze")
+    state.service.wait(second_id)
+
+    finding_id = client.get(f"/api/investigations/{first}/findings").json()["items"][0][
+        "finding_id"
+    ]
+    session_id = client.get(f"/api/investigations/{first}/sessions").json()["items"][0][
+        "session_id"
+    ]
+
+    # Unscoped: still answers, because the rows are identical but for the
+    # investigation they belong to.
+    assert client.get(f"/api/findings/{finding_id}").status_code == 200
+    assert client.get(f"/api/sessions/{session_id}").status_code == 200
+
+    for identifier in (first, second_id):
+        finding = client.get(
+            f"/api/findings/{finding_id}", params={"investigation_id": identifier}
+        )
+        assert finding.status_code == 200
+        assert finding.json()["finding"]["investigation_id"] == identifier
+
+        session = client.get(
+            f"/api/sessions/{session_id}", params={"investigation_id": identifier}
+        )
+        assert session.status_code == 200
+
+    missing = client.get(
+        f"/api/findings/{finding_id}", params={"investigation_id": "inv-nope"}
+    )
+    assert missing.status_code == 404
+
+
+def test_the_schema_migration_widens_the_primary_keys(tmp_path: Path) -> None:
+    """A version-1 database is migrated in place without losing rows.
+
+    The version-1 shape is produced by taking the real schema and narrowing
+    the two primary keys back to one column, rather than by hand-writing a
+    table -- a hand-written approximation would not exercise the columns,
+    defaults and indexes the real migration has to carry across.
+    """
+    import re
+
+    from sqlalchemy import create_engine
+    from sqlalchemy import text as sql
+
+    path = tmp_path / "old.sqlite3"
+    engine = create_engine(f"sqlite:///{path}", future=True)
+
+    with engine.begin() as connection:
+        Base.metadata.create_all(connection)
+        for table, keep in (("sessions", "session_id"), ("findings", "finding_id")):
+            ddl = connection.execute(
+                sql(
+                    "SELECT sql FROM sqlite_master WHERE type='table' AND name=:t"
+                ),
+                {"t": table},
+            ).scalar_one()
+            narrowed = re.sub(
+                r"PRIMARY KEY \([^)]*\)", f"PRIMARY KEY ({keep})", ddl
+            )
+            assert narrowed != ddl, f"the {table} DDL did not contain a key clause"
+            connection.execute(sql(f"DROP TABLE {table}"))
+            connection.execute(sql(narrowed))
+        connection.execute(
+            sql(
+                "INSERT INTO findings (finding_id, investigation_id, capture_id, "
+                "session_id, rule_id, title, description, severity, confidence, "
+                "category, evaluation_status, rank, technical_impact, "
+                "policy_version) VALUES ('find-1', 'inv-1', 'cap-1', 'sess-1', "
+                "'R1', 'kept', 'd', 'HIGH', 'CONFIRMED', 'C', 'FAIL', 1, 'i', '1')"
+            )
+        )
+        connection.execute(sql("PRAGMA user_version=1"))
+    engine.dispose()
+
+    database = Database(path)
+    try:
+        assert database.schema_version == 2
+        with database.engine.connect() as connection:
+            kept = connection.execute(
+                text("SELECT title FROM findings WHERE finding_id='find-1'")
+            ).scalar_one()
+            assert kept == "kept", "the migration lost a row"
+            assert (
+                connection.execute(text("PRAGMA integrity_check")).scalar_one() == "ok"
+            )
+            leftovers = connection.execute(
+                text("SELECT name FROM sqlite_master WHERE name LIKE '%\\_old' ESCAPE '\\'")
+            ).fetchall()
+            assert leftovers == [], leftovers
+            for table, other in (("findings", "finding_id"), ("sessions", "session_id")):
+                keys = {
+                    row[1]
+                    for row in connection.execute(
+                        text(f"PRAGMA table_info({table})")
+                    ).fetchall()
+                    if row[5]
+                }
+                assert keys == {other, "investigation_id"}, (table, keys)
+    finally:
+        database.close()
+
+
+def test_the_migration_is_a_no_op_on_a_current_database(tmp_path: Path) -> None:
+    """Running it again must not rebuild anything or drop an index."""
+    path = tmp_path / "current.sqlite3"
+    first = Database(path)
+    with first.engine.connect() as connection:
+        before = connection.execute(
+            text("SELECT name FROM sqlite_master ORDER BY name")
+        ).fetchall()
+    first.close()
+
+    second = Database(path)
+    try:
+        assert second.migrate() == 2
+        with second.engine.connect() as connection:
+            after = connection.execute(
+                text("SELECT name FROM sqlite_master ORDER BY name")
+            ).fetchall()
+        assert after == before
+    finally:
+        second.close()

@@ -86,6 +86,23 @@ responsive.
 * **Conservative restart.** A job left `QUEUED` or `RUNNING` by a dead process
   is marked `FAILED` with its reason. It produced no results, and a job still
   marked running would either spin for ever or be read as complete.
+* **No cancellation.** A running analysis finishes or fails. There is no
+  endpoint, no `CANCELLED` status and no button, and
+  `tests/test_reliability.py` asserts their absence so the gap cannot be
+  mistaken for a broken control.
+
+M8 added tests that hold this description to the code:
+`test_the_worker_model_is_a_bounded_thread_pool` asserts the pool type and
+`max_workers == 2`, so this section cannot drift away from what runs. Six
+concurrency scenarios — simultaneous uploads, identical uploads, reads during
+an analysis, concurrent exports in three formats, duplicate analyse requests
+and a capture deleted mid-investigation — are exercised in
+`tests/test_reliability.py`.
+
+Because both workers share one process, they also share its memory. A single
+6,000-packet analysis reaches about 625 MB of resident memory; two of that size
+at once approach the 2 GB budget derived for an 8 GB machine. See
+[performance-benchmarks.md](performance-benchmarks.md).
 
 ## Frontend
 

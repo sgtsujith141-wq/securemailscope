@@ -117,6 +117,23 @@ reason stated, rather than being left to look as though it were still running
 or assumed to have completed. Re-running the analysis is the remedy; the
 uploaded capture is still in storage.
 
+## Execution model
+
+Analyses run in a `ThreadPoolExecutor` with `max_workers=2`, inside the API
+process. It is not a distributed task queue, not a process pool and not
+asynchronous. Two analyses proceed at once; a third waits. This is asserted by
+`tests/test_reliability.py::test_the_worker_model_is_a_bounded_thread_pool`, so
+this description cannot drift away from the code.
+
+There is no way to cancel a running analysis. It finishes or it fails. No
+endpoint, no `CANCELLED` status and no button exists, and a test asserts their
+absence so the gap cannot be mistaken for a broken feature.
+
+Because both workers share one process, peak memory is shared too. One
+6,000-packet analysis reaches about 625 MB of resident memory; two concurrent
+analyses of that size approach the 2 GB budget derived for an 8 GB machine. See
+`docs/performance-benchmarks.md`.
+
 ## What this deployment never does
 
 - Bind a non-loopback interface.

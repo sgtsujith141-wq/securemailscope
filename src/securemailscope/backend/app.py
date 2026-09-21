@@ -691,10 +691,24 @@ def create_app(
         "/api/sessions/{session_id}", response_model=SessionDetail, tags=["sessions"]
     )
     def get_session(
-        session_id: str, app_state: AppState = Depends(get_state)
+        session_id: str,
+        investigation_id: str | None = Query(
+            None,
+            description=(
+                "Narrow the lookup to one investigation. A session id is a "
+                "digest of the session itself, so the same capture analysed in "
+                "two investigations yields the same id in both."
+            ),
+        ),
+        app_state: AppState = Depends(get_state),
     ) -> SessionDetail:
         with app_state.database.session() as db_session:
-            row = db_session.get(SessionRow, session_id)
+            query = db_session.query(SessionRow).filter(
+                SessionRow.session_id == session_id
+            )
+            if investigation_id:
+                query = query.filter(SessionRow.investigation_id == investigation_id)
+            row = query.first()
             if row is None:
                 raise HTTPException(status_code=404, detail="session not found")
             findings = (
@@ -760,10 +774,24 @@ def create_app(
         "/api/findings/{finding_id}", response_model=FindingDetail, tags=["findings"]
     )
     def get_finding(
-        finding_id: str, app_state: AppState = Depends(get_state)
+        finding_id: str,
+        investigation_id: str | None = Query(
+            None,
+            description=(
+                "Narrow the lookup to one investigation. A finding id is a "
+                "digest of the rule, the session and the policy, so it repeats "
+                "wherever the same capture is analysed under the same policy."
+            ),
+        ),
+        app_state: AppState = Depends(get_state),
     ) -> FindingDetail:
         with app_state.database.session() as db_session:
-            row = db_session.get(FindingRow, finding_id)
+            query = db_session.query(FindingRow).filter(
+                FindingRow.finding_id == finding_id
+            )
+            if investigation_id:
+                query = query.filter(FindingRow.investigation_id == investigation_id)
+            row = query.first()
             if row is None:
                 raise HTTPException(status_code=404, detail="finding not found")
             return FindingDetail(

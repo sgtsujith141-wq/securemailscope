@@ -36,7 +36,7 @@ vi.mock('../lib/api', async () => {
   }
 })
 
-import { api } from '../lib/api'
+import { ApiError, api } from '../lib/api'
 import App from '../App'
 import { Overview } from '../pages/Overview'
 import { Investigations } from '../pages/Investigations'
@@ -330,5 +330,60 @@ describe('colour contrast', () => {
 
   it.each(pairs)('%s meets its contrast minimum', (_name, fg, bg, minimum) => {
     expect(ratio(fg, bg)).toBeGreaterThanOrEqual(minimum)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Upload staging
+// ---------------------------------------------------------------------------
+describe('upload staging', () => {
+  /**
+   * Regression for a defect the M8 acceptance walkthrough found: a second
+   * selection replaced the staging list, so two already-uploaded captures
+   * disappeared and the Analyse button went with them, even though the backend
+   * still held them.
+   */
+  it('keeps earlier uploads when more files are selected', async () => {
+    resolveEverything()
+    mocked.uploadCapture
+      .mockResolvedValueOnce({ ...fixtures.capture, capture_id: 'sha256:aaa' })
+      .mockResolvedValueOnce({ ...fixtures.capture, capture_id: 'sha256:bbb' })
+      .mockRejectedValueOnce(new ApiError(422, 'not a pcap or pcapng capture'))
+
+    withRouter(<Investigations />)
+    const input = await screen.findByTestId('file-input')
+
+    await userEvent.upload(input, [
+      new File(['a'], 'one.pcap'),
+      new File(['b'], 'two.pcap'),
+    ])
+    await waitFor(() => expect(screen.getByTestId('analyse-button')).toBeInTheDocument())
+
+    await userEvent.upload(input, [new File(['x'], 'bad.pcap')])
+    await waitFor(() => expect(screen.getByText(/not a pcap or pcapng capture/i)).toBeInTheDocument())
+
+    // The two good captures are still staged, and still analysable.
+    expect(screen.getByText('one.pcap')).toBeInTheDocument()
+    expect(screen.getByText('two.pcap')).toBeInTheDocument()
+    expect(screen.getByTestId('analyse-button')).toBeInTheDocument()
+  })
+
+  it('lists a capture staged twice only once when analysing', async () => {
+    resolveEverything()
+    mocked.uploadCapture.mockResolvedValue({ ...fixtures.capture, capture_id: 'sha256:same' })
+    mocked.createInvestigation.mockResolvedValue(fixtures.investigation)
+    mocked.startAnalysis.mockResolvedValue(fixtures.job)
+
+    withRouter(<Investigations />)
+    const input = await screen.findByTestId('file-input')
+    await userEvent.upload(input, [new File(['a'], 'one.pcap')])
+    await waitFor(() => expect(screen.getByTestId('analyse-button')).toBeInTheDocument())
+    await userEvent.upload(input, [new File(['a'], 'one-again.pcap')])
+    await waitFor(() => expect(screen.getByText('one-again.pcap')).toBeInTheDocument())
+
+    await userEvent.click(screen.getByTestId('analyse-button'))
+    await waitFor(() => expect(mocked.createInvestigation).toHaveBeenCalled())
+    const [, ids] = mocked.createInvestigation.mock.calls[0]
+    expect(ids).toEqual(['sha256:same'])
   })
 })

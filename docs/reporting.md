@@ -20,13 +20,21 @@ is not already in the analysis result, it does not appear in a report.
 `tests/test_backend.py::test_all_three_formats_agree_on_the_facts` compares,
 across all three formats:
 
-capture ids · session ids and counts · finding rule ids and severities · policy
-version · posture score · remediation ids · blast-radius subjects · ML
-validation status and anomaly algorithm
+capture ids · session ids and counts · finding ids · finding rule ids and
+severities · policy version · posture score · remediation ids · blast-radius
+subjects · ML validation status and anomaly algorithm
 
 Long identifiers wrap across lines in the PDF, which is correct — wrapping is
 what stops them being clipped — so the comparison is made on whitespace-
 normalised text.
+
+**Finding ids are printed in full in all three formats.** Until M8 only the
+JSON export carried them: the HTML and PDF reports printed each finding's title
+and rule id but not its `finding_id`, so a finding read in a report could not
+be looked up in the JSON export or the dashboard. Both now print it.
+`tests/test_report_hardening.py` asserts that every CRITICAL and HIGH finding
+present in the JSON export appears, by id, in both other formats — so an
+aggregate score can never suppress an individual result.
 
 ## JSON
 

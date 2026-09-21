@@ -239,7 +239,9 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
   )
 }
 
-function query(params: Record<string, string | number | boolean | undefined>): string {
+function query(
+  params: Record<string, string | number | boolean | undefined | null>,
+): string {
   const search = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== '' && value !== null) search.set(key, String(value))
@@ -289,7 +291,14 @@ export const api = {
     } = {},
   ) => get<Page<SessionSummary>>(`/api/investigations/${id}/sessions${query(options)}`),
 
-  getSession: (sessionId: string) => get<SessionDetail>(`/api/sessions/${sessionId}`),
+  // `investigationId` scopes the lookup. Session and finding ids are digests
+  // of their own content, so the same capture analysed in two investigations
+  // produces the same id in both; without the scope the backend returns
+  // whichever copy it finds first.
+  getSession: (sessionId: string, investigationId?: string | null) =>
+    get<SessionDetail>(
+      `/api/sessions/${sessionId}${query({ investigation_id: investigationId })}`,
+    ),
 
   listFindings: (
     id: string,
@@ -305,7 +314,10 @@ export const api = {
     } = {},
   ) => get<Page<FindingSummary>>(`/api/investigations/${id}/findings${query(options)}`),
 
-  getFinding: (findingId: string) => get<FindingDetail>(`/api/findings/${findingId}`),
+  getFinding: (findingId: string, investigationId?: string | null) =>
+    get<FindingDetail>(
+      `/api/findings/${findingId}${query({ investigation_id: investigationId })}`,
+    ),
 
   getIntelligence: (id: string, section?: string) =>
     get<Record<string, unknown>>(`/api/investigations/${id}/intelligence${query({ section })}`),

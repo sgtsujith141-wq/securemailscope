@@ -10,7 +10,7 @@ PY      := $(BIN)/python
 PIP     := $(BIN)/pip
 
 .DEFAULT_GOAL := help
-.PHONY: help venv install fixtures test lint typecheck check demo clean secrets-check
+.PHONY: help venv install fixtures test lint typecheck check demo clean secrets-check benchmark benchmark-all lock
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -49,6 +49,20 @@ check: lint typecheck test ## Lint, type-check and test
 demo: fixtures ## Analyse a generated fixture and print the report path
 	$(BIN)/securemailscope analyze tests/fixtures/generated/a_complete_connection.pcap \
 	  --output out/demo-report.json
+
+benchmark: ## Measure performance (small, medium, large) and judge the result
+	$(BIN)/python scripts/run_benchmarks.py
+	$(BIN)/python scripts/check_benchmarks.py
+
+benchmark-all: ## Measure performance including the stress profile
+	$(BIN)/python scripts/run_benchmarks.py --profile all
+	$(BIN)/python scripts/check_benchmarks.py
+
+lock: ## Regenerate requirements-lock.txt from the current environment
+	@{ head -9 requirements-lock.txt; \
+	   $(BIN)/pip list --format=freeze | grep -v "^securemailscope" | grep -v "^-e" | sort; \
+	 } > requirements-lock.txt.new && mv requirements-lock.txt.new requirements-lock.txt
+	@echo "requirements-lock.txt regenerated"
 
 secrets-check: ## Refuse to proceed if capture data or secrets are staged
 	@./scripts/check_staged.sh

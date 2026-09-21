@@ -42,18 +42,27 @@ export function Investigations() {
     const staged: Pending[] = Array.from(files).map((file) => ({
       name: file.name, size: file.size, stage: 'validating' as Stage,
     }))
-    setPending(staged)
+    // Appended, not replaced. A fresh selection used to discard everything
+    // staged before it, so choosing one more file after two successful uploads
+    // removed those two from the list and took the Analyse button with them --
+    // even though the backend was still holding the captures.
+    let base = 0
+    setPending((current) => {
+      base = current.length
+      return [...current, ...staged]
+    })
 
     for (let index = 0; index < files.length; index += 1) {
       const file = files[index]
+      const slot = base + index
       setPending((current) =>
-        current.map((item, i) => (i === index ? { ...item, stage: 'uploading' } : item)),
+        current.map((item, i) => (i === slot ? { ...item, stage: 'uploading' } : item)),
       )
       try {
         const capture = await api.uploadCapture(file)
         setPending((current) =>
           current.map((item, i) =>
-            i === index
+            i === slot
               ? { ...item, stage: 'uploaded', capture, detail: `${capture.file_format} · stored privately` }
               : item,
           ),
@@ -61,7 +70,7 @@ export function Investigations() {
       } catch (cause) {
         setPending((current) =>
           current.map((item, i) =>
-            i === index
+            i === slot
               ? {
                   ...item,
                   stage: 'rejected',
@@ -76,7 +85,9 @@ export function Investigations() {
   }, [captures])
 
   const analyse = useCallback(async () => {
-    const ids = pending.filter((p) => p.capture).map((p) => p.capture!.capture_id)
+    // De-duplicated: the backend stores identical bytes once and returns the
+    // same id, so the same file staged twice must not be listed twice.
+    const ids = [...new Set(pending.filter((p) => p.capture).map((p) => p.capture!.capture_id))]
     if (ids.length === 0) return
     setBusy(true)
     setError(null)

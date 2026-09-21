@@ -531,5 +531,38 @@ Stated rather than papered over:
   conflict. The reader's ambiguity handling is unit-tested directly
   (`test_bytes_from_an_overlap_conflict_are_flagged_ambiguous`) but not end to
   end from a capture.
-- Running three parsers per session is O(3n) in dialogue length. No
-  performance measurement has been taken, and none is claimed.
+- Running three parsers per session is O(3n) in dialogue length. Since M8 this
+  is measured rather than assumed: see `docs/performance-benchmarks.md`. The
+  measurement is of synthetic captures on one machine, so it characterises this
+  configuration and nothing wider.
+
+## M8 additions
+
+Four test modules were added, all using isolated temporary databases and
+storage directories, none capable of exhausting the development machine.
+
+| module | tests | subject |
+|---|---:|---|
+| `tests/test_robustness.py` | 24 | Malformed containers, TLS records and protocol data; resource limits; the passive-only guarantee. Seven tests are property-based (`hypothesis`, 40 examples each). |
+| `tests/test_reliability.py` | 20 | SQLite integrity and foreign-key enforcement, transactional rollback, restart recovery, six concurrency scenarios, and the tested *absence* of cancellation. |
+| `tests/test_security_audit.py` | 59 | Authentication, DNS rebinding, CORS, CSRF, hostile identifiers, SQL injection attempts, upload validation and limits, information disclosure. |
+| `tests/test_report_hardening.py` | 35 | Reports under hostile titles, Unicode, long identifiers and a 20-capture investigation; structural PDF action checks. |
+| `tests/test_dependencies.py` | 7 | Every third-party import declared; every declaration pinned and used; the engine's dependency floor enforced by AST scan and by a subprocess import. |
+| `frontend/src/test/accessibility.test.tsx` | 51 | Landmarks, accessible names, keyboard operation, failure announcement, narrow viewports and computed colour contrast. |
+| `frontend/e2e/acceptance.spec.ts` | 1 (22 steps) | The complete browser-to-backend walkthrough, including stopping and restarting the backend process on the same data directory. |
+
+### Property-based testing
+
+The malformed-input tests use `hypothesis` rather than a hand-written list of
+bad inputs, because a fixed list only finds the bugs its author already
+imagined. Each property runs 40 examples with no deadline. Two of them caught
+wrong assumptions in the tests themselves before any engine defect: a capture
+declaring a zero-length packet legitimately parses trailing zero bytes as
+further empty records, and a 200,000-byte protocol line cannot be sent as a
+single pcap record at all.
+
+### What the new tests assert, in one sentence
+
+A malformed input may be rejected with a stated reason or may parse to nothing,
+but it may never crash and it may never produce cryptographic evidence that the
+data did not contain.

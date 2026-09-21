@@ -16,7 +16,14 @@ capture contents anywhere.
 
 ## Current status
 
-This repository is at the end of **M7**. The table below is the honest state of
+This repository is at the end of **M8**, which is reported **PARTIAL**: fifteen
+of sixteen verification gates are met, and continuous integration is reported
+NOT VERIFIED because no GitHub Actions run has been observed. See
+[docs/release-readiness.md](docs/release-readiness.md) for the full assessment
+and [docs/milestones/M8-REPORT.md](docs/milestones/M8-REPORT.md) for what that
+milestone found.
+
+The table below is the honest state of
 each stage; the same table is emitted into every report so a reader never has
 to guess whether a missing TLS section means "no TLS in the capture" or "not
 built yet".
@@ -41,6 +48,11 @@ built yet".
 | ML risk classification | **PARTIAL** | Trained and measured, reported `NOT_VALIDATED`; M6 |
 | Local API, SQLite persistence, web interface | **IMPLEMENTED** | FastAPI + React; M7 |
 | JSON / HTML / PDF reporting | **IMPLEMENTED** | One canonical model, parity tested; M7 |
+| Performance benchmarking | **IMPLEMENTED** | Four profiles with ground truth, thresholds committed before measurement; M8 |
+| Security audit and hardening | **IMPLEMENTED** | Internal only — no penetration test, no certification; M8 |
+| Malformed-input and reliability testing | **IMPLEMENTED** | Property-based; database, restart and concurrency; M8 |
+| Analysis cancellation | NOT IMPLEMENTED | Deliberate: an analysis finishes or fails. The absence is tested |
+| Continuous integration | **NOT VERIFIED** | Workflow committed; no run observed; M8 |
 
 Three things are constants in every report, and are asserted by the test
 suite rather than left to trust: `handshake_analyzed` is `false`,
@@ -223,6 +235,11 @@ make secrets-check  # refuse to commit captures, keys or .env files
 | [docs/requirements-matrix.md](docs/requirements-matrix.md) | SIH26159 requirement → module → milestone → test → status |
 | [docs/adr/](docs/adr/) | Architecture decision records |
 | [docs/milestones/](docs/milestones/) | Milestone reports |
+| [docs/release-readiness.md](docs/release-readiness.md) | What is verified, what is not, and what to know before relying on it |
+| [docs/performance-benchmarks.md](docs/performance-benchmarks.md) | Measured performance, and what the figures do not establish |
+| [docs/security-audit.md](docs/security-audit.md) | The local threat model, the controls, and what the audit did not cover |
+| [docs/reliability-testing.md](docs/reliability-testing.md) | Malformed input, resource limits, database integrity, restart and concurrency |
+| [docs/dependency-audit.md](docs/dependency-audit.md) | Every dependency, why it is there, and its known advisories |
 
 ## Security and privacy
 
