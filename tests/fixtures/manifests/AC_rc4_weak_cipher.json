@@ -1,0 +1,277 @@
+{
+  "name": "AC_rc4_weak_cipher",
+  "filename": "ac_rc4_weak_cipher.pcap",
+  "description": "A TLS 1.2 handshake negotiating TLS_RSA_WITH_RC4_128_SHA. RC4 is prohibited by RFC 7465 and RFC 9325; the stream cipher is the finding, and the suite's static RSA key exchange is a second, independent one.",
+  "generation": "securemailscope.testing.assessment_fixtures._fixture_ac (synthetic)",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": null,
+  "file_size_bytes": null,
+  "expected_packet_count": 5,
+  "expected_tcp_packet_count": 5,
+  "expected_timestamps_ns": [
+    1780315200000000000,
+    1780315200001000000,
+    1780315200002000000,
+    1780315200003000000,
+    1780315200004000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": null,
+  "expected_tls": [
+    {
+      "session_index": 0,
+      "entry_point": "IMPLICIT",
+      "handshake_state": "SERVER_FLIGHT_COMPLETE",
+      "client_record_parse_state": "COMPLETE",
+      "server_record_parse_state": "COMPLETE",
+      "forward_secrecy_status": "STATIC_RSA_KEY_EXCHANGE",
+      "certificate_visibility": "OBSERVED",
+      "key_exchange_method": "RSA",
+      "selected_version": "TLS 1.2",
+      "selected_version_source": null,
+      "selected_cipher_suite": "TLS_RSA_WITH_RC4_128_SHA",
+      "cipher_decomposition_applicable": true,
+      "cipher_key_exchange": "RSA",
+      "key_exchange_source": "CIPHER_SUITE",
+      "selected_group": null,
+      "server_name_indication": "mail.example.invalid",
+      "certificate_count": 1,
+      "record_count": null,
+      "message_types": [
+        "client_hello",
+        "server_hello",
+        "certificate",
+        "server_hello_done"
+      ],
+      "alert_descriptions": [],
+      "encryption_boundary_reasons": {},
+      "resumption_likely": null,
+      "hello_retry_request": false,
+      "handshake_analyzed": false,
+      "certificates": [],
+      "validation": null,
+      "expected_warning_codes": []
+    }
+  ],
+  "expected_assessment": [
+    {
+      "session_index": 0,
+      "score": {
+        "status": "AVAILABLE",
+        "score": 70,
+        "band": "ADEQUATE",
+        "evaluated_units": 8,
+        "passed_units": 6,
+        "failed_units": 2,
+        "unknown_units": 2,
+        "weighted_evaluated": 40.0,
+        "weighted_deductions": 12.0,
+        "weighted_applicable": 52.0,
+        "coverage_ratio": 0.7692
+      },
+      "rule_outcomes": [
+        {
+          "rule_id": "TLS-PROTO-001",
+          "outcome": "PASS",
+          "severity": "HIGH",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "TLS-PROTO-002",
+          "outcome": "PASS",
+          "severity": "INFO",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "TLS-CIPHER-001",
+          "outcome": "PASS",
+          "severity": "CRITICAL",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "TLS-CIPHER-002",
+          "outcome": "PASS",
+          "severity": "CRITICAL",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "TLS-CIPHER-003",
+          "outcome": "FAIL",
+          "severity": "HIGH",
+          "counts_toward_score": true
+        },
+        {
+          "rule_id": "TLS-CIPHER-004",
+          "outcome": "PASS",
+          "severity": "MEDIUM",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "TLS-CIPHER-005",
+          "outcome": "FAIL",
+          "severity": "MEDIUM",
+          "counts_toward_score": false
+        },
+        {
+          "rule_id": "TLS-PROTO-003",
+          "outcome": "PASS",
+          "severity": "LOW",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "TLS-CIPHER-006",
+          "outcome": "PASS",
+          "severity": "INFO",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "TLS-KEX-001",
+          "outcome": "FAIL",
+          "severity": "HIGH",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "TLS-KEX-002",
+          "outcome": "NOT_APPLICABLE",
+          "severity": null,
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "CERT-001",
+          "outcome": "PASS",
+          "severity": "HIGH",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "CERT-002",
+          "outcome": "PASS",
+          "severity": "HIGH",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "CERT-003",
+          "outcome": "PASS",
+          "severity": "HIGH",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "CERT-004",
+          "outcome": "PASS",
+          "severity": "HIGH",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "CERT-005",
+          "outcome": "UNKNOWN",
+          "severity": "HIGH",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "CERT-006",
+          "outcome": "UNKNOWN",
+          "severity": "HIGH",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "CERT-007",
+          "outcome": "PASS",
+          "severity": "MEDIUM",
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "MAIL-001",
+          "outcome": "NOT_APPLICABLE",
+          "severity": null,
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "MAIL-002",
+          "outcome": "NOT_APPLICABLE",
+          "severity": null,
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "MAIL-003",
+          "outcome": "NOT_APPLICABLE",
+          "severity": null,
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "MAIL-004",
+          "outcome": "NOT_APPLICABLE",
+          "severity": null,
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "MAIL-005",
+          "outcome": "NOT_APPLICABLE",
+          "severity": null,
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "MAIL-006",
+          "outcome": "NOT_APPLICABLE",
+          "severity": null,
+          "counts_toward_score": null
+        },
+        {
+          "rule_id": "MAIL-007",
+          "outcome": "PASS",
+          "severity": "INFO",
+          "counts_toward_score": null
+        }
+      ],
+      "findings": [
+        {
+          "rule_id": "TLS-CIPHER-003",
+          "severity": "HIGH",
+          "confidence": "CONFIRMED",
+          "priority": "P1",
+          "rank": 1
+        },
+        {
+          "rule_id": "TLS-KEX-001",
+          "severity": "HIGH",
+          "confidence": "CONFIRMED",
+          "priority": "P1",
+          "rank": 2
+        }
+      ],
+      "forbidden_finding_rule_ids": [
+        "TLS-PROTO-003",
+        "TLS-CIPHER-002",
+        "TLS-KEX-002",
+        "CERT-001",
+        "CERT-002",
+        "CERT-003",
+        "CERT-004",
+        "CERT-005",
+        "CERT-006",
+        "CERT-007",
+        "MAIL-001",
+        "MAIL-002",
+        "MAIL-003",
+        "MAIL-004",
+        "MAIL-005",
+        "MAIL-006",
+        "MAIL-007",
+        "TLS-PROTO-001",
+        "TLS-PROTO-002",
+        "TLS-CIPHER-001",
+        "TLS-CIPHER-004",
+        "TLS-CIPHER-005",
+        "TLS-CIPHER-006"
+      ],
+      "remediation_ids": [
+        "REM-TLS-CIPHER",
+        "REM-TLS-FS"
+      ]
+    }
+  ],
+  "byte_reproducible": false,
+  "forbidden_strings": []
+}

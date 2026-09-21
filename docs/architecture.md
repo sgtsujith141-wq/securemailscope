@@ -348,6 +348,75 @@ as one, and an observed SNI is the client's request rather than an authorised
 expectation. Revocation is never performed, because the engine makes no
 network requests at all.
 
+## The assessment layer (M4)
+
+The first three milestones answer *what was observed*. M4 answers *what that
+means*, and keeps the two kinds of statement in separate blocks of the report
+so a reader can always tell which is which. Nothing in the assessment layer
+modifies, replaces or summarises a forensic observation: the reconstructed
+sessions, handshakes and certificates are byte-identical whether the layer runs
+or not, which `--no-assessment` demonstrates directly.
+
+### Four independent stages
+
+```
+                  forensic observations (M1-M3, unchanged)
+                                 |
+                                 v
+        +------------------ rule evaluation ------------------+
+        |  25 rules x each session -> FAIL/PASS/UNKNOWN/N.A.  |
+        |  de-duplication: one weakness -> one charged unit   |
+        +-----------------------------------------------------+
+                                 |
+             +-------------------+-------------------+
+             |                   |                   |
+             v                   v                   v
+        posture scoring    prioritisation      remediation
+        (weighted units)   (severity x         (catalogue lookup
+                            confidence          from raised
+                            matrix)             findings only)
+```
+
+The four are independent on purpose. Scoring never reads the priority order;
+prioritisation never reads the score; remediation walks the *findings that were
+raised*, never the rules that might have fired. A defect in one cannot silently
+corrupt another, and each can be tested in isolation.
+
+### Module boundaries
+
+| Module | Responsibility |
+| --- | --- |
+| `assessment/policy.py` | The versioned, named policy: thresholds, weights, approved and prohibited algorithms, and the rationale for each. |
+| `assessment/catalog.py` | Static metadata: 25 `RuleDefinition` and 12 `Remediation` entries, with typed standards citations. |
+| `assessment/rules.py` | The 25 evaluators. Each takes a `SessionContext` and returns a `Verdict`. |
+| `assessment/evaluator.py` | Runs the enabled rules, de-duplicates, derives finding identifiers. |
+| `assessment/scoring.py` | Builds scoring units and computes the score and coverage. |
+| `assessment/prioritization.py` | The severity x confidence matrix and the deterministic sort. |
+| `assessment/remediation.py` | Selects catalogue entries for the findings that were raised. |
+| `assessment/engine.py` | Orchestrates the above per session and per capture. |
+
+### Constraints the layer holds to
+
+- **It reads typed models only.** It never re-parses a capture and never
+  inspects serialised JSON with regular expressions. Its entire input is the
+  `AnalysisResult` the forensic layers produced.
+- **It needs no LLM.** There is no model dependency anywhere in the package,
+  and the output is deterministic.
+- **It never turns `UNKNOWN` into `PASS`.** Missing evidence is reported as
+  missing and excluded from the score arithmetic on both sides.
+- **It never infers intent.** A weak configuration is a weak configuration; a
+  refused STARTTLS is what a server with no TLS configured also does, and the
+  finding says so.
+- **It retains no credential material.** The redaction guarantees M2
+  established hold through the new layer, and are re-asserted against it.
+
+### Schema evolution
+
+The report schema moved 1.2.0 -> **1.3.0**, additively. Every M1–M3 block is
+present and unchanged; the `assessment` block is new and may be omitted
+entirely. See [scoring-methodology.md](scoring-methodology.md) and
+[security-policy.md](security-policy.md).
+
 ## Planned evolution
 
 The TCP layer is the foundation every later milestone stands on, which is why
@@ -359,7 +428,10 @@ M1 spent its effort there. Later stages attach to it without modifying it:
 - **M3 (done)** reconstructs TLS records and handshakes starting from the
   boundaries M2 produced, extracts negotiated parameters, and decodes and
   validates certificates where they are visible in plaintext.
-- **M4–M6** add assessment, correlation and ML on top of those observations,
-  never replacing them.
+- **M4 (done)** evaluates 25 evidence-based rules against those observations
+  and produces an explainable score, a priority order and remediation guidance,
+  all in additive report blocks that never replace the observations.
+- **M5–M6** add cross-session correlation and local ML on top, never replacing
+  what came before.
 - **M7–M8** add a local FastAPI adapter and a React UI around the unchanged
   engine.

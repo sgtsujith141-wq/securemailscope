@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .manifest import (
+    ExpectedAssessment,
     ExpectedConflict,
     ExpectedGap,
     ExpectedProtocol,
@@ -82,6 +83,8 @@ class FixtureSpec:
     expected_protocols: list[ExpectedProtocol] | None = None
     #: ``None`` means this fixture makes no TLS-layer assertions.
     expected_tls: list[ExpectedTLS] | None = None
+    #: ``None`` means this fixture makes no assessment-layer assertions.
+    expected_assessment: list[ExpectedAssessment] | None = None
     #: False when the capture bytes differ between runs (live TLS handshakes
     #: and randomised certificate signatures).
     byte_reproducible: bool = True
@@ -111,6 +114,7 @@ class FixtureSpec:
             expected_error=self.expected_error,
             expected_protocols=self.expected_protocols,
             expected_tls=self.expected_tls,
+            expected_assessment=self.expected_assessment,
             byte_reproducible=self.byte_reproducible,
             forbidden_strings=list(self.forbidden_strings),
         )
@@ -1288,6 +1292,7 @@ def build_fixtures() -> list[FixtureSpec]:
     Combines the M1 TCP-reconstruction fixtures defined here with the M2
     protocol fixtures in :mod:`securemailscope.testing.protocol_fixtures`.
     """
+    from .assessment_fixtures import build_assessment_fixtures
     from .protocol_fixtures import build_protocol_fixtures
     from .tls_fixtures import build_tls_fixtures
 
@@ -1295,6 +1300,7 @@ def build_fixtures() -> list[FixtureSpec]:
         [builder() for builder in _BUILDERS]
         + build_protocol_fixtures()
         + build_tls_fixtures()
+        + build_assessment_fixtures()
     )
 
 

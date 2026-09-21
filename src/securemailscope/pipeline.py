@@ -10,6 +10,7 @@
       -> email protocol parsing + STARTTLS state             (protocols/analyzer)
       -> TLS records, handshake, crypto parameters           (tls/analyzer)
       -> X.509 extraction and independent validation         (certificates/)
+      -> security rules, score, priority, remediation        (assessment/)
       -> session inventory with provenance                   (models)
       -> JSON                                                (reporting)
 
@@ -23,6 +24,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import __version__
+from .assessment.engine import assess_capture
+from .assessment.policy import DEFAULT_POLICY, AssessmentPolicy
 from .certificates.truststore import load_trust_store
 from .config import AnalysisConfig
 from .diagnostics import WarningSink
@@ -34,6 +37,7 @@ from .models.analysis import (
     SessionInventory,
     ToolInfo,
 )
+from .models.assessment import AssessmentMode
 from .models.capture import CaptureMetadata
 from .models.evidence import (
     AnalysisWarning,
@@ -258,6 +262,32 @@ def _tls_inventory(analyses: tuple[TLSSessionAnalysis, ...]) -> TLSInventory:
     )
 
 
+def _policy_for(config: AnalysisConfig) -> AssessmentPolicy:
+    """Build the active assessment policy from the run configuration.
+
+    Overrides are recorded on the policy itself, so a report always states
+    which settings were changed from the documented default.
+    """
+    disabled = (
+        frozenset(
+            item.strip() for item in config.disabled_rules.split(",") if item.strip()
+        )
+        if config.disabled_rules
+        else None
+    )
+    return DEFAULT_POLICY.with_overrides(
+        assessment_mode=(
+            AssessmentMode.CURRENT_TIME if config.assess_at_current_time else None
+        ),
+        minimum_coverage_for_score=(
+            config.minimum_score_coverage_percent / 100.0
+            if config.minimum_score_coverage_percent != 50
+            else None
+        ),
+        disabled_rules=disabled,
+    )
+
+
 def analyze_capture(
     path: Path | str,
     *,
@@ -407,4 +437,8 @@ def analyze_capture_with_payloads(
         tls=tls_sessions,
         warnings=global_warnings,
     )
+    if config.assess_security:
+        result = result.model_copy(
+            update={"assessment": assess_capture(result, policy=_policy_for(config))}
+        )
     return AnalysisArtifacts(result=result, payload_runs=payload_runs)

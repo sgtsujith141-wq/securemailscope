@@ -291,15 +291,70 @@ stating their status and the milestone that owns them.
 | F15.7 | No certificate is not a failure | `tls/analyzer.py` | M3 | `CertificateVisibility` states the cause | `test_tls.py::test_certificates_match_manifest` | **IMPLEMENTED** |
 | F15.8 | Negotiation progress ≠ verified completion | `models/tls.py` | M3 | Constants asserted across every fixture | `test_tls.py::test_no_handshake_is_ever_claimed_verified` | **IMPLEMENTED** |
 
+## F16 — Security rule evaluation (M4)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F16.1 | Versioned, named policy | `assessment/policy.py` | M4 | `policy_id`, version, published date and fingerprint in every report | `test_assessment.py::test_the_policy_is_reported_with_its_own_caveats` | **IMPLEMENTED** |
+| F16.2 | Four distinct rule outcomes | `assessment/rules.py` | M4 | `FAIL`/`PASS`/`UNKNOWN`/`NOT_APPLICABLE` all reachable and distinguished | `test_assessment.py::test_rule_outcomes_match_the_manifest` | **IMPLEMENTED** |
+| F16.3 | `UNKNOWN` never becomes `PASS` | `assessment/rules.py` | M4 | Missing evidence yields `UNKNOWN`; only `FAIL` becomes a finding | `test_assessment.py::test_only_failures_become_findings` | **IMPLEMENTED** |
+| F16.4 | Rule category A — TLS protocol version | `assessment/rules.py` | M4 | `TLS-PROTO-001..003` | `test_assessment.py` (manifest matrix) | **IMPLEMENTED** |
+| F16.5 | Rule category B — cipher suite | `assessment/rules.py` | M4 | `TLS-CIPHER-001..006` | `test_assessment.py` (manifest matrix) | **IMPLEMENTED** |
+| F16.6 | Rule category C — key exchange and forward secrecy | `assessment/rules.py` | M4 | `TLS-KEX-001..002` | `test_assessment.py` (manifest matrix) | **IMPLEMENTED** |
+| F16.7 | Rule category D — certificate | `assessment/rules.py` | M4 | `CERT-001..007` | `test_assessment.py` (manifest matrix) | **IMPLEMENTED** |
+| F16.8 | Rule category E — email transport | `assessment/rules.py` | M4 | `MAIL-001..007` | `test_assessment.py` (manifest matrix) | **IMPLEMENTED** |
+| F16.9 | Every rule cites a standard, typed by kind | `assessment/catalog.py` | M4 | `PROTOCOL_REQUIREMENT` / `STANDARDS_RECOMMENDATION` / `PROJECT_POLICY` / `ENVIRONMENT_CHOICE` | `test_assessment.py::test_every_rule_result_is_explained` | **IMPLEMENTED** |
+| F16.10 | Stable, deterministic finding identifiers | `assessment/evaluator.py` | M4 | Same inputs and policy give the same id; different policy criteria give a different one | `test_assessment.py::test_finding_ids_are_stable_and_distinct`, `::test_finding_id_changes_with_the_policy_version` | **IMPLEMENTED** |
+| F16.11 | One weakness counted once | `assessment/evaluator.py` | M4 | De-duplication groups charge the most severe member only | `test_assessment.py::test_one_weakness_is_counted_once` | **IMPLEMENTED** |
+| F16.12 | No fabricated packet references | `assessment/rules.py` | M4 | Every reference is in range and carries the capture's recorded timestamp | `test_assessment.py::test_every_finding_cites_a_real_packet` | **IMPLEMENTED** |
+| F16.13 | Rules never re-parse captures or scan JSON with regexes | `assessment/` | M4 | Operates on typed models only | Code review; module imports | **IMPLEMENTED** |
+| F16.14 | Operates without an LLM | `assessment/` | M4 | No model dependency anywhere in the package | `test_passive.py` | **IMPLEMENTED** |
+
+## F17 — Explainable posture scoring (M4)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F17.1 | Published, checkable formula | `assessment/scoring.py` | M4 | `score = 100 * (W(E) - W(F)) / W(E)`, recomputable from the report | `test_assessment.py::test_score_follows_the_published_formula` | **IMPLEMENTED** |
+| F17.2 | Missing observations cannot improve the score | `assessment/scoring.py` | M4 | `UNKNOWN` is excluded from both sides of the fraction | `test_assessment.py::test_unknown_evidence_cannot_improve_the_score` | **IMPLEMENTED** |
+| F17.3 | `SCORE_UNAVAILABLE` below the coverage floor | `assessment/scoring.py` | M4 | Default floor 0.50; status and `null` score reported | `test_assessment.py::test_insufficient_evidence_produces_no_score` | **IMPLEMENTED** |
+| F17.4 | Coverage reported separately from posture | `assessment/scoring.py` | M4 | `W(E)/W(A)` with the same denominator the score used | `test_assessment.py::test_coverage_arithmetic_is_consistent` | **IMPLEMENTED** |
+| F17.5 | No double counting | `assessment/scoring.py` | M4 | At most one deduction per de-duplication group | `test_assessment.py::test_each_dedup_group_contributes_at_most_one_deduction` | **IMPLEMENTED** |
+| F17.6 | Monotonicity in failures | `assessment/scoring.py` | M4 | A more heavily weighted failure never scores higher | `test_assessment.py::test_more_failures_never_raise_the_score` | **IMPLEMENTED** |
+| F17.7 | Every deduction itemised | `assessment/scoring.py` | M4 | `deduction_detail` names group, weight and rule, and sums to the total | `test_assessment.py::test_severity_weights_are_reported_not_hidden` | **IMPLEMENTED** |
+| F17.8 | Score never clamped into range | `assessment/scoring.py` | M4 | `F ⊆ E` makes `[0,100]` structural | `test_assessment.py::test_deductions_never_exceed_the_evaluated_weight` | **IMPLEMENTED** |
+| F17.9 | Score presented as a project-defined metric | `docs/scoring-methodology.md` | M4 | Limitations carried in the report itself, not only in prose | `test_assessment.py::test_the_policy_is_reported_with_its_own_caveats` | **IMPLEMENTED** |
+| F17.10 | Disabling a rule removes it from the population | `assessment/policy.py` | M4 | Not counted as a pass | `test_assessment.py::test_disabling_a_rule_removes_it_from_both_sides` | **IMPLEMENTED** |
+
+## F18 — Threat prioritisation (M4)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F18.1 | Deterministic total order | `assessment/prioritization.py` | M4 | Dense ranks from 1; identical across runs | `test_assessment.py::test_prioritisation_is_a_total_order`, `::test_prioritisation_is_stable_across_runs` | **IMPLEMENTED** |
+| F18.2 | Priority from a matrix, never a product | `assessment/prioritization.py` | M4 | Severity and confidence looked up, not multiplied | `test_assessment.py::test_priority_comes_from_the_matrix_not_a_product` | **IMPLEMENTED** |
+| F18.3 | Severity order never violated | `assessment/prioritization.py` | M4 | A more severe finding is never ranked lower | `test_assessment.py::test_more_severe_findings_are_never_ranked_lower` | **IMPLEMENTED** |
+| F18.4 | Asset criticality never inferred | `assessment/policy.py` | M4 | Operator-supplied only; unlabelled assets sort last within a band | `test_assessment.py::test_asset_criticality_is_never_invented` | **IMPLEMENTED** |
+| F18.5 | Attack intent never inferred from configuration | `assessment/catalog.py` | M4 | A refused upgrade is described as configuration, with the alternative stated | `test_assessment.py::test_rejected_starttls_is_reported_as_configuration_not_attack` | **IMPLEMENTED** |
+
+## F19 — Remediation guidance (M4)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F19.1 | Advice only for findings that were raised | `assessment/remediation.py` | M4 | Exactly the remediations the raised findings reference | `test_assessment.py::test_remediations_answer_findings_that_exist` | **IMPLEMENTED** |
+| F19.2 | No dangling catalogue references | `assessment/catalog.py` | M4 | Every rule's remediation exists; every remediation is reachable | `test_assessment.py::test_the_catalogue_has_no_dangling_references` | **IMPLEMENTED** |
+| F19.3 | Vendor-neutral, with validation steps | `assessment/catalog.py` | M4 | No product named; each entry states how to verify the fix | `test_assessment.py::test_remediations_answer_findings_that_exist` | **IMPLEMENTED** |
+| F19.4 | No active remediation | whole engine | M4 | Nothing is applied; no connection is made | `test_passive.py` | **IMPLEMENTED** |
+| F19.5 | No fictitious before-and-after scores | `assessment/` | M4 | No projected score exists in any model | Code review; `models/assessment.py` | **IMPLEMENTED** |
+| F19.6 | Generated policy documents cannot drift | `scripts/generate_policy_docs.py` | M4 | Committed files match the generator | `test_assessment.py::test_the_generated_policy_documents_are_current` | **IMPLEMENTED** |
+
 ## F8 — Assessment, correlation, ML, reporting, UI
 
 | ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
 |---|---|---|---|---|---|---|
-| F8.1 | Explainable security findings | `assessment/` | M4 | Every finding cites its observations and their statuses | — | **NOT IMPLEMENTED** |
-| F8.2 | Posture scoring | `assessment/` | M4 | Score auditable back to packets | — | **NOT IMPLEMENTED** |
+| F8.1 | Explainable security findings | `assessment/` | M4 | Every finding cites its observations and their statuses | `test_assessment.py::test_every_finding_cites_a_real_packet` | **IMPLEMENTED** |
+| F8.2 | Posture scoring | `assessment/` | M4 | Score auditable back to packets | `test_assessment.py::test_score_follows_the_published_formula` | **IMPLEMENTED** |
 | F8.3 | Evidence-based correlation | `intelligence/` | M5 | Multi-session findings retain all contributing refs | — | **NOT IMPLEMENTED** |
 | F8.4 | ML-assisted analysis | `ml/` | M6 | Local scikit-learn; output always `INFERRED` | — | **NOT IMPLEMENTED** |
-| F8.5 | Forensic reports | `reporting/` | M1 / M4 | JSON implemented (schema 1.1.0, protocol layer included); narrative forensic report is M4 | `test_report.py` | **PARTIAL** |
+| F8.5 | Forensic reports | `reporting/` | M1 / M7 | JSON implemented (schema 1.3.0, assessment blocks included). PDF and HTML reports belong to M7 | `test_report.py`, `test_assessment.py::test_schema_is_additive_over_m1_to_m3` | **PARTIAL** |
 | F8.6 | Local SQLite persistence | `backend/` | M7 | — | — | **NOT IMPLEMENTED** |
 | F8.7 | FastAPI backend | `backend/` | M7 | — | — | **NOT IMPLEMENTED** |
 | F8.8 | React + TypeScript + Vite frontend | `frontend/` | M8 | — | — | **NOT IMPLEMENTED** |
@@ -327,23 +382,28 @@ stating their status and the milestone that owns them.
 
 ## Summary
 
-| Status | Count | Change since M2 |
+| Status | Count | Change since M3 |
 |---|---|---|
-| IMPLEMENTED | 198 | +74 |
-| PARTIAL | 3 | -1 |
-| NOT IMPLEMENTED | 16 | -2 |
-| **Total requirements tracked** | **217** | +71 |
+| IMPLEMENTED | 235 | +37 |
+| PARTIAL | 3 | 0 |
+| NOT IMPLEMENTED | 14 | -2 |
+| **Total requirements tracked** | **252** | +35 |
 
-As of M3 the implemented set covers capture ingestion, TCP reconstruction,
-the email protocol layer, and the TLS layer: record framing, handshake
-reassembly, version and cipher-suite identification, key-exchange analysis,
-forward-secrecy observation, X.509 extraction and five independent validation
-checks.
+As of M4 the implemented set covers capture ingestion, TCP reconstruction, the
+email protocol layer, the TLS and certificate layer, and the assessment layer:
+25 evidence-based security rules across five categories, an explainable posture
+score with published arithmetic, deterministic threat prioritisation and a
+remediation catalogue.
 
-**Still not claimed anywhere:** security findings and scoring (F8.1–F8.2,
-F13.7, F14.24), correlation (F8.3), ML (F8.4), backend and frontend
-(F8.6–F8.8), and revocation checking (F14.25, permanently out of scope).
+**Still not claimed anywhere:** evidence correlation across sessions (F8.3),
+ML-assisted analysis (F8.4), SQLite persistence and the FastAPI backend
+(F8.6–F8.7), the React frontend (F8.8), PDF and HTML reports (F8.5, M7), and
+revocation checking (F14.25, permanently out of scope).
 
-**Constants in every report M3 produces:**
+**Constants in every report M4 produces:**
 `handshake_analyzed = false`, `handshakes_cryptographically_verified = 0`,
 `revocation_checks_performed = 0`.
+
+**What the posture score is not:** a project-defined analytical metric over one
+capture, not an independently validated measure of enterprise-wide security.
+See [scoring-methodology.md](scoring-methodology.md).

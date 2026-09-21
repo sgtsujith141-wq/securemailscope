@@ -70,13 +70,20 @@ def test_tcp_stream_count_agrees(fixtures: dict[str, Fixture]) -> None:
 
 
 def test_smtp_starttls_command_is_seen_by_both(fixtures: dict[str, Fixture]) -> None:
-    """TShark's SMTP dissector must agree that STARTTLS was requested."""
+    """TShark's SMTP dissector must agree that STARTTLS was requested.
+
+    Verified against TShark 4.6.8, which tokenises SMTP commands as a
+    four-character verb plus a parameter, so ``STARTTLS`` is dissected as
+    command ``STAR`` with parameter ``TLS``. We read the whole verb. The
+    tokenisation differs; the conclusion -- which frame carried the upgrade
+    request -- is what this test compares, and that must agree.
+    """
     fixture = fixtures["P_A_smtp_starttls_accepted"]
     output = _tshark(
         "-r",
         str(fixture.path),
         "-Y",
-        "smtp.req.command == \"STARTTLS\"",
+        'smtp.req.command == "STAR" && smtp.req.parameter == "TLS"',
         "-T",
         "fields",
         "-e",
@@ -165,8 +172,11 @@ def test_tls_cipher_suite_agrees(fixtures: dict[str, Fixture]) -> None:
         "-e",
         "tls.handshake.ciphersuite",
     )
-    values = [int(line) for line in output.split() if line.strip().isdigit()]
-    assert values, "TShark reported no selected cipher suite"
+    # TShark 4.6.8 prints the suite as hex ("0xc02b"), not decimal.
+    values = [
+        int(token, 16) for token in output.split() if token.lower().startswith("0x")
+    ]
+    assert values, f"TShark reported no selected cipher suite: {output.strip()!r}"
     analysis = analyze_capture(fixture.path).tls[0]
     assert analysis.cipher_suite.selected is not None
     assert analysis.cipher_suite.selected.value in values
@@ -182,8 +192,11 @@ def test_certificate_count_agrees(fixtures: dict[str, Fixture]) -> None:
         "-T",
         "fields",
         "-e",
-        "x509sat.printableString",
+        "x509af.version",
     )
+    # The certificate version, rather than a subject attribute: the attribute
+    # field name depends on the ASN.1 string encoding the issuer chose, and
+    # that is not what this test is about.
     assert output.strip(), "TShark did not dissect a Certificate message"
     analysis = analyze_capture(fixture.path).tls[0]
     assert analysis.certificates.chain_length >= 1
@@ -207,3 +220,45 @@ def test_tls13_certificate_is_not_visible_to_either_tool(
     assert not output.strip(), "TShark unexpectedly dissected a TLS 1.3 Certificate"
     analysis = analyze_capture(fixture.path).tls[0]
     assert analysis.certificates.visibility.value == "ENCRYPTED_TLS13"
+
+
+def test_m4_fixture_parameters_agree(fixtures: dict[str, Fixture]) -> None:
+    """The parameters the M4 rules judge must be the ones TShark also sees.
+
+    Every finding these fixtures produce rests on the negotiated version and
+    cipher suite. If an independent dissector read different values from the
+    same bytes, the assessment would be judging something that is not there.
+    """
+    expected = {
+        "AA_tls10_static_rsa_multiple_findings": ("0x0301", 0x002F),
+        "AB_null_cipher_duplicate_evidence": ("0x0303", 0x003B),
+        "AC_rc4_weak_cipher": ("0x0303", 0x0005),
+    }
+    for name, (version, suite) in expected.items():
+        fixture = fixtures[name]
+        output = _tshark(
+            "-r",
+            str(fixture.path),
+            "-Y",
+            "tls.handshake.type == 2",
+            "-T",
+            "fields",
+            "-e",
+            "tls.handshake.version",
+            "-e",
+            "tls.handshake.ciphersuite",
+        )
+        fields = output.split()
+        assert fields, f"TShark saw no ServerHello in {name}"
+        assert fields[0] == version, (
+            f"{name}: TShark read version {fields[0]}, the fixture declares {version}"
+        )
+        assert int(fields[1], 16) == suite, (
+            f"{name}: TShark read suite {fields[1]}, the fixture declares {suite:#06x}"
+        )
+
+        analysis = analyze_capture(fixture.path).tls[0]
+        assert analysis.version.selected_version is not None
+        assert analysis.version.selected_version.value == int(version, 16)
+        assert analysis.cipher_suite.selected is not None
+        assert analysis.cipher_suite.selected.value == suite

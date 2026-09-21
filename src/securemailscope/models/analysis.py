@@ -7,6 +7,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .assessment import AssessmentResult
 from .capture import CaptureMetadata
 from .evidence import AnalysisWarning
 from .protocol import ProtocolInventory, ProtocolSessionAnalysis
@@ -28,12 +29,19 @@ __all__ = [
 #: 1.1.0 (M2) adds the top-level ``protocols`` array and ``protocol_inventory``
 #: object, and adds members to ``stage_status``.
 #:
+#: 1.3.0 (M4) adds the top-level ``assessment`` object carrying the security
+#: policy, rule results, findings, posture score, prioritisation and
+#: remediations, and adds further ``stage_status`` members. Still additive:
+#: every earlier field keeps its name, type and meaning, and the forensic
+#: observations are reported unchanged alongside the assessment rather than
+#: being replaced by it.
+#:
 #: 1.2.0 (M3) adds the top-level ``tls`` array and ``tls_inventory`` object,
 #: adds optional M3 fields to ``TLSRecordObservation``, and adds further
 #: ``stage_status`` members. Still backward compatible: every 1.0.0 and 1.1.0
 #: field keeps its name, type and meaning, and the M1 TCP and M2 protocol
 #: models are unchanged. An older consumer can ignore the new keys.
-REPORT_SCHEMA_VERSION = "1.2.0"
+REPORT_SCHEMA_VERSION = "1.3.0"
 
 
 class AnalysisStage(StrEnum):
@@ -58,7 +66,12 @@ class AnalysisStage(StrEnum):
     CERTIFICATE_VALIDATION = "CERTIFICATE_VALIDATION"
     CERTIFICATE_REVOCATION = "CERTIFICATE_REVOCATION"
     CERTIFICATE_ASSESSMENT = "CERTIFICATE_ASSESSMENT"
+    SECURITY_RULE_EVALUATION = "SECURITY_RULE_EVALUATION"
+    POSTURE_SCORING = "POSTURE_SCORING"
+    THREAT_PRIORITISATION = "THREAT_PRIORITISATION"
+    REMEDIATION_GUIDANCE = "REMEDIATION_GUIDANCE"
     RISK_ASSESSMENT = "RISK_ASSESSMENT"
+    EVIDENCE_CORRELATION = "EVIDENCE_CORRELATION"
     ML_ANALYSIS = "ML_ANALYSIS"
 
 
@@ -82,9 +95,15 @@ STAGE_STATUS: dict[AnalysisStage, str] = {
     AnalysisStage.CERTIFICATE_VALIDATION: "IMPLEMENTED",
     # No OCSP or CRL retrieval exists; the engine makes no network requests.
     AnalysisStage.CERTIFICATE_REVOCATION: "NOT_IMPLEMENTED",
-    # Turning certificate observations into a posture judgement is M4.
-    AnalysisStage.CERTIFICATE_ASSESSMENT: "NOT_IMPLEMENTED",
-    AnalysisStage.RISK_ASSESSMENT: "NOT_IMPLEMENTED",
+    AnalysisStage.CERTIFICATE_ASSESSMENT: "IMPLEMENTED",
+    AnalysisStage.SECURITY_RULE_EVALUATION: "IMPLEMENTED",
+    AnalysisStage.POSTURE_SCORING: "IMPLEMENTED",
+    AnalysisStage.THREAT_PRIORITISATION: "IMPLEMENTED",
+    AnalysisStage.REMEDIATION_GUIDANCE: "IMPLEMENTED",
+    # The umbrella "risk" stage stays open: it would mean combining findings
+    # across sessions and hosts, which is M5.
+    AnalysisStage.RISK_ASSESSMENT: "PARTIAL",
+    AnalysisStage.EVIDENCE_CORRELATION: "NOT_IMPLEMENTED",
     AnalysisStage.ML_ANALYSIS: "NOT_IMPLEMENTED",
 }
 
@@ -174,6 +193,15 @@ class AnalysisResult(_Frozen):
         description=(
             "TLS analysis, one entry per session that carried TLS, joined to "
             "'sessions' and 'protocols' by session_id."
+        ),
+    )
+
+    assessment: AssessmentResult | None = Field(
+        default=None,
+        description=(
+            "Security assessment of the observations above (M4). Present when "
+            "assessment is enabled. The forensic evidence is reported unchanged "
+            "alongside it, never replaced by it."
         ),
     )
 

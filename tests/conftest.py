@@ -52,6 +52,14 @@ class Fixture:
         return expected
 
     @property
+    def expected_assessment(self) -> list[dict[str, Any]]:
+        expected = self.manifest.get("expected_assessment")
+        assert expected is not None, (
+            f"{self.name} declares no assessment expectations"
+        )
+        return expected
+
+    @property
     def byte_reproducible(self) -> bool:
         return bool(self.manifest.get("byte_reproducible", True))
 

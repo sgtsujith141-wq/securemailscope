@@ -16,6 +16,7 @@
   "expected_error": "UnsupportedCaptureFormatError",
   "expected_protocols": null,
   "expected_tls": null,
+  "expected_assessment": null,
   "byte_reproducible": true,
   "forbidden_strings": []
 }

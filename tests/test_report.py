@@ -73,8 +73,11 @@ def test_report_declares_stage_status_honestly(fixtures: dict[str, Fixture]) -> 
     # M3 analyses only what a passive capture can show; nothing is decrypted.
     assert status["TLS_ANALYSIS"] == "PARTIAL"
     assert status["CERTIFICATE_REVOCATION"] == "NOT_IMPLEMENTED"
-    assert status["CERTIFICATE_ASSESSMENT"] == "NOT_IMPLEMENTED"
-    assert data["tool"]["report_schema_version"] == "1.2.0"
+    # M4 assesses certificates; correlation and ML remain untouched.
+    assert status["CERTIFICATE_ASSESSMENT"] == "IMPLEMENTED"
+    assert status["EVIDENCE_CORRELATION"] == "NOT_IMPLEMENTED"
+    assert status["ML_ANALYSIS"] == "NOT_IMPLEMENTED"
+    assert data["tool"]["report_schema_version"] == "1.3.0"
     # No fabricated cryptographic findings anywhere in the document. This is
     # now a structural check rather than a substring one: the prose legitimately
     # mentions certificates in order to say they are NOT analysed, so what must

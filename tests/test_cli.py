@@ -104,7 +104,10 @@ def test_status_reports_unimplemented_stages() -> None:
     # M3 implements TLS analysis for the observable plaintext portion only.
     assert status["TLS_ANALYSIS"] == "PARTIAL"
     assert status["CERTIFICATE_REVOCATION"] == "NOT_IMPLEMENTED"
-    assert status["RISK_ASSESSMENT"] == "NOT_IMPLEMENTED"
+    # M4 assesses within a capture; combining findings across hosts is M5.
+    assert status["RISK_ASSESSMENT"] == "PARTIAL"
+    assert status["EVIDENCE_CORRELATION"] == "NOT_IMPLEMENTED"
+    assert status["ML_ANALYSIS"] == "NOT_IMPLEMENTED"
 
 
 @pytest.mark.integration
@@ -182,7 +185,7 @@ def test_analyze_reports_starttls_state(fixtures: dict[str, Fixture], tmp_path: 
     assert completed.returncode == 0, completed.stderr
 
     report = json.loads(output.read_text())
-    assert report["tool"]["report_schema_version"] == "1.2.0"
+    assert report["tool"]["report_schema_version"] == "1.3.0"
     # M1 data is still present and unchanged in shape.
     assert report["sessions"][0]["client_to_server"]["bytes_reconstructed"] > 0
     assert "runs" in report["sessions"][0]["client_to_server"]
@@ -287,7 +290,9 @@ def test_status_reports_m2_stages() -> None:
     assert status["STARTTLS_DETECTION"] == "IMPLEMENTED"
     assert status["TLS_RECORD_FRAMING"] == "IMPLEMENTED"
     assert status["TLS_ANALYSIS"] == "PARTIAL"
-    assert status["CERTIFICATE_ASSESSMENT"] == "NOT_IMPLEMENTED"
+    # M4 turns certificate observations into judgements.
+    assert status["CERTIFICATE_ASSESSMENT"] == "IMPLEMENTED"
+    assert status["SECURITY_RULE_EVALUATION"] == "IMPLEMENTED"
 
 
 # ---------------------------------------------------------------------------
@@ -304,7 +309,7 @@ def test_analyze_reports_tls12_cryptographic_evidence(
     assert completed.returncode == 0, completed.stderr
 
     report = json.loads(output.read_text())
-    assert report["tool"]["report_schema_version"] == "1.2.0"
+    assert report["tool"]["report_schema_version"] == "1.3.0"
     analysis = report["tls"][0]
     assert analysis["session_id"] == report["sessions"][0]["session_id"]
     assert analysis["version"]["selected_version"]["name"] == "TLS 1.2"

@@ -139,6 +139,27 @@ structural ones assert a capture hash.
 | T_Z | synthetic | Fatal alert ⇒ aborted, not negotiated |
 | T_HRR | synthetic | HelloRetryRequest is not a ServerHello; TLS 1.3 compat CCS is not TLS 1.2 |
 
+### Assessment fixtures (M4)
+
+Three configurations the local OpenSSL will not negotiate at any security
+level, so all three are assembled byte by byte from the RFC structures. Each
+carries a manifest with hand-computed expected outcomes, findings, score
+arithmetic, coverage and remediations.
+
+| Fixture | Negotiated | Principally verifies |
+|---|---|---|
+| AA | TLS 1.0, `TLS_RSA_WITH_AES_128_CBC_SHA` | An obsolete *negotiated* version; several independent findings in one session; score 59 / `WEAK` at 0.7551 coverage |
+| AB | TLS 1.2, `TLS_RSA_WITH_NULL_SHA256` | Duplicate evidence for one weakness: two cipher rules, one de-duplication group, one finding, one deduction; score 64 |
+| AC | TLS 1.2, `TLS_RSA_WITH_RC4_128_SHA` | A prohibited stream cipher; score 70 / `ADEQUATE`, kept deliberately to show what the score is and is not |
+
+The remaining cases in the M4 fixture matrix reuse M1–M3 fixtures rather than
+duplicating them: secure TLS 1.2 (`T_A`), TLS 1.3 with an encrypted certificate
+(`T_D`, `T_E`), static RSA (`T_C`), ephemeral key exchange (`T_A`, `T_B`),
+expired and not-yet-valid certificates (`T_O`, `T_P`), chain and hostname
+failures (`T_S`, `T_T`), missing validation evidence (`T_R`), insufficient
+evidence for scoring (`T_G`), plaintext authentication (`P_M`), a rejected
+`STARTTLS` (`P_B`, `P_G`) and an incomplete upgrade (`P_J`, `P_K`).
+
 ### Certificates and keys are never committed
 
 The synthetic CA creates a fresh key pair in-process at fixture-build time.
@@ -154,6 +175,52 @@ valid record/handshake headers built byte by byte
 (`securemailscope.testing.tls_blobs`) so the framing detector has something
 genuine to validate. They carry no cryptographic meaning, and nothing in the
 suite claims a handshake was analysed.
+
+## The assessment layer (M4)
+
+The assessment tests divide into two halves, and the second is the one that
+matters most.
+
+**Findings that must exist.** Three new fixtures (`AA`, `AB`, `AC`) carry
+manifests specifying the exact outcome of every rule, every finding with its
+severity, confidence, priority band and rank, the full score arithmetic and the
+remediation list. Every number in them was **computed by hand** from the policy
+weights before the engine was run against the fixture; the working is written
+out in each fixture's docstring in
+`src/securemailscope/testing/assessment_fixtures.py` so a reviewer can check it
+without executing anything. Nothing recomputes an expectation using the code
+under test, so a change in the scoring implementation fails a test rather than
+redefining the answer.
+
+**Findings that must NOT exist.** Thirteen explicit false-positive tests, one
+per case in the M4 directive: TLS 1.3 encrypted certificates, missing
+ClientHello, missing ServerHello, truncated captures, unknown cipher suites,
+unknown key-exchange groups, incomplete chains, missing trust stores, missing
+reference hostnames, PSK-versus-ephemeral negotiation, STARTTLS rejection,
+authentication detected without credential disclosure, and port hints without a
+confirmed protocol. Each asserts that unsupported findings are **absent**.
+
+The asymmetry is deliberate. Asserting an expected finding exists proves a rule
+fires. Only asserting that an unsupported finding does not exist proves it does
+not fire on evidence that never established the weakness — and inventing a
+weakness is the failure mode that costs an operator real time.
+
+Three defects in the M4 fixture expectations were found this way, before the
+fixtures were committed: `TLS-CIPHER-003` correctly passes on a NULL cipher
+because `TLS-CIPHER-001` owns that algorithm; an unrecognised cipher suite is
+`UNKNOWN` rather than a finding; and per-session tallies were under-reporting
+suppressed duplicates. The first two were wrong predictions and the manifests
+were corrected; the third was a real bug in `engine.py` and was fixed.
+
+### Generated documents are tested
+
+`docs/security-policy.md` and `docs/remediation-catalog.md` are generated from
+the policy and catalogue by `scripts/generate_policy_docs.py`, and
+`test_the_generated_policy_documents_are_current` asserts the committed files
+match what the generator produces. A policy document that disagrees with the
+engine is worse than no document, because a reader would check the wrong
+thresholds. `test_the_requirements_matrix_summary_is_arithmetically_correct`
+likewise re-counts the requirements matrix against its own summary table.
 
 ## Test files
 
@@ -172,7 +239,8 @@ suite claims a handshake was analysed.
 | `test_protocol_behaviour.py` | Command/response matching, malformed input, limits, the upgrade boundary |
 | `test_tls.py` | Manifest-driven M3: records, messages, version, cipher, key exchange, forward secrecy, certificates, validation |
 | `test_tls_validation.py` | Chain and hostname verification under different configurations, capture-time dates, TLS 1.3 limits, bounds, no-socket guarantee |
-| `test_tshark_crosscheck.py` | Optional cross-validation against an independent dissector |
+| `test_assessment.py` | M4: manifest-driven rule outcomes, findings and scores; evidence linkage; finding identifiers; scoring and coverage arithmetic; prioritisation; remediation mapping; duplicate suppression; thirteen false-positive cases; schema compatibility; redaction; CLI; determinism; generated-document freshness |
+| `test_tshark_crosscheck.py` | Cross-validation against an independent dissector (optional; executed and passing against TShark 4.6.8) |
 
 ## What "verified" means here
 
@@ -208,20 +276,36 @@ those strings appear nowhere:
 covers the subtler case: a base64 blob sitting in command position must not be
 quoted back as an "unknown verb".
 
-## Optional cross-validation against TShark
+## Cross-validation against TShark
 
-`test_tshark_crosscheck.py` compares packet counts, TCP stream counts and
-SMTP/IMAP/POP3 dissection against TShark. It is **skipped unless** `tshark` is
-on `PATH` *and* `SECUREMAILSCOPE_TSHARK=1` is set, so an ordinary test run has
-no external dependency. TShark is invoked strictly offline (`-r` on a local
-file, `-n` to disable name resolution).
+`test_tshark_crosscheck.py` compares packet counts, TCP stream counts,
+SMTP/IMAP/POP3 dissection, TLS version, cipher suite and certificate
+dissection against TShark. It is **skipped unless** `tshark` is on `PATH`
+*and* `SECUREMAILSCOPE_TSHARK=1` is set, so an ordinary test run has no
+external dependency. TShark is invoked strictly offline (`-r` on a local file,
+`-n` to disable name resolution).
 
 ```bash
 SECUREMAILSCOPE_TSHARK=1 make test   # with tshark installed
 ```
 
-Any deviation found must be recorded in the milestone report rather than
-worked around.
+**Executed in M4 against TShark (Wireshark) 4.6.8: all 10 checks pass.** They
+had been written but never run through M2 and M3, and were reported as
+`NOT_VERIFIED` in both milestone reports. Running them found three defects —
+all three in the *checks*, none in the engine:
+
+| Check | What was wrong | Resolution |
+| --- | --- | --- |
+| SMTP `STARTTLS` | The filter looked for `smtp.req.command == "STARTTLS"`. Wireshark tokenises SMTP commands as a four-character verb plus a parameter, so it dissects command `STAR`, parameter `TLS`. | Filter corrected; the tokenisation difference is documented in the test. Both tools agree on which frame carried the request, which is the fact under comparison. |
+| Cipher suite | The check parsed TShark's output as decimal; TShark prints `0xc02b`. | Parsed as hex. |
+| Certificate | The check read `x509sat.printableString`; the synthetic CA encodes the common name as a UTF-8 string. | Switched to `x509af.version`, which does not depend on the ASN.1 string encoding the issuer chose. |
+
+No disagreement about a protocol fact was found. An eleventh check was added in
+M4 comparing the negotiated version and cipher suite of the three assessment
+fixtures, since every finding they produce rests on those two values.
+
+Any deviation found in future must be recorded in the milestone report rather
+than worked around.
 
 ## Running
 
@@ -247,11 +331,14 @@ Stated rather than papered over:
   dedicated fixture; only Ethernet and raw IP are exercised end to end.
 - No test yet asserts behaviour on a capture with multiple pcapng sections or
   multiple interfaces.
-- The TShark cross-check has not been executed in this environment because
-  TShark is not installed here. The tests are written -- now including TLS
-  version, cipher suite and certificate comparisons -- and skip cleanly, but
-  they have **not been observed passing**. No claim of agreement with TShark
-  is made anywhere.
+- ~~The TShark cross-check has not been executed~~ — **closed in M4.** TShark
+  4.6.8 was installed and all 10 checks were executed and observed passing.
+  See *Cross-validation against TShark* above. The checks remain optional, so
+  a machine without TShark still skips them cleanly.
+- The cross-check compares a sample of facts, not the whole report. Agreement
+  on packet counts, stream counts, protocol identification, TLS version,
+  cipher suite and certificate dissection is not agreement on everything, and
+  no such claim is made.
 - TLS fixtures built from live OpenSSL depend on the local library's
   defaults. The TLS 1.3 fixtures assert the suite OpenSSL itself reports
   negotiating, which is an independent cross-check on our parse of the

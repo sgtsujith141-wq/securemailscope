@@ -104,6 +104,21 @@ class AnalysisConfig:
     #: Include base64 DER of each certificate in the report. Off by default.
     include_certificate_der: bool = False
 
+    # --- security assessment (M4) -------------------------------------------
+    #: Run the assessment layer. On by default: the forensic observations are
+    #: reported unchanged either way, so this only adds the judgement block.
+    assess_security: bool = True
+    #: Judge certificate validity against the analysis clock instead of the
+    #: capture timestamp. Off by default -- the capture's own clock is the only
+    #: one that describes what was true when the traffic happened.
+    assess_at_current_time: bool = False
+    #: Comma-separated rule ids to disable, e.g. "TLS-PROTO-002,MAIL-004".
+    disabled_rules: str | None = None
+    #: Minimum weighted coverage before a numeric score is reported at all.
+    #: Below it the engine reports SCORE_UNAVAILABLE. Expressed in percent so
+    #: it can travel through an integer environment variable.
+    minimum_score_coverage_percent: int = 50
+
     #: When true the report may carry a short hex preview of payload bytes.
     #: Off by default: reports must be safe to share.
     include_payload_preview: bool = False
@@ -118,6 +133,7 @@ class AnalysisConfig:
             "max_tls_handshake_messages",
             "max_certificates_per_chain",
             "max_certificate_bytes",
+            "minimum_score_coverage_percent",
             "max_line_bytes",
             "max_literal_bytes",
             "max_message_body_bytes",

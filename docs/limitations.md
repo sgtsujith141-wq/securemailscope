@@ -296,14 +296,71 @@ These are milestones, not permanent limits:
 | ~~STARTTLS / STLS upgrade detection and state~~ | done in M2 |
 | ~~TLS handshake reconstruction and negotiated parameters~~ | done in M3 |
 | ~~Certificate extraction and independent validation~~ | done in M3 (TLS ≤ 1.2) |
-| Certificate parsing and assessment (TLS ≤ 1.2 only) | M3–M4 |
-| Risk scoring and explainable findings | M4 |
+| ~~Certificate parsing and assessment (TLS ≤ 1.2 only)~~ | done in M3–M4 |
+| ~~Risk scoring and explainable findings~~ | done in M4 |
+| ~~Threat prioritisation and remediation guidance~~ | done in M4 |
 | Cross-session evidence correlation | M5 |
 | ML-assisted analysis | M6 |
 | REST API and web interface | M7–M8 |
 
 Every report embeds `stage_status`, so a reader can always tell "not found"
 from "not looked for".
+
+---
+
+## 8. Limits of the assessment layer (M4)
+
+The assessment layer inherits every limit above — it can only judge what the
+forensic layers observed — and adds some of its own.
+
+### What the posture score is not
+
+It is **a transparent, project-defined analytical metric over one capture under
+one named policy version.** It is not an independently validated measure of
+enterprise-wide security, is not benchmarked against any industry data set, and
+carries no accreditation. The weights and band boundaries are ordering
+judgements chosen by this project, documented with their rationale, and fully
+configurable.
+
+A score does not tell you how secure an organisation is, how it compares with
+peers, whether it is compliant with anything, or what the score would become
+after a fix. The **findings are the substance; the score is a reading aid**, and
+where they seem to disagree the findings are what to act on. See
+[scoring-methodology.md](scoring-methodology.md), which works through a fixture
+that scores `ADEQUATE` while negotiating RC4.
+
+### Coverage bounds every conclusion
+
+Coverage — the weighted fraction of applicable controls the evidence actually
+let us evaluate — is reported alongside every score, because a score of 100
+over 4% coverage is a statement about very little. Below the configured floor
+(default 50%) no score is produced at all.
+
+### What the rules cannot conclude
+
+- **Nothing about a configuration that was not exercised.** A server that
+  negotiated TLS 1.2 in this capture may also accept TLS 1.0; passive capture
+  cannot enumerate what was *available*, only what was *chosen*. No rule claims
+  otherwise.
+- **Nothing about intent.** A refused `STARTTLS` is reported as configuration.
+  It is equally what a server with no TLS configured does, and the finding says
+  so explicitly. This tool does not detect attacks.
+- **Nothing about scope beyond the capture.** `observed_session_count` counts
+  sessions in this capture only. No cross-capture or cross-session correlation
+  exists; that is M5.
+- **Nothing from an unrecognised code point.** A cipher suite absent from this
+  build's registry is `UNKNOWN`, not weak. Our registry's gaps are ours.
+- **Nothing about a chain without a trust store, or an identity without an
+  expected name.** Both are `UNKNOWN` by default. Supplying `--trust-store` and
+  `--expected-server-identity` is what turns them into real checks.
+
+### The score depends on the policy, and says so
+
+Two reports produced under different thresholds are not comparable, even at the
+same policy version. Finding identifiers therefore incorporate a **policy
+fingerprint** covering the version and every applied override, so a diff
+between reports evaluated under different criteria cannot silently compare
+unlike things.
 
 ---
 
@@ -320,3 +377,8 @@ from "not looked for".
 - Accept a TLS key log, a private key, or any other decryption material.
 - Fetch a certificate, an intermediate, an OCSP response or a CRL.
 - Report a handshake as cryptographically verified.
+- Apply a remediation, change a configuration, or act on a finding.
+- Predict what a score would become after a fix.
+- Present a project-defined weight or band as a validated industry benchmark.
+- Infer attack intent from a weak configuration.
+- Treat an unavailable observation as either a pass or a finding.

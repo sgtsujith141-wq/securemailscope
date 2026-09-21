@@ -332,6 +332,77 @@ without disclosing where anyone keeps their files.
 network requests, so OCSP and CRL retrieval are out of scope by design, and a
 successful chain verification is **not** evidence of non-revocation.
 
+## The assessment layer (M4)
+
+M4 introduces a second kind of statement. The forensic layers say *this was
+observed*; the assessment layer says *this is a problem under this policy*.
+Those are different claims with different warrants, and the model keeps them
+apart.
+
+### Rule outcomes are not evidence statuses
+
+| Evidence status | Grades | Produced by |
+| --- | --- | --- |
+| `OBSERVED` / `INFERRED` / `UNKNOWN` / `NOT_AVAILABLE` | an observation | M1–M3 |
+| `FAIL` / `PASS` / `UNKNOWN` / `NOT_APPLICABLE` | a judgement about observations | M4 |
+
+They are deliberately separate enumerations. An `OBSERVED` cipher suite can
+`FAIL` a rule; an `INFERRED` one produces a finding at reduced *confidence*,
+not at reduced severity.
+
+### Confidence is derived from evidence status
+
+`Confidence` is the bridge between the two vocabularies:
+
+| Confidence | When |
+| --- | --- |
+| `CONFIRMED` | Every supporting observation was `OBSERVED`, from a complete record. |
+| `PROBABLE` | At least one supporting observation was `INFERRED`. |
+| `LOW` | The session was partial, indeterminate, or identified only by port. |
+
+A finding never inherits a *severity* from evidence quality, and never has its
+severity reduced because the evidence was thin. Thin evidence lowers
+confidence, which lowers priority through the matrix — and the report shows
+both numbers, so the reason is visible.
+
+### Every finding carries its evidence forward
+
+A `SecurityFinding` carries `evidence_refs` (packet references), `stream_offsets`
+and `observed_values` (the concrete values the rule read, each naming the
+observation field it came from). A `FAIL` with no evidence references is a
+contract violation and is asserted against.
+
+Packet references are checked to be in range for the capture and to carry the
+timestamp the capture actually recorded for that frame, against the committed
+fixture manifest rather than against anything the pipeline produced.
+
+### Rules for the assessment layer
+
+These extend the rules above, and apply to M5 onward as well:
+
+10. **A judgement is never presented as an observation.** Rule outcomes,
+    findings, scores and remediations live in the `assessment` block; the
+    forensic blocks are unchanged by their presence.
+11. **`UNKNOWN` is never promoted to `PASS`.** A rule that could not be
+    evaluated says so, and contributes to neither side of the score.
+12. **A finding is never generated because an observation is unavailable.**
+    Only `FAIL` becomes a finding. The absence of a trust store is an evidence
+    gap, not a chain failure.
+13. **Severity, confidence and priority are never multiplied together.** They
+    are three axes, reported separately, combined only by a published lookup
+    table.
+14. **Attack intent is never inferred from a configuration.** Where a weak
+    observation has an innocent explanation, the finding states it.
+15. **One underlying weakness is counted once and reported once.** Rules
+    sharing a de-duplication group charge the most severe member; the rest are
+    reported with `counts_toward_score: false`.
+16. **Criticality is supplied, never inferred.** No port number, hostname or
+    address makes a host important.
+17. **A finding identifier binds to the criteria that produced it.** The policy
+    fingerprint — version plus every applied override — is part of the
+    identifier, so reports produced under different thresholds cannot appear to
+    describe the same finding.
+
 ## Rules for future milestones
 
 These apply to every stage added after M1:

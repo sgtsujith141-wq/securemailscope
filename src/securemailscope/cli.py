@@ -82,6 +82,48 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Omit per-record TLS framing lists (smaller reports).",
     )
+    analyze.add_argument(
+        "--no-rule-results",
+        action="store_true",
+        help="Omit the per-session rule result lists, keeping findings and the score.",
+    )
+
+    assessment = analyze.add_argument_group(
+        "security assessment",
+        "Turns the forensic observations into judgements under a named, versioned "
+        "policy. The observations themselves are reported unchanged either way.",
+    )
+    assessment.add_argument(
+        "--no-assessment",
+        action="store_true",
+        help="Skip the assessment layer and report forensic observations only.",
+    )
+    assessment.add_argument(
+        "--policy-reference-time",
+        choices=("capture", "current"),
+        default="capture",
+        help="Which clock the rules judge certificate validity against. 'capture' "
+        "(default) asks whether the certificate was valid when the traffic was "
+        "recorded, which is the forensic question. 'current' asks whether it is "
+        "valid now. The mode is recorded in the policy block. Distinct from "
+        "--assess-current-time, which adds a second validity report without "
+        "changing what the rules conclude.",
+    )
+    assessment.add_argument(
+        "--disable-rules",
+        default=None,
+        metavar="IDS",
+        help="Comma-separated rule ids to disable, e.g. TLS-PROTO-002,MAIL-004. "
+        "Recorded as a policy override in the report.",
+    )
+    assessment.add_argument(
+        "--minimum-score-coverage",
+        type=int,
+        default=None,
+        metavar="PERCENT",
+        help="Weighted coverage below which no numeric score is reported "
+        "(default 50). Below it the engine reports SCORE_UNAVAILABLE.",
+    )
 
     tls = analyze.add_argument_group(
         "TLS and certificate analysis",
@@ -181,6 +223,14 @@ def _config_from_args(args: argparse.Namespace) -> AnalysisConfig:
         )
         if getattr(args, name, None) is not None
     }
+    if getattr(args, "no_assessment", False):
+        overrides["assess_security"] = False
+    if getattr(args, "policy_reference_time", "capture") == "current":
+        overrides["assess_at_current_time"] = True
+    if getattr(args, "disable_rules", None):
+        overrides["disabled_rules"] = args.disable_rules
+    if getattr(args, "minimum_score_coverage", None) is not None:
+        overrides["minimum_score_coverage_percent"] = args.minimum_score_coverage
     if args.trust_store is not None:
         overrides["trust_store_path"] = str(args.trust_store)
     if getattr(args, "expected_server_identity", None):
@@ -345,6 +395,57 @@ def _summarise(result: AnalysisResult, stream: TextIO) -> None:
                 file=stream,
             )
 
+    assessment = result.assessment
+    if assessment is not None:
+        score = assessment.posture_score
+        print(
+            f"policy       : {assessment.policy.policy_id} "
+            f"v{assessment.policy.policy_version} "
+            f"({assessment.policy.assessment_mode.value} mode)"
+            + (
+                f"  overrides: {', '.join(assessment.policy.overrides_applied)}"
+                if assessment.policy.overrides_applied
+                else ""
+            ),
+            file=stream,
+        )
+        tally = assessment.tally
+        print(
+            f"controls     : {tally.evaluated} evaluated of {tally.total_applicable} "
+            f"applicable ({tally.passed} passed, {tally.failed} failed, "
+            f"{tally.unknown} unknown); coverage "
+            f"{assessment.coverage.coverage_ratio:.0%}",
+            file=stream,
+        )
+        if score.status.value == "AVAILABLE":
+            print(
+                f"posture score: {score.score}/100 ({score.band.value}) -- a "
+                "project-defined metric over the analysed evidence only",
+                file=stream,
+            )
+        else:
+            print(
+                f"posture score: SCORE_UNAVAILABLE -- {score.explanation}",
+                file=stream,
+            )
+        if assessment.findings:
+            print(f"findings     : {len(assessment.findings)}", file=stream)
+            for entry in assessment.prioritised_findings:
+                print(
+                    f"  {entry.priority.value}  {entry.rule_id:15s} "
+                    f"{entry.severity.value:8s} {entry.confidence.value:10s} "
+                    f"x{entry.observed_session_count}",
+                    file=stream,
+                )
+        else:
+            print("findings     : none", file=stream)
+        if assessment.remediations:
+            print(
+                "remediations : "
+                + ", ".join(item.remediation_id for item in assessment.remediations),
+                file=stream,
+            )
+
     total_warnings = (
         len(result.warnings)
         + sum(len(s.warnings) for s in result.sessions)
@@ -363,6 +464,7 @@ def _run_analyze(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
     include_segments = not args.no_segments
     include_events = not args.no_protocol_events
     include_records = not args.no_tls_records
+    include_rule_results = not args.no_rule_results
     indent = None if args.compact else 2
 
     if args.output is not None:
@@ -373,6 +475,7 @@ def _run_analyze(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
             include_segments=include_segments,
             include_protocol_events=include_events,
             include_tls_records=include_records,
+            include_rule_results=include_rule_results,
         )
         if not args.quiet:
             print(f"report       : {path}", file=err)
@@ -384,6 +487,7 @@ def _run_analyze(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
                 include_segments=include_segments,
                 include_protocol_events=include_events,
                 include_tls_records=include_records,
+                include_rule_results=include_rule_results,
             ),
             file=out,
         )

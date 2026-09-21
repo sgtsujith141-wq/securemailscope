@@ -25,6 +25,10 @@ __all__ = [
     "ExpectedCertificate",
     "ExpectedValidation",
     "ExpectedTLS",
+    "ExpectedRuleOutcome",
+    "ExpectedFinding",
+    "ExpectedScore",
+    "ExpectedAssessment",
     "FixtureManifest",
 ]
 
@@ -220,6 +224,62 @@ class ExpectedTLS:
 
 
 @dataclass(frozen=True)
+class ExpectedRuleOutcome:
+    """The outcome one rule must reach, and whether it carries the unit."""
+
+    rule_id: str
+    outcome: str
+    severity: str | None = None
+    #: False when another rule in the same dedup group carried the finding.
+    counts_toward_score: bool | None = None
+
+
+@dataclass(frozen=True)
+class ExpectedFinding:
+    rule_id: str
+    severity: str
+    confidence: str
+    priority: str
+    rank: int
+
+
+@dataclass(frozen=True)
+class ExpectedScore:
+    """Hand-computed scoring arithmetic.
+
+    These numbers are worked out from the policy weights and the expected rule
+    outcomes by hand, not read back from the implementation, so a change in
+    the scoring code fails a test instead of silently rewriting the answer.
+    """
+
+    status: str
+    score: int | None
+    band: str
+    evaluated_units: int
+    passed_units: int
+    failed_units: int
+    unknown_units: int
+    weighted_evaluated: float
+    weighted_deductions: float
+    weighted_applicable: float
+    coverage_ratio: float
+
+
+@dataclass(frozen=True)
+class ExpectedAssessment:
+    """Expected assessment for one session."""
+
+    session_index: int
+    score: ExpectedScore
+    rule_outcomes: list[ExpectedRuleOutcome] = field(default_factory=list)
+    findings: list[ExpectedFinding] = field(default_factory=list)
+    #: Rules that must NOT produce a finding. Asserting absence is how false
+    #: positives are caught; asserting presence alone never would.
+    forbidden_finding_rule_ids: list[str] = field(default_factory=list)
+    remediation_ids: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class FixtureManifest:
     name: str
     filename: str
@@ -243,6 +303,8 @@ class FixtureManifest:
     expected_protocols: list[ExpectedProtocol] | None = None
     #: ``None`` means the fixture makes no TLS-layer assertions.
     expected_tls: list[ExpectedTLS] | None = None
+    #: ``None`` means the fixture makes no assessment-layer assertions.
+    expected_assessment: list[ExpectedAssessment] | None = None
     #: False for fixtures containing randomised signatures or live OpenSSL
     #: handshakes: their bytes differ per run, so the capture hash is not
     #: asserted and the semantic expectations carry the whole test.

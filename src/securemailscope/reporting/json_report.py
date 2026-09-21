@@ -27,6 +27,7 @@ def result_to_dict(
     include_segments: bool = True,
     include_protocol_events: bool = True,
     include_tls_records: bool = True,
+    include_rule_results: bool = True,
 ) -> dict[str, Any]:
     """Convert a result to plain Python objects.
 
@@ -48,6 +49,11 @@ def result_to_dict(
     if not include_tls_records:
         for analysis in data.get("tls", []):
             analysis.pop("records", None)
+    if not include_rule_results:
+        assessment = data.get("assessment")
+        if assessment:
+            for session in assessment.get("sessions", []):
+                session.pop("rule_results", None)
     return data
 
 
@@ -58,6 +64,7 @@ def result_to_json(
     include_segments: bool = True,
     include_protocol_events: bool = True,
     include_tls_records: bool = True,
+    include_rule_results: bool = True,
 ) -> str:
     return json.dumps(
         result_to_dict(
@@ -65,6 +72,7 @@ def result_to_json(
             include_segments=include_segments,
             include_protocol_events=include_protocol_events,
             include_tls_records=include_tls_records,
+            include_rule_results=include_rule_results,
         ),
         indent=indent,
         ensure_ascii=False,
@@ -80,6 +88,7 @@ def write_json_report(
     include_segments: bool = True,
     include_protocol_events: bool = True,
     include_tls_records: bool = True,
+    include_rule_results: bool = True,
 ) -> Path:
     """Write the report to ``destination`` and return the resolved path."""
     path = Path(destination).expanduser().resolve(strict=False)
@@ -90,6 +99,7 @@ def write_json_report(
         include_segments=include_segments,
         include_protocol_events=include_protocol_events,
         include_tls_records=include_tls_records,
+        include_rule_results=include_rule_results,
     )
     path.write_text(payload + "\n", encoding="utf-8")
     return path

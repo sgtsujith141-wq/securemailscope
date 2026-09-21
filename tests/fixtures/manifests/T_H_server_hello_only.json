@@ -51,6 +51,7 @@
       "expected_warning_codes": []
     }
   ],
+  "expected_assessment": null,
   "byte_reproducible": true,
   "forbidden_strings": []
 }
