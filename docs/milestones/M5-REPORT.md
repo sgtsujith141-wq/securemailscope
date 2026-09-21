@@ -4,6 +4,7 @@
 - **Date:** 2026-09-21
 - **Milestone:** M5 — Cryptographic DNA, drift, cross-session correlation, evidence timeline and blast radius
 - **Baseline (M4):** `5cde1fd618bc84f09d5622dbbb37eece7d41f939`
+- **Commit:** `aa6efeb0da78abaf019640486af8d1ae6281f2f1`
 - **Result:** **COMPLETE** — all 16 acceptance gates pass.
 
 ---
