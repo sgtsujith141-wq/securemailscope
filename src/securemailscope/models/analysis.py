@@ -9,12 +9,26 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .capture import CaptureMetadata
 from .evidence import AnalysisWarning
+from .protocol import ProtocolInventory, ProtocolSessionAnalysis
 from .tcp import TCPSession
 
-__all__ = ["AnalysisStage", "ToolInfo", "AnalysisLimits", "SessionInventory", "AnalysisResult"]
+__all__ = [
+    "AnalysisStage",
+    "ToolInfo",
+    "AnalysisLimits",
+    "SessionInventory",
+    "AnalysisResult",
+    "REPORT_SCHEMA_VERSION",
+    "STAGE_STATUS",
+]
 
-#: Bumped whenever the JSON output contract changes incompatibly.
-REPORT_SCHEMA_VERSION = "1.0.0"
+#: Bumped whenever the JSON output contract changes.
+#:
+#: 1.1.0 (M2) adds the top-level ``protocols`` array and ``protocol_inventory``
+#: object, and adds members to ``stage_status``. It is backward compatible:
+#: every 1.0.0 field keeps its name, type and meaning, and the M1 TCP models
+#: are unchanged. A 1.0.0 consumer can ignore the new keys.
+REPORT_SCHEMA_VERSION = "1.1.0"
 
 
 class AnalysisStage(StrEnum):
@@ -29,6 +43,8 @@ class AnalysisStage(StrEnum):
     TCP_REASSEMBLY = "TCP_REASSEMBLY"
     PROTOCOL_HINTS = "PROTOCOL_HINTS"
     EMAIL_PROTOCOL_PARSING = "EMAIL_PROTOCOL_PARSING"
+    STARTTLS_DETECTION = "STARTTLS_DETECTION"
+    TLS_RECORD_FRAMING = "TLS_RECORD_FRAMING"
     TLS_ANALYSIS = "TLS_ANALYSIS"
     CERTIFICATE_ASSESSMENT = "CERTIFICATE_ASSESSMENT"
     RISK_ASSESSMENT = "RISK_ASSESSMENT"
@@ -39,8 +55,12 @@ class AnalysisStage(StrEnum):
 STAGE_STATUS: dict[AnalysisStage, str] = {
     AnalysisStage.CAPTURE_INGESTION: "IMPLEMENTED",
     AnalysisStage.TCP_REASSEMBLY: "IMPLEMENTED",
-    AnalysisStage.PROTOCOL_HINTS: "PARTIAL",
-    AnalysisStage.EMAIL_PROTOCOL_PARSING: "NOT_IMPLEMENTED",
+    AnalysisStage.PROTOCOL_HINTS: "IMPLEMENTED",
+    AnalysisStage.EMAIL_PROTOCOL_PARSING: "IMPLEMENTED",
+    AnalysisStage.STARTTLS_DETECTION: "IMPLEMENTED",
+    # Record framing only: enough to locate and bound TLS bytes, not to parse
+    # them. Handshake reconstruction is M3.
+    AnalysisStage.TLS_RECORD_FRAMING: "PARTIAL",
     AnalysisStage.TLS_ANALYSIS: "NOT_IMPLEMENTED",
     AnalysisStage.CERTIFICATE_ASSESSMENT: "NOT_IMPLEMENTED",
     AnalysisStage.RISK_ASSESSMENT: "NOT_IMPLEMENTED",
@@ -110,6 +130,20 @@ class AnalysisResult(_Frozen):
     capture: CaptureMetadata
     inventory: SessionInventory
     sessions: tuple[TCPSession, ...] = ()
+
+    protocol_inventory: ProtocolInventory = Field(
+        default_factory=ProtocolInventory,
+        description="Capture-wide totals for the application protocol layer (M2).",
+    )
+    protocols: tuple[ProtocolSessionAnalysis, ...] = Field(
+        default=(),
+        description=(
+            "Application-layer analysis, one entry per session, joined to "
+            "'sessions' by session_id. Kept separate so the M1 TCP contract is "
+            "unchanged."
+        ),
+    )
+
     warnings: tuple[AnalysisWarning, ...] = Field(
         default=(), description="Warnings not attributable to a single session."
     )

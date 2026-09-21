@@ -1,0 +1,72 @@
+{
+  "name": "P_K_gap_during_upgrade",
+  "filename": "p_k_gap_during_upgrade.pcap",
+  "description": "The server's STARTTLS response is missing from the capture and TLS-looking bytes follow. Even though TLS bytes appear, success must NOT be claimed: the negotiation was interrupted by a hole.",
+  "generation": "securemailscope.testing.protocol_fixtures._fixture_k",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "7b16ac76c000080547fea70e3731750aabbd16589a88747d92e0eb2d6c6ac487",
+  "file_size_bytes": 922,
+  "expected_packet_count": 9,
+  "expected_tcp_packet_count": 9,
+  "expected_timestamps_ns": [
+    1704067200000000000,
+    1704067200001000000,
+    1704067200002000000,
+    1704067200003000000,
+    1704067200004000000,
+    1704067200005000000,
+    1704067200006000000,
+    1704067200007000000,
+    1704067200008000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": [
+    {
+      "session_index": 0,
+      "protocol": "SMTP",
+      "detection_status": "CONFIRMED",
+      "confidence_basis": "GREETING_AND_MATCHED_EXCHANGE",
+      "parse_state": "INCOMPLETE",
+      "port_hint": "SMTP",
+      "port_hint_agrees": true,
+      "implicit_tls_observed": false,
+      "upgrade": {
+        "mechanism": "STARTTLS",
+        "state": "INCOMPLETE",
+        "advertised": true,
+        "requested": true,
+        "response_code": null,
+        "server_boundary_offset": null,
+        "server_boundary_basis": null,
+        "client_boundary_offset": null,
+        "client_boundary_basis": null,
+        "tls_record_count": 0,
+        "handshake_analyzed": false
+      },
+      "authentication": [],
+      "key_events": [
+        {
+          "event_type": "UPGRADE_REQUESTED",
+          "direction": "CLIENT_TO_SERVER",
+          "stream_offset": 21,
+          "end_offset": null,
+          "command_verb": "STARTTLS",
+          "reply_code": null,
+          "tag": null,
+          "packets": []
+        }
+      ],
+      "forbidden_event_types": [
+        "UPGRADE_ACCEPTED"
+      ],
+      "expected_warning_codes": [
+        "PROTOCOL_DESYNCHRONISED"
+      ]
+    }
+  ],
+  "forbidden_strings": []
+}

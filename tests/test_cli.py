@@ -146,3 +146,120 @@ def test_committed_manifests_match_regenerated_ones(tmp_path: Path) -> None:
             f"{regenerated.name} differs from the committed manifest; "
             "run `make fixtures` and review the change"
         )
+
+
+# ---------------------------------------------------------------------------
+# M2: application protocol layer
+# ---------------------------------------------------------------------------
+@pytest.mark.integration
+def test_analyze_reports_starttls_state(fixtures: dict[str, Fixture], tmp_path: Path) -> None:
+    output = tmp_path / "starttls.json"
+    completed = run_cli(
+        "analyze", str(fixtures["P_A_smtp_starttls_accepted"].path), "-o", str(output)
+    )
+    assert completed.returncode == 0, completed.stderr
+
+    report = json.loads(output.read_text())
+    assert report["tool"]["report_schema_version"] == "1.1.0"
+    # M1 data is still present and unchanged in shape.
+    assert report["sessions"][0]["client_to_server"]["bytes_reconstructed"] > 0
+    assert "runs" in report["sessions"][0]["client_to_server"]
+
+    analysis = report["protocols"][0]
+    assert analysis["session_id"] == report["sessions"][0]["session_id"]
+    assert analysis["detection"]["protocol"] == "SMTP"
+    assert analysis["detection"]["status"] == "CONFIRMED"
+    assert analysis["parse_state"] == "HANDED_OFF_TO_TLS"
+
+    upgrade = analysis["upgrade"]
+    assert upgrade["mechanism"] == "STARTTLS"
+    assert upgrade["state"] == "TLS_BYTES_OBSERVED"
+    assert upgrade["handshake_analyzed"] is False
+    assert upgrade["negotiated_parameters_available"] is False
+    assert upgrade["server_boundary"]["basis"] == "SERVER_SUCCESS_REPLY_END"
+    assert upgrade["client_boundary"]["basis"] == "FIRST_TLS_RECORD"
+    assert len(upgrade["tls_records"]) == 2
+
+    assert report["protocol_inventory"]["confirmed_smtp_count"] == 1
+    assert report["protocol_inventory"]["tls_handshakes_analysed"] == 0
+    assert "STARTTLS: TLS_BYTES_OBSERVED" in completed.stderr
+    assert "tls handshake: NOT ANALYSED" in completed.stderr
+
+
+@pytest.mark.integration
+def test_analyze_never_emits_credentials(
+    fixtures: dict[str, Fixture], tmp_path: Path
+) -> None:
+    """A capture full of dummy credentials must produce a clean report."""
+    fixture = fixtures["P_M_auth_before_tls"]
+    output = tmp_path / "auth.json"
+    completed = run_cli("analyze", str(fixture.path), "-o", str(output))
+    assert completed.returncode == 0, completed.stderr
+
+    everything = output.read_text() + completed.stdout + completed.stderr
+    for secret in fixture.manifest["forbidden_strings"]:
+        assert secret not in everything, f"{secret!r} leaked through the CLI"
+
+    analysis = json.loads(output.read_text())["protocols"][0]
+    observation = analysis["authentication"][0]
+    assert observation["command_verb"] == "AUTH"
+    assert observation["mechanism"] == "LOGIN"
+    assert observation["occurred_before_tls_upgrade"] is True
+    assert observation["continuation_exchanges"] == 2
+    assert observation["credentials_recorded"] is False
+    assert "auth attempts: 1 observed" in completed.stderr
+
+
+@pytest.mark.integration
+def test_analyze_reports_inconclusive_upgrade_honestly(
+    fixtures: dict[str, Fixture], tmp_path: Path
+) -> None:
+    output = tmp_path / "gap.json"
+    completed = run_cli(
+        "analyze", str(fixtures["P_K_gap_during_upgrade"].path), "-o", str(output), "--quiet"
+    )
+    assert completed.returncode == 0, completed.stderr
+    analysis = json.loads(output.read_text())["protocols"][0]
+    assert analysis["upgrade"]["state"] == "INCOMPLETE"
+    assert analysis["parse_state"] == "INCOMPLETE"
+    assert analysis["upgrade"].get("server_boundary") is None
+
+
+@pytest.mark.integration
+def test_no_protocol_events_flag_shrinks_the_report(
+    fixtures: dict[str, Fixture], tmp_path: Path
+) -> None:
+    fixture = fixtures["P_A_smtp_starttls_accepted"]
+    full = tmp_path / "full.json"
+    slim = tmp_path / "slim.json"
+    assert run_cli("analyze", str(fixture.path), "-o", str(full), "--quiet").returncode == 0
+    assert (
+        run_cli(
+            "analyze",
+            str(fixture.path),
+            "-o",
+            str(slim),
+            "--quiet",
+            "--no-protocol-events",
+        ).returncode
+        == 0
+    )
+    full_data = json.loads(full.read_text())
+    slim_data = json.loads(slim.read_text())
+    assert full_data["protocols"][0]["events"]
+    assert "events" not in slim_data["protocols"][0]
+    # The conclusions survive the trimming.
+    assert slim_data["protocols"][0]["upgrade"]["state"] == "TLS_BYTES_OBSERVED"
+    assert slim_data["protocols"][0]["detection"]["status"] == "CONFIRMED"
+
+
+@pytest.mark.integration
+def test_status_reports_m2_stages() -> None:
+    completed = run_cli("status")
+    assert completed.returncode == 0
+    status = json.loads(completed.stdout)
+    assert status["EMAIL_PROTOCOL_PARSING"] == "IMPLEMENTED"
+    assert status["STARTTLS_DETECTION"] == "IMPLEMENTED"
+    assert status["TLS_RECORD_FRAMING"] == "PARTIAL"
+    assert status["TLS_ANALYSIS"] == "NOT_IMPLEMENTED"
+    assert status["CERTIFICATE_ASSESSMENT"] == "NOT_IMPLEMENTED"

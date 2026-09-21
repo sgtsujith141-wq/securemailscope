@@ -139,15 +139,65 @@ in principle be misprojected. This is documented rather than defended against.
 
 ---
 
-## 4. Protocol identification limits
+## 4. Protocol identification and STARTTLS limits
 
-M1 identifies nothing. It emits **hints** derived from the server port, marked
-`INFERRED`, prefixed `HINT:`, and carrying explicit limitations. A service on
-port 25 is probably SMTP; a port number is not proof, and email protocols run
-on non-standard ports routinely.
+M2 parses SMTP, IMAP and POP3 from payload. What it still cannot tell you:
 
-Payload-based confirmation is M2. Until then, **no claim of email-protocol
-detection is made anywhere in this repository.**
+### A port number is never proof
+
+Detection reaches `CONFIRMED` only from application-level syntax. A session
+with no parseable dialogue on port 993 is reported `PORT_HINT`, never
+confirmed IMAP. Where payload and port disagree, the payload wins and the
+disagreement is stated.
+
+### An accepted upgrade is not an encrypted connection
+
+`UPGRADE_ACCEPTED` means the server replied that it would begin TLS.
+`TLS_BYTES_OBSERVED` additionally means bytes with valid TLS record framing
+followed. **Neither means a handshake completed, that the parameters were
+sound, or that the peer's certificate was acceptable.** Those are M3 and M4
+questions, and `handshake_analyzed` is a constant `False` throughout M2.
+
+### Record framing is a weak signal on its own
+
+A single well-formed TLS record header is graded `SINGLE_RECORD_HEADER` with
+`INFERRED` status because arbitrary binary payload can match it by chance.
+Only an identifiable handshake message or a chain of length-consistent records
+is treated as observed.
+
+### What is inside an implicit-TLS session is unknowable
+
+On ports 465, 993 and 995 the session is TLS from its first byte. The framing
+may be observed; the email protocol inside it is encrypted and cannot be
+identified passively. It stays a port hint.
+
+### A gap during negotiation voids the conclusion
+
+If data is missing while an upgrade command is outstanding, the state becomes
+`INCOMPLETE` even if TLS-looking bytes appear afterwards. The engine will not
+claim a successful negotiation it did not observe end to end.
+
+### A midstream capture loses capability context
+
+If the `EHLO` was not captured, the `250` multiline reply answering it is not
+treated as a capability advertisement -- there is no way to know which command
+it answers. `UPGRADE_ADVERTISED` will be absent even though the bytes
+containing `STARTTLS` are present. This is deliberate conservatism.
+
+### Absence of STARTTLS is not a downgrade attack
+
+The engine records that an upgrade was absent, rejected or unused. It does not
+conclude anything about intent or attack. Turning those observations into
+findings is M4.
+
+### Not implemented in the protocol layer
+
+- SMTP `BDAT` / CHUNKING bodies (only dot-terminated `DATA` is skipped).
+- IMAP `COMPRESS=DEFLATE`; a compressed stream is not decompressed.
+- SASL mechanism-specific semantics. Mechanism names are recorded when
+  recognised; nothing about the exchange is interpreted.
+- Message headers, envelopes, addresses and bodies. Deliberately never parsed.
+- NNTP, Sieve, ManageSieve, Submission-over-QUIC.
 
 ---
 
@@ -169,9 +219,9 @@ These are milestones, not permanent limits:
 
 | Capability | Milestone |
 |---|---|
-| SMTP / IMAP / POP3 command and response parsing | M2 |
-| STARTTLS / STLS upgrade detection and correlation | M2–M3 |
-| TLS record framing and handshake reconstruction | M3 |
+| ~~SMTP / IMAP / POP3 command and response parsing~~ | done in M2 |
+| ~~STARTTLS / STLS upgrade detection and state~~ | done in M2 |
+| TLS handshake reconstruction and negotiated parameters | M3 |
 | Certificate parsing and assessment (TLS ≤ 1.2 only) | M3–M4 |
 | Risk scoring and explainable findings | M4 |
 | Cross-session evidence correlation | M5 |
@@ -191,3 +241,5 @@ from "not looked for".
 - Attempt to break, downgrade or decrypt cryptography.
 - Report a certificate for a TLS 1.3 session.
 - Present an inference as an observation.
+- Record a username, a password, a SASL payload, an email address or a message
+  body -- from any protocol, in any field, at any milestone.

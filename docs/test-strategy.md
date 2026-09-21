@@ -65,9 +65,37 @@ history. This keeps the habit correct for when real captures are involved.
 | N | pcap declaring link type 105 | Unsupported link type → diagnostic, zero sessions |
 | O | Data frame stored with a short snaplen | `NOT_CAPTURED` gap; `ACKED_DATA_NOT_CAPTURED` |
 
-No fixture contains a TLS handshake or a certificate. Inventing one would put
-fabricated cryptographic evidence into the suite; real TLS fixtures belong to
-M3.
+### M2 protocol fixtures
+
+| Fixture | Scenario | Principally verifies |
+|---|---|---|
+| P_A | SMTP STARTTLS accepted, command segment retransmitted | Baseline upgrade; retransmission does not double the request |
+| P_B | SMTP STARTTLS refused with 454 | Temporary failure distinguished from permanent; plaintext parsing continues |
+| P_C | Multiline 220 acceptance | The reply completes only at its final line; boundary measured there |
+| P_D | IMAP STARTTLS accepted, CAPABILITY delivered out of order | Tag matching; TCP reordering resolved before the parser sees it |
+| P_E | IMAP tagged OK with the **wrong** tag | An unrelated completion never accepts STARTTLS |
+| P_F | POP3 STLS accepted after a multiline CAPA | Dot-terminated capability parsing; STLS acceptance |
+| P_G | POP3 STLS refused with -ERR | Rejection recorded as an observation, not a verdict |
+| P_H | SMTP on port 8025 | CONFIRMED with no port hint at all |
+| P_I | POP3 dialogue on port 143 | Payload beats the port; disagreement reported |
+| P_J | STARTTLS with no server response | Outcome unknown, never success |
+| P_K | Server response missing (TCP gap) then TLS bytes | A hole voids the conclusion even when TLS bytes follow |
+| P_L | 220 acceptance and ServerHello in ONE TCP payload | Boundary mid-payload; trailing TLS bytes preserved |
+| P_M | AUTH LOGIN with a two-round base64 exchange, no TLS | Continuation counting; credentials never recorded |
+| P_N | Fake plaintext `AUTH PLAIN <token>` **after** the boundary | Parsing never resumes; the token never leaks |
+| P_O | Port 993, truncated ClientHello | Implicit TLS framing observed; identity stays PORT_HINT |
+| P_P | DATA body containing "STARTTLS" and a fake 220 | Message content is never parsed as protocol |
+| P_Q | IMAP literal containing a full fake STARTTLS exchange | Literals skipped by declared length |
+| P_R | POP3 RETR body containing "STLS" and a fake +OK | Dot-terminated body skipped; dot-stuffing handled |
+| P_S | EHLO, its reply and STARTTLS split across segments, CRLF split | Reassembly restores records before the line reader |
+| P_T | Capture starting midstream, no greeting | Detection falls to PROBABLE; no capability claimed |
+
+No fixture contains a real TLS handshake or a certificate. The TLS records in
+P_A, P_C, P_D, P_F, P_L, P_N, P_O, P_S and P_T are synthetic, structurally
+valid record/handshake headers built byte by byte
+(`securemailscope.testing.tls_blobs`) so the framing detector has something
+genuine to validate. They carry no cryptographic meaning, and nothing in the
+suite claims a handshake was analysed.
 
 ## Test files
 
@@ -79,8 +107,12 @@ M3.
 | `test_reassembly.py` | Manifest-driven reconstruction, literal byte comparison, provenance |
 | `test_sessions.py` | Flow normalisation, separation, tuple reuse, role inference |
 | `test_report.py` | JSON contract, payload absence, path absence, honest stage status |
-| `test_cli.py` | End-to-end subprocess invocation, exit codes, reproducibility |
+| `test_cli.py` | End-to-end subprocess invocation, exit codes, reproducibility, M2 report shape |
 | `test_passive.py` | No socket, no subprocess, Scapy neighbour resolution blocked |
+| `test_protocols.py` | Manifest-driven M2: detection, upgrade state, boundaries, events, auth, warnings, credential absence |
+| `test_protocol_reader.py` | Line reader bounds and gap safety, redaction filters, TLS record framing |
+| `test_protocol_behaviour.py` | Command/response matching, malformed input, limits, the upgrade boundary |
+| `test_tshark_crosscheck.py` | Optional cross-validation against an independent dissector |
 
 ## What "verified" means here
 
@@ -97,6 +129,39 @@ Assertions are specific, not existential:
   diagnostic fails the test rather than slipping through.
 - **Timestamps:** the full nanosecond list, compared element by element against
   the manifest.
+
+## Credential-absence testing
+
+Fixtures that carry authentication use recognisable dummy values
+(`dummy-user@example.invalid`, `NotARealPassword123`, and their base64 forms)
+and list them in the manifest's `forbidden_strings`. Two tests then assert
+those strings appear nowhere:
+
+* `test_protocols.py::test_no_credential_material_reaches_the_report` checks
+  the serialised report, every warning message, every warning `details` blob
+  and every event `detail` string.
+* `test_cli.py::test_analyze_never_emits_credentials` checks the report file
+  plus the CLI's stdout and stderr, because a stray print is as much of a leak
+  as a stray field.
+
+`test_protocol_behaviour.py::test_unrecognised_command_token_is_not_echoed`
+covers the subtler case: a base64 blob sitting in command position must not be
+quoted back as an "unknown verb".
+
+## Optional cross-validation against TShark
+
+`test_tshark_crosscheck.py` compares packet counts, TCP stream counts and
+SMTP/IMAP/POP3 dissection against TShark. It is **skipped unless** `tshark` is
+on `PATH` *and* `SECUREMAILSCOPE_TSHARK=1` is set, so an ordinary test run has
+no external dependency. TShark is invoked strictly offline (`-r` on a local
+file, `-n` to disable name resolution).
+
+```bash
+SECUREMAILSCOPE_TSHARK=1 make test   # with tshark installed
+```
+
+Any deviation found must be recorded in the milestone report rather than
+worked around.
 
 ## Running
 
@@ -122,3 +187,12 @@ Stated rather than papered over:
   dedicated fixture; only Ethernet and raw IP are exercised end to end.
 - No test yet asserts behaviour on a capture with multiple pcapng sections or
   multiple interfaces.
+- The TShark cross-check has not been executed in this environment because
+  TShark is not installed here. The tests are written and skip cleanly; they
+  have not been observed passing.
+- No fixture yet combines a protocol dialogue with an overlapping-segment
+  conflict. The reader's ambiguity handling is unit-tested directly
+  (`test_bytes_from_an_overlap_conflict_are_flagged_ambiguous`) but not end to
+  end from a capture.
+- Running three parsers per session is O(3n) in dialogue length. No
+  performance measurement has been taken, and none is claimed.

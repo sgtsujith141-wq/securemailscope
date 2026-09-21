@@ -18,6 +18,10 @@ __all__ = [
     "ExpectedConflict",
     "ExpectedStream",
     "ExpectedSession",
+    "ExpectedProtocolEvent",
+    "ExpectedUpgrade",
+    "ExpectedAuthentication",
+    "ExpectedProtocol",
     "FixtureManifest",
 ]
 
@@ -85,6 +89,69 @@ class ExpectedSession:
 
 
 @dataclass(frozen=True)
+class ExpectedProtocolEvent:
+    """One protocol event that must appear, at exactly this position."""
+
+    event_type: str
+    direction: str
+    stream_offset: int
+    end_offset: int | None = None
+    command_verb: str | None = None
+    reply_code: str | None = None
+    tag: str | None = None
+    packets: list[int] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class ExpectedUpgrade:
+    """The expected STARTTLS/STLS outcome, including both boundaries."""
+
+    mechanism: str
+    state: str
+    advertised: bool
+    requested: bool
+    response_code: str | None = None
+    server_boundary_offset: int | None = None
+    server_boundary_basis: str | None = None
+    client_boundary_offset: int | None = None
+    client_boundary_basis: str | None = None
+    tls_record_count: int = 0
+    #: Always False in M2; asserted so a future regression is caught.
+    handshake_analyzed: bool = False
+
+
+@dataclass(frozen=True)
+class ExpectedAuthentication:
+    command_verb: str
+    direction: str
+    stream_offset: int
+    before_upgrade: bool
+    mechanism: str | None = None
+    continuation_exchanges: int = 0
+
+
+@dataclass(frozen=True)
+class ExpectedProtocol:
+    """Expected application-layer analysis for one session."""
+
+    session_index: int
+    protocol: str
+    detection_status: str
+    confidence_basis: str
+    parse_state: str
+    port_hint: str | None = None
+    port_hint_agrees: bool | None = None
+    implicit_tls_observed: bool = False
+    upgrade: ExpectedUpgrade | None = None
+    authentication: list[ExpectedAuthentication] = field(default_factory=list)
+    #: Events that must be present exactly as described. Not exhaustive.
+    key_events: list[ExpectedProtocolEvent] = field(default_factory=list)
+    #: Event types that must NOT appear anywhere in this session's analysis.
+    forbidden_event_types: list[str] = field(default_factory=list)
+    expected_warning_codes: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class FixtureManifest:
     name: str
     filename: str
@@ -102,6 +169,11 @@ class FixtureManifest:
     expected_capture_truncated: bool = False
     #: Set when analysis is expected to raise instead of producing a result.
     expected_error: str | None = None
+    #: ``None`` means the fixture makes no protocol-layer assertions.
+    expected_protocols: list[ExpectedProtocol] | None = None
+    #: Byte strings that must never appear in any serialised output. Used by
+    #: fixtures carrying recognisable dummy credentials.
+    forbidden_strings: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

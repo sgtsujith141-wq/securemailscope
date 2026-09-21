@@ -1,0 +1,44 @@
+{
+  "name": "P_O_implicit_tls_incomplete",
+  "filename": "p_o_implicit_tls_incomplete.pcap",
+  "description": "A session on port 993 that is TLS-framed from its first byte, whose ClientHello record is truncated by the end of the capture. The framing may be observed; the email protocol inside must remain a port hint only.",
+  "generation": "securemailscope.testing.protocol_fixtures._fixture_o",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "7caa198c314fc9bf676c337f9d028c9e4ed39348b188f30c498d5cf5f6355998",
+  "file_size_bytes": 414,
+  "expected_packet_count": 5,
+  "expected_tcp_packet_count": 5,
+  "expected_timestamps_ns": [
+    1704067200000000000,
+    1704067200001000000,
+    1704067200002000000,
+    1704067200003000000,
+    1704067200004000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": [
+    {
+      "session_index": 0,
+      "protocol": "IMAP",
+      "detection_status": "PORT_HINT",
+      "confidence_basis": "SERVER_PORT_ONLY",
+      "parse_state": "NOT_APPLICABLE",
+      "port_hint": "IMAP",
+      "port_hint_agrees": null,
+      "implicit_tls_observed": true,
+      "upgrade": null,
+      "authentication": [],
+      "key_events": [],
+      "forbidden_event_types": [
+        "UPGRADE_ACCEPTED",
+        "SERVER_GREETING"
+      ],
+      "expected_warning_codes": []
+    }
+  ],
+  "forbidden_strings": []
+}

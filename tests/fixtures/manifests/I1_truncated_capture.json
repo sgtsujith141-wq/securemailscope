@@ -63,5 +63,7 @@
     "NO_TERMINATION_OBSERVED"
   ],
   "expected_capture_truncated": true,
-  "expected_error": null
+  "expected_error": null,
+  "expected_protocols": null,
+  "forbidden_strings": []
 }

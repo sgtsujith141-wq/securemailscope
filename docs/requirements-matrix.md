@@ -21,7 +21,8 @@ status.
 
 Nothing in this table is marked complete on the strength of a placeholder
 module. Five packages (`tls/`, `certificates/`, `assessment/`,
-`intelligence/`, `ml/`) contain only a docstring stating their status.
+`intelligence/`, `ml/`) still contain no code at all -- only a docstring
+stating their status and the milestone that owns them.
 
 ---
 
@@ -111,27 +112,88 @@ module. Five packages (`tls/`, `certificates/`, `assessment/`,
 | F5.2 | `securemailscope analyze <capture> --output result.json` | `cli.py` | M1 | Exact command works; exit code 0 | `test_cli.py` | **IMPLEMENTED** |
 | F5.3 | JSON includes metadata, ids, endpoints, packet refs, byte counts, status, gaps, warnings | `reporting/` | M1 | All present | `test_cli.py::test_analyze_reports_gaps_and_conflicts` | **IMPLEMENTED** |
 | F5.4 | No fictitious TLS findings | whole engine | M1 | No TLS/certificate key appears in any report | `test_report.py::test_report_declares_stage_status_honestly` | **IMPLEMENTED** |
-| F5.5 | Port-based protocol hints, clearly labelled | `protocols/hints.py` | M1 | `INFERRED`, `HINT:` prefix, explicit limitations | `test_sessions.py::test_protocol_hints_are_labelled_as_hints` | **IMPLEMENTED** |
+| F5.5 | Port-based protocol hints, clearly labelled | `protocols/hints.py` | M1 | `INFERRED`, `HINT:` prefix, explicit limitations. Retained on `TCPSession` for M1 compatibility; superseded by F6 detection | `test_sessions.py::test_protocol_hints_are_labelled_as_hints` | **IMPLEMENTED** |
 | F5.6 | Output distinguishes facts, hints and unknowns | `models/evidence.py` | M1 | Four statuses used correctly throughout | `test_sessions.py`, `test_report.py` | **IMPLEMENTED** |
 | F5.7 | Works with no LLM, server, database or frontend | package deps | M0/M1 | Only `scapy` and `pydantic` installed | `pyproject.toml`; suite runs standalone | **IMPLEMENTED** |
 | F5.8 | Functional CLI entry point named `securemailscope` | `pyproject.toml` | M0 | Installed console script | `test_cli.py` (runs `python -m securemailscope`) | **IMPLEMENTED** |
 
-## F6 — Email protocol analysis
+## F6 — Email protocol analysis (M2)
 
 | ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
 |---|---|---|---|---|---|---|
-| F6.1 | Identify SMTP | `protocols/` | M2 | Banner and command grammar confirmed from payload | — | **NOT IMPLEMENTED** |
-| F6.2 | Identify IMAP | `protocols/` | M2 | Tagged command/response grammar confirmed | — | **NOT IMPLEMENTED** |
-| F6.3 | Identify POP3 | `protocols/` | M2 | `+OK`/`-ERR` grammar confirmed | — | **NOT IMPLEMENTED** |
-| F6.4 | Detect STARTTLS / STLS | `protocols/` | M2 | Command and server acceptance both observed | — | **NOT IMPLEMENTED** |
-| F6.5 | Detect implicit TLS (465/993/995) | `tls/` | M3 | TLS record on the first byte of the stream | — | **NOT IMPLEMENTED** |
-| F6.6 | Detect offered-but-unused STARTTLS | `intelligence/` | M5 | Capability advertised, upgrade never issued | — | **NOT IMPLEMENTED** |
+| F6.1 | Identify SMTP from payload | `protocols/smtp.py` | M2 | Greeting + command grammar + matched response ⇒ CONFIRMED | `test_protocols.py::test_detection_matches_manifest` (P_A, P_H) | **IMPLEMENTED** |
+| F6.2 | Identify IMAP from payload | `protocols/imap.py` | M2 | Untagged greeting + tagged command/completion ⇒ CONFIRMED | `test_protocols.py` (P_D, P_Q) | **IMPLEMENTED** |
+| F6.3 | Identify POP3 from payload | `protocols/pop3.py` | M2 | `+OK` greeting + matched command/response ⇒ CONFIRMED | `test_protocols.py` (P_F, P_R) | **IMPLEMENTED** |
+| F6.4 | Identify on non-standard ports | `protocols/analyzer.py` | M2 | SMTP on 8025 CONFIRMED with no port hint | `test_protocols.py` (P_H) | **IMPLEMENTED** |
+| F6.5 | Port disagreement resolved toward payload | `protocols/analyzer.py` | M2 | POP3 on 143 ⇒ POP3, `port_hint_agrees=false` | `test_protocols.py` (P_I) | **IMPLEMENTED** |
+| F6.6 | Four-level detection status | `models/protocol.py` | M2 | CONFIRMED / PROBABLE / PORT_HINT / UNKNOWN with basis and evidence | `test_protocols.py::test_detection_matches_manifest` | **IMPLEMENTED** |
+| F6.7 | A port never yields CONFIRMED | `protocols/analyzer.py` | M2 | Binary payload on 25/143/110 never CONFIRMED | `test_protocol_behaviour.py::test_a_conventional_port_alone_never_confirms` | **IMPLEMENTED** |
+| F6.8 | Detect STARTTLS (SMTP) | `protocols/smtp.py` | M2 | Advertisement, command and 220 matched to the pending command | `test_protocols.py` (P_A, P_B, P_C) | **IMPLEMENTED** |
+| F6.9 | Detect STARTTLS (IMAP) with tag matching | `protocols/imap.py` | M2 | Only a matching tagged OK accepts | `test_protocols.py` (P_D, P_E) | **IMPLEMENTED** |
+| F6.10 | Detect STLS (POP3) | `protocols/pop3.py` | M2 | `+OK`/`-ERR` matched to the pending STLS | `test_protocols.py` (P_F, P_G) | **IMPLEMENTED** |
+| F6.11 | Multiline SMTP replies | `protocols/smtp.py` | M2 | A reply completes only at its final line | `test_protocols.py` (P_C) | **IMPLEMENTED** |
+| F6.12 | Intermediate replies do not complete a command | `protocols/smtp.py` | M2 | 354 and 334 keep the command outstanding | `test_protocol_behaviour.py::test_smtp_354_does_not_complete_the_data_command` | **IMPLEMENTED** |
+| F6.13 | Reply matched to the right outstanding command | `protocols/base.py` | M2 | A 220 answering EHLO does not accept STARTTLS | `test_protocol_behaviour.py::test_a_220_answering_an_earlier_command_does_not_accept_starttls` | **IMPLEMENTED** |
+| F6.14 | SMTP DATA body skipped, dot-stuffing handled | `protocols/smtp.py` | M2 | A body containing "STARTTLS" produces no upgrade | `test_protocols.py` (P_P) | **IMPLEMENTED** |
+| F6.15 | IMAP literals skipped by declared length | `protocols/imap.py` | M2 | A literal containing a fake STARTTLS exchange produces no upgrade | `test_protocols.py` (P_Q) | **IMPLEMENTED** |
+| F6.16 | POP3 multiline responses skipped | `protocols/pop3.py` | M2 | A retrieved message containing "STLS" produces no upgrade | `test_protocols.py` (P_R) | **IMPLEMENTED** |
+| F6.17 | Detect implicit TLS (465/993/995) | `protocols/framing.py` | M2 | Record framing from the first byte; identity stays PORT_HINT | `test_protocol_behaviour.py::test_implicit_tls_on_993_is_a_port_hint_not_confirmed_imap` | **IMPLEMENTED** |
+| F6.18 | Capability advertisement recorded separately from use | `protocols/*` | M2 | `UPGRADE_ADVERTISED` distinct from `UPGRADE_REQUESTED` | `test_protocols.py` (P_B) | **IMPLEMENTED** |
+| F6.19 | Detect offered-but-unused STARTTLS as a *finding* | `intelligence/` | M5 | — | — | **NOT IMPLEMENTED** (the observations exist; the finding does not) |
+
+## F9 — Gap-safe stream reading and protocol bounds (M2)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F9.1 | Commands split across TCP segments | `protocols/reader.py` | M2 | Reassembled run yields one line | `test_protocols.py` (P_S) | **IMPLEMENTED** |
+| F9.2 | Multiple commands in one segment | `protocols/reader.py` | M2 | Three lines from one payload | `test_protocol_reader.py::test_multiple_commands_in_one_segment_are_separate_lines` | **IMPLEMENTED** |
+| F9.3 | CRLF split across segments | `protocols/reader.py` | M2 | Line still complete | `test_protocol_reader.py::test_crlf_split_across_segments_is_joined_by_reassembly` | **IMPLEMENTED** |
+| F9.4 | Original stream offsets preserved | `protocols/reader.py` | M2 | Absolute, not run-relative | `test_protocol_reader.py::test_offsets_are_absolute_not_run_relative` | **IMPLEMENTED** |
+| F9.5 | Packet provenance and timestamps preserved | `protocols/reader.py` | M2 | Every event carries packet refs and aware timestamps | `test_protocols.py::test_key_events_present_with_exact_offsets_and_provenance` | **IMPLEMENTED** |
+| F9.6 | Maximum line size enforced | `protocols/reader.py` | M2 | Truncated, reported, resynchronised at next terminator | `test_protocol_reader.py::test_oversized_line_is_truncated_and_resynchronises` | **IMPLEMENTED** |
+| F9.7 | Buffered data bounded | `protocols/reader.py` | M2 | 100 KB with no terminator does not buffer | `test_protocol_reader.py::test_line_limit_bounds_memory_on_a_stream_with_no_terminator` | **IMPLEMENTED** |
+| F9.8 | Incomplete final lines supported | `protocols/reader.py` | M2 | Reported `complete=False`, not a gap | `test_protocol_reader.py::test_unterminated_tail_at_end_of_capture_is_not_a_gap` | **IMPLEMENTED** |
+| F9.9 | Never concatenate across missing bytes | `protocols/reader.py` | M2 | Two lines, `preceded_by_gap`, gap length reported | `test_protocol_reader.py::test_line_is_never_assembled_across_a_gap` | **IMPLEMENTED** |
+| F9.10 | Gap marks the record incomplete and invalidates state | `protocols/base.py` | M2 | Pending commands cleared, parse state INCOMPLETE | `test_protocols.py` (P_K) | **IMPLEMENTED** |
+| F9.11 | Gap during negotiation prevents claiming success | `protocols/base.py` | M2 | State forced to `INCOMPLETE` even with TLS bytes present | `test_protocols.py` (P_K) | **IMPLEMENTED** |
+| F9.12 | Ambiguous overlap bytes not used as evidence | `protocols/reader.py` | M2 | `ambiguous=True`, `usable=False`, diagnostic emitted | `test_protocol_reader.py::test_bytes_from_an_overlap_conflict_are_flagged_ambiguous` | **IMPLEMENTED** |
+| F9.13 | IMAP literal bound enforced | `protocols/imap.py` | M2 | Oversized literal ⇒ INDETERMINATE, parsing stops | `test_protocol_behaviour.py::test_oversized_imap_literal_stops_parsing` | **IMPLEMENTED** |
+| F9.14 | Message body bound enforced | `protocols/smtp.py`, `pop3.py` | M2 | Oversized body ⇒ INDETERMINATE | `test_protocol_behaviour.py::test_oversized_data_body_stops_parsing` | **IMPLEMENTED** |
+| F9.15 | Malformed records reported, never crash | `protocols/*` | M2 | `PARSE_DESYNCHRONISED` events | `test_protocol_behaviour.py::test_malformed_server_reply_is_reported_not_crashed` | **IMPLEMENTED** |
+
+## F10 — TLS transition model (M2)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F10.1 | Explicit upgrade state model | `models/protocol.py` | M2 | 8 states, each distinguishable | `test_protocols.py::test_upgrade_state_and_boundaries_match_manifest` | **IMPLEMENTED** |
+| F10.2 | Advertisement / request / response tracked separately | `models/protocol.py` | M2 | Three independent event fields | `test_protocols.py` | **IMPLEMENTED** |
+| F10.3 | Server boundary = end of success reply | `protocols/base.py` | M2 | Multiline 220 ⇒ end of FINAL line | `test_protocols.py` (P_C) | **IMPLEMENTED** |
+| F10.4 | Client boundary determined independently | `protocols/base.py` | M2 | `FIRST_TLS_RECORD`, or `NOT_OBSERVED` when nothing validates | `test_protocol_behaviour.py::test_client_boundary_is_not_assumed_to_be_the_command_end` | **IMPLEMENTED** |
+| F10.5 | TLS bytes in the acceptance payload preserved | `protocols/base.py` | M2 | Boundary mid-payload; records forwarded | `test_protocols.py` (P_L) | **IMPLEMENTED** |
+| F10.6 | Accepted-but-no-TLS-bytes distinguished | `protocols/base.py` | M2 | `UPGRADE_ACCEPTED` + diagnostic | `test_protocol_behaviour.py::test_no_plaintext_parsing_resumes_after_acceptance` | **IMPLEMENTED** |
+| F10.7 | Truncated/malformed TLS bytes preserve uncertainty | `protocols/framing.py` | M2 | `complete=False`, limitation recorded | `test_protocol_reader.py::test_truncated_record_is_reported_incomplete_not_dropped` | **IMPLEMENTED** |
+| F10.8 | No plaintext parsing after acceptance | `protocols/*` | M2 | Fake plaintext AUTH after the boundary is never parsed | `test_protocols.py` (P_N), `test_protocol_behaviour.py` | **IMPLEMENTED** |
+| F10.9 | Rejected upgrade continues plaintext parsing | `protocols/*` | M2 | Session parsed to COMPLETE after 454/-ERR | `test_protocols.py` (P_B, P_G) | **IMPLEMENTED** |
+| F10.10 | Handshake analysis explicitly not claimed | `models/protocol.py` | M2 | `handshake_analyzed=False` everywhere | `test_protocols.py`, `test_report.py` | **IMPLEMENTED** |
+| F10.11 | Record framing validated and bounded | `protocols/framing.py` | M2 | Header + length checks; weak single headers marked INFERRED | `test_protocol_reader.py` (7 framing tests) | **IMPLEMENTED** |
+
+## F11 — Authentication privacy (M2)
+
+| ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
+|---|---|---|---|---|---|---|
+| F11.1 | SMTP AUTH and continuations recognised | `protocols/smtp.py` | M2 | Verb, mechanism and continuation count recorded | `test_protocols.py` (P_M) | **IMPLEMENTED** |
+| F11.2 | IMAP LOGIN and AUTHENTICATE recognised | `protocols/imap.py` | M2 | Observation produced | `test_protocols.py` (P_Q) | **IMPLEMENTED** |
+| F11.3 | POP3 USER / PASS / APOP / AUTH recognised | `protocols/pop3.py` | M2 | Observations produced | `test_protocols.py` (P_R) | **IMPLEMENTED** |
+| F11.4 | No credential material persisted anywhere | `protocols/redaction.py` | M2 | Dummy credentials absent from report, warnings and event details | `test_protocols.py::test_no_credential_material_reaches_the_report`, `test_cli.py::test_analyze_never_emits_credentials` | **IMPLEMENTED** |
+| F11.5 | Unrecognised command tokens never echoed | `protocols/redaction.py` | M2 | Base64 blob in command position is not reported | `test_protocol_behaviour.py::test_unrecognised_command_token_is_not_echoed` | **IMPLEMENTED** |
+| F11.6 | Pre-upgrade flag recorded | `models/protocol.py` | M2 | `occurred_before_tls_upgrade` + state at attempt | `test_protocols.py::test_authentication_observations_match_manifest` | **IMPLEMENTED** |
+| F11.7 | Plaintext auth scored as a finding | `assessment/` | M4 | — | — | **NOT IMPLEMENTED** (observation only, by design) |
 
 ## F7 — TLS and certificate analysis
 
 | ID | Requirement | Module | Milestone | Acceptance criterion | Test | Status |
 |---|---|---|---|---|---|---|
-| F7.1 | TLS record framing over reconstructed streams | `tls/` | M3 | Records framed; stops at a gap | — | **NOT IMPLEMENTED** |
+| F7.1 | TLS record framing over reconstructed streams | `protocols/framing.py` | M2/M3 | Header validation and bounds only; contents untouched | `test_protocol_reader.py` (framing tests) | **PARTIAL** |
 | F7.2 | Reconstruct handshakes | `tls/` | M3 | ClientHello/ServerHello parsed | — | **NOT IMPLEMENTED** |
 | F7.3 | Extract observable crypto properties | `tls/` | M3 | Version, cipher suite, groups, signature algorithms, ALPN, SNI | — | **NOT IMPLEMENTED** |
 | F7.4 | Certificate extraction | `certificates/` | M3 | TLS ≤ 1.2 only; TLS 1.3 → `NOT_AVAILABLE` | — | **NOT IMPLEMENTED** |
@@ -146,7 +208,7 @@ module. Five packages (`tls/`, `certificates/`, `assessment/`,
 | F8.2 | Posture scoring | `assessment/` | M4 | Score auditable back to packets | — | **NOT IMPLEMENTED** |
 | F8.3 | Evidence-based correlation | `intelligence/` | M5 | Multi-session findings retain all contributing refs | — | **NOT IMPLEMENTED** |
 | F8.4 | ML-assisted analysis | `ml/` | M6 | Local scikit-learn; output always `INFERRED` | — | **NOT IMPLEMENTED** |
-| F8.5 | Forensic reports | `reporting/` | M1 / M4 | JSON implemented; narrative forensic report is M4 | `test_report.py` | **PARTIAL** |
+| F8.5 | Forensic reports | `reporting/` | M1 / M4 | JSON implemented (schema 1.1.0, protocol layer included); narrative forensic report is M4 | `test_report.py` | **PARTIAL** |
 | F8.6 | Local SQLite persistence | `backend/` | M7 | — | — | **NOT IMPLEMENTED** |
 | F8.7 | FastAPI backend | `backend/` | M7 | — | — | **NOT IMPLEMENTED** |
 | F8.8 | React + TypeScript + Vite frontend | `frontend/` | M8 | — | — | **NOT IMPLEMENTED** |
@@ -174,13 +236,21 @@ module. Five packages (`tls/`, `certificates/`, `assessment/`,
 
 ## Summary
 
-| Status | Count |
-|---|---|
-| IMPLEMENTED | 74 |
-| PARTIAL | 3 |
-| NOT IMPLEMENTED | 23 |
-| **Total requirements tracked** | **100** |
+| Status | Count | Change since M1 |
+|---|---|---|
+| IMPLEMENTED | 124 | +50 |
+| PARTIAL | 4 | +1 |
+| NOT IMPLEMENTED | 18 | −5 |
+| **Total requirements tracked** | **146** | +46 |
 
-The implemented set is, deliberately, entirely within capture ingestion, TCP
-reconstruction, data contracts, the CLI and the non-functional guarantees.
-**No requirement in F6, F7 or F8 is claimed.**
+As of M2 the implemented set covers capture ingestion, TCP reconstruction,
+data contracts, the CLI, the non-functional guarantees, and the full email
+protocol layer: SMTP/IMAP/POP3 parsing, STARTTLS/STLS state reconstruction,
+TLS transition boundaries, implicit-TLS framing detection and
+credential-free authentication observation.
+
+**Still not claimed anywhere:** TLS handshake reconstruction, negotiated
+version or cipher suite, certificate extraction or assessment (F7.2–F7.6),
+security findings and scoring (F8.1–F8.2), correlation (F8.3), ML (F8.4),
+backend and frontend (F8.6–F8.8). `handshake_analyzed` is a constant `False`
+in every report M2 produces.

@@ -26,6 +26,7 @@ from pathlib import Path
 from .manifest import (
     ExpectedConflict,
     ExpectedGap,
+    ExpectedProtocol,
     ExpectedRun,
     ExpectedSession,
     ExpectedStream,
@@ -43,7 +44,13 @@ from .packets import (
 )
 from .writers import write_pcap, write_pcapng
 
-__all__ = ["FixtureSpec", "build_fixtures", "write_fixtures", "FIXTURE_DIR_NAME"]
+__all__ = [
+    "FixtureSpec",
+    "Conversation",
+    "build_fixtures",
+    "write_fixtures",
+    "FIXTURE_DIR_NAME",
+]
 
 FIXTURE_DIR_NAME = "generated"
 
@@ -70,6 +77,10 @@ class FixtureSpec:
     expected_warning_codes: list[str] = field(default_factory=list)
     expected_capture_truncated: bool = False
     expected_error: str | None = None
+    #: ``None`` means this fixture makes no protocol-layer assertions.
+    expected_protocols: list[ExpectedProtocol] | None = None
+    #: Dummy credential strings that must never appear in any output.
+    forbidden_strings: list[str] = field(default_factory=list)
 
     @property
     def sha256(self) -> str:
@@ -92,10 +103,12 @@ class FixtureSpec:
             expected_warning_codes=list(self.expected_warning_codes),
             expected_capture_truncated=self.expected_capture_truncated,
             expected_error=self.expected_error,
+            expected_protocols=self.expected_protocols,
+            forbidden_strings=list(self.forbidden_strings),
         )
 
 
-class _Conversation:
+class Conversation:
     """Accumulates frames for one or more connections in capture order."""
 
     def __init__(
@@ -194,7 +207,7 @@ def _run(offset: int, content: bytes) -> ExpectedRun:
     return ExpectedRun(stream_offset=offset, length=len(content), content_hex=content.hex())
 
 
-def _merge(conversations: Iterable[_Conversation]) -> list[tuple[int, bytes]]:
+def _merge(conversations: Iterable[Conversation]) -> list[tuple[int, bytes]]:
     """Interleave several conversations into one capture, ordered by timestamp."""
     packets: list[tuple[int, bytes]] = []
     for conversation in conversations:
@@ -211,7 +224,7 @@ def _timestamps(packets: list[tuple[int, bytes]]) -> list[int]:
 # A. One complete TCP connection with known payload
 # ---------------------------------------------------------------------------
 def _fixture_a() -> FixtureSpec:
-    c = _Conversation()
+    c = Conversation()
     c.c2s(1000, 0, "S")  # 1
     c.s2c(5000, 1001, "SA")  # 2
     c.c2s(1001, 5001, "A")  # 3
@@ -277,7 +290,7 @@ def _fixture_a() -> FixtureSpec:
 # B. The same payload split across multiple segments
 # ---------------------------------------------------------------------------
 def _fixture_b() -> FixtureSpec:
-    c = _Conversation()
+    c = Conversation()
     c.c2s(1000, 0, "S")  # 1
     c.s2c(5000, 1001, "SA")  # 2
     c.c2s(1001, 5001, "A")  # 3
@@ -345,7 +358,7 @@ def _fixture_b() -> FixtureSpec:
 # C. Out-of-order delivery
 # ---------------------------------------------------------------------------
 def _fixture_c() -> FixtureSpec:
-    c = _Conversation()
+    c = Conversation()
     c.c2s(1000, 0, "S")  # 1
     c.s2c(5000, 1001, "SA")  # 2
     c.c2s(1001, 5001, "A")  # 3
@@ -413,7 +426,7 @@ def _fixture_c() -> FixtureSpec:
 # D. Duplicate segment (the same frame captured twice)
 # ---------------------------------------------------------------------------
 def _fixture_d() -> FixtureSpec:
-    c = _Conversation()
+    c = Conversation()
     c.c2s(1000, 0, "S")  # 1
     c.s2c(5000, 1001, "SA")  # 2
     c.c2s(1001, 5001, "A")  # 3
@@ -479,7 +492,7 @@ def _fixture_d() -> FixtureSpec:
 # E. Retransmission (same bytes, a genuinely different frame)
 # ---------------------------------------------------------------------------
 def _fixture_e() -> FixtureSpec:
-    c = _Conversation()
+    c = Conversation()
     c.c2s(1000, 0, "S")  # 1
     c.s2c(5000, 1001, "SA")  # 2
     c.c2s(1001, 5001, "A")  # 3
@@ -545,7 +558,7 @@ def _fixture_e() -> FixtureSpec:
 # F. Missing segment
 # ---------------------------------------------------------------------------
 def _fixture_f() -> FixtureSpec:
-    c = _Conversation()
+    c = Conversation()
     c.c2s(1000, 0, "S")  # 1
     c.s2c(5000, 1001, "SA")  # 2
     c.c2s(1001, 5001, "A")  # 3
@@ -623,8 +636,8 @@ _G_IMAP_PAYLOAD = b"a001 CAPABILITY\r\n"  # 17 bytes
 
 
 def _fixture_g() -> FixtureSpec:
-    smtp = _Conversation(client_port=49152, server_port=25, step_ns=2 * _STEP_NS)
-    imap = _Conversation(
+    smtp = Conversation(client_port=49152, server_port=25, step_ns=2 * _STEP_NS)
+    imap = Conversation(
         client_ip="192.0.2.11",
         client_port=49153,
         server_port=143,
@@ -645,7 +658,7 @@ def _fixture_g() -> FixtureSpec:
     packets = _merge([smtp, imap])
 
     def session_for(
-        conversation: _Conversation, payload: bytes, numbers: list[int], hint: str
+        conversation: Conversation, payload: bytes, numbers: list[int], hint: str
     ) -> ExpectedSession:
         return ExpectedSession(
             client=conversation.client,
@@ -710,7 +723,7 @@ _H_SECOND = b"B" * 10
 
 
 def _fixture_h() -> FixtureSpec:
-    c = _Conversation()
+    c = Conversation()
     c.c2s(1000, 0, "S")  # 1
     c.s2c(5000, 1001, "SA")  # 2
     c.c2s(1001, 5001, "A")  # 3
@@ -884,7 +897,7 @@ _J_SECOND = b"SECOND\r\n"  # 8 bytes
 
 
 def _fixture_j() -> FixtureSpec:
-    c = _Conversation()
+    c = Conversation()
     c.c2s(1000, 0, "S")  # 1
     c.s2c(5000, 1001, "SA")  # 2
     c.c2s(1001, 5001, "A")  # 3
@@ -994,7 +1007,7 @@ def _fixture_k() -> FixtureSpec:
 
 
 def _fixture_a_packets() -> list[tuple[int, bytes]]:
-    c = _Conversation()
+    c = Conversation()
     c.c2s(1000, 0, "S")
     c.s2c(5000, 1001, "SA")
     c.c2s(1001, 5001, "A")
@@ -1013,7 +1026,7 @@ def _fixture_a_packets() -> list[tuple[int, bytes]]:
 # L. IPv6 connection
 # ---------------------------------------------------------------------------
 def _fixture_l() -> FixtureSpec:
-    c = _Conversation(
+    c = Conversation(
         client_ip=CLIENT_IPV6, server_ip=SERVER_IPV6, server_port=587, ipv6=True
     )
     c.c2s(1000, 0, "S")  # 1
@@ -1074,7 +1087,7 @@ def _fixture_l() -> FixtureSpec:
 # M. Midstream capture (no handshake observed)
 # ---------------------------------------------------------------------------
 def _fixture_m() -> FixtureSpec:
-    c = _Conversation()
+    c = Conversation()
     c.c2s(1001, 5001, "PA", SMTP_GREETING)  # 1
     c.s2c(5001, 1022, "A")  # 2
     c.s2c(5001, 1022, "PA", SMTP_REPLY)  # 3
@@ -1157,7 +1170,7 @@ def _fixture_n() -> FixtureSpec:
 # O. Snapshot-truncated payload
 # ---------------------------------------------------------------------------
 def _fixture_o() -> FixtureSpec:
-    c = _Conversation()
+    c = Conversation()
     c.c2s(1000, 0, "S")  # 1
     c.s2c(5000, 1001, "SA")  # 2
     c.c2s(1001, 5001, "A")  # 3
@@ -1262,8 +1275,14 @@ _BUILDERS = (
 
 
 def build_fixtures() -> list[FixtureSpec]:
-    """Build every fixture in memory. Deterministic across runs and machines."""
-    return [builder() for builder in _BUILDERS]
+    """Build every fixture in memory. Deterministic across runs and machines.
+
+    Combines the M1 TCP-reconstruction fixtures defined here with the M2
+    protocol fixtures in :mod:`securemailscope.testing.protocol_fixtures`.
+    """
+    from .protocol_fixtures import build_protocol_fixtures
+
+    return [builder() for builder in _BUILDERS] + build_protocol_fixtures()
 
 
 def write_fixtures(capture_dir: Path, manifest_dir: Path) -> list[FixtureSpec]:

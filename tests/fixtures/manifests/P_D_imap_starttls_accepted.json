@@ -1,0 +1,90 @@
+{
+  "name": "P_D_imap_starttls_accepted",
+  "filename": "p_d_imap_starttls_accepted.pcap",
+  "description": "IMAP STARTTLS accepted by a correctly tagged OK, with the CAPABILITY response delivered out of order at the TCP layer. Reassembly must restore the order before the protocol layer sees it.",
+  "generation": "securemailscope.testing.protocol_fixtures._fixture_d",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "b4d293b86f5906312bcc327f209d7301ef9d316b0a44063ffd0b0dcc7b463ec8",
+  "file_size_bytes": 1093,
+  "expected_packet_count": 11,
+  "expected_tcp_packet_count": 11,
+  "expected_timestamps_ns": [
+    1704067200000000000,
+    1704067200001000000,
+    1704067200002000000,
+    1704067200003000000,
+    1704067200004000000,
+    1704067200005000000,
+    1704067200006000000,
+    1704067200007000000,
+    1704067200008000000,
+    1704067200009000000,
+    1704067200010000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": [
+    {
+      "session_index": 0,
+      "protocol": "IMAP",
+      "detection_status": "CONFIRMED",
+      "confidence_basis": "GREETING_AND_MATCHED_EXCHANGE",
+      "parse_state": "HANDED_OFF_TO_TLS",
+      "port_hint": "IMAP",
+      "port_hint_agrees": true,
+      "implicit_tls_observed": false,
+      "upgrade": {
+        "mechanism": "STARTTLS",
+        "state": "TLS_BYTES_OBSERVED",
+        "advertised": true,
+        "requested": true,
+        "response_code": "OK",
+        "server_boundary_offset": 166,
+        "server_boundary_basis": "SERVER_SUCCESS_REPLY_END",
+        "client_boundary_offset": 32,
+        "client_boundary_basis": "FIRST_TLS_RECORD",
+        "tls_record_count": 2,
+        "handshake_analyzed": false
+      },
+      "authentication": [],
+      "key_events": [
+        {
+          "event_type": "SERVER_GREETING",
+          "direction": "SERVER_TO_CLIENT",
+          "stream_offset": 0,
+          "end_offset": null,
+          "command_verb": null,
+          "reply_code": "OK",
+          "tag": null,
+          "packets": []
+        },
+        {
+          "event_type": "UPGRADE_REQUESTED",
+          "direction": "CLIENT_TO_SERVER",
+          "stream_offset": 17,
+          "end_offset": null,
+          "command_verb": "STARTTLS",
+          "reply_code": null,
+          "tag": "a002",
+          "packets": []
+        },
+        {
+          "event_type": "UPGRADE_ACCEPTED",
+          "direction": "SERVER_TO_CLIENT",
+          "stream_offset": 131,
+          "end_offset": null,
+          "command_verb": null,
+          "reply_code": "OK",
+          "tag": "a002",
+          "packets": []
+        }
+      ],
+      "forbidden_event_types": [],
+      "expected_warning_codes": []
+    }
+  ],
+  "forbidden_strings": []
+}

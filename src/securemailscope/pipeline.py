@@ -7,6 +7,7 @@
       -> streamed container records                          (ingestion/pcap*_reader)
       -> link/IP/TCP dissection                              (ingestion/dissect)
       -> connection identification + payload reconstruction   (network/sessions)
+      -> email protocol parsing + STARTTLS state             (protocols/analyzer)
       -> session inventory with provenance                   (models)
       -> JSON                                                (reporting)
 
@@ -38,8 +39,10 @@ from .models.evidence import (
     WarningCode,
     ns_to_datetime,
 )
+from .models.protocol import ProtocolSessionAnalysis
 from .models.tcp import Direction, SessionCompleteness, TCPSession
 from .network.sessions import TCPSessionEngine
+from .protocols.analyzer import analyze_session, build_inventory
 
 __all__ = ["analyze_capture", "analyze_capture_with_payloads", "AnalysisArtifacts"]
 
@@ -117,6 +120,33 @@ def _attach_warnings(
     return updated, tuple(global_warnings)
 
 
+def _analyze_protocols(
+    sessions: tuple[TCPSession, ...],
+    payload_runs: dict[tuple[str, Direction], list[tuple[int, bytes]]],
+    config: AnalysisConfig,
+    capture_id: str,
+) -> tuple[ProtocolSessionAnalysis, ...]:
+    """Run the application-layer analysis for every reconstructed session.
+
+    Protocol diagnostics stay on their own session analysis rather than being
+    merged into the capture-level warning list: they belong to one dialogue,
+    and several candidate parsers are run speculatively, so only the winner's
+    diagnostics are meaningful.
+    """
+    analyses: list[ProtocolSessionAnalysis] = []
+    for session in sessions:
+        analyses.append(
+            analyze_session(
+                session,
+                payload_runs.get((session.session_id, Direction.CLIENT_TO_SERVER), []),
+                payload_runs.get((session.session_id, Direction.SERVER_TO_CLIENT), []),
+                config=config,
+                capture_id=capture_id,
+            )
+        )
+    return tuple(analyses)
+
+
 def analyze_capture(
     path: Path | str,
     *,
@@ -188,6 +218,8 @@ def analyze_capture_with_payloads(
             )
 
     sessions = engine.finalize()
+    payload_runs = engine.payload_runs()
+    protocols = _analyze_protocols(sessions, payload_runs, config, source.capture_id)
 
     if non_ip:
         sink.add(
@@ -257,6 +289,8 @@ def analyze_capture_with_payloads(
         capture=capture,
         inventory=_inventory(sessions, engine.tuple_reuse_count),
         sessions=sessions,
+        protocol_inventory=build_inventory(protocols),
+        protocols=protocols,
         warnings=global_warnings,
     )
-    return AnalysisArtifacts(result=result, payload_runs=engine.payload_runs())
+    return AnalysisArtifacts(result=result, payload_runs=payload_runs)

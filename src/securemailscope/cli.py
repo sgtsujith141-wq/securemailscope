@@ -73,6 +73,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Omit per-packet segment provenance lists (smaller reports).",
     )
     analyze.add_argument(
+        "--no-protocol-events",
+        action="store_true",
+        help="Omit per-line protocol event lists (smaller reports).",
+    )
+    analyze.add_argument(
         "--quiet", action="store_true", help="Suppress the human-readable summary on stderr."
     )
 
@@ -87,6 +92,9 @@ def build_parser() -> argparse.ArgumentParser:
     limits.add_argument("--max-concurrent-sessions", type=int, default=None)
     limits.add_argument("--max-total-sessions", type=int, default=None)
     limits.add_argument("--max-segments-per-direction", type=int, default=None)
+    limits.add_argument("--max-line-bytes", type=int, default=None)
+    limits.add_argument("--max-literal-bytes", type=int, default=None)
+    limits.add_argument("--max-message-body-bytes", type=int, default=None)
 
     fixtures = subparsers.add_parser(
         "fixtures",
@@ -129,6 +137,9 @@ def _config_from_args(args: argparse.Namespace) -> AnalysisConfig:
             "max_concurrent_sessions",
             "max_total_sessions",
             "max_segments_per_direction",
+            "max_line_bytes",
+            "max_literal_bytes",
+            "max_message_body_bytes",
         )
         if getattr(args, name, None) is not None
     }
@@ -178,18 +189,83 @@ def _summarise(result: AnalysisResult, stream: TextIO) -> None:
     if capture.truncated:
         print("NOTE         : capture parsing stopped early; results are incomplete.", file=stream)
 
+    protocols = {analysis.session_id: analysis for analysis in result.protocols}
+    inventory_p = result.protocol_inventory
+    print(
+        f"protocols    : SMTP {inventory_p.confirmed_smtp_count} confirmed, "
+        f"IMAP {inventory_p.confirmed_imap_count} confirmed, "
+        f"POP3 {inventory_p.confirmed_pop3_count} confirmed, "
+        f"{inventory_p.probable_count} probable, "
+        f"{inventory_p.port_hint_only_count} port-hint only, "
+        f"{inventory_p.unknown_count} unknown",
+        file=stream,
+    )
+    print(
+        f"tls upgrades : {inventory_p.upgrade_advertised_count} advertised, "
+        f"{inventory_p.upgrade_requested_count} requested, "
+        f"{inventory_p.upgrade_accepted_count} accepted, "
+        f"{inventory_p.upgrade_rejected_count} rejected, "
+        f"{inventory_p.upgrade_incomplete_count} inconclusive; "
+        f"{inventory_p.tls_bytes_observed_count} with TLS bytes observed",
+        file=stream,
+    )
+    if inventory_p.implicit_tls_session_count:
+        print(
+            f"implicit tls : {inventory_p.implicit_tls_session_count} session(s) TLS-framed "
+            "from the first byte (inner protocol not determinable)",
+            file=stream,
+        )
+    if inventory_p.authentication_observation_count:
+        print(
+            f"auth attempts: {inventory_p.authentication_observation_count} observed, "
+            f"{inventory_p.authentication_before_upgrade_count} with no accepted TLS "
+            "upgrade in effect (no credential material recorded)",
+            file=stream,
+        )
+    print(
+        "tls handshake: NOT ANALYSED - handshake reconstruction, cipher suites and "
+        "certificates are not implemented (M3)",
+        file=stream,
+    )
+
     for session in result.sessions:
-        hint = session.protocol_hint.value if session.protocol_hint else "no hint"
+        analysis = protocols.get(session.session_id)
         marker = "" if session.completeness is SessionCompleteness.COMPLETE else " *"
+        if analysis is not None:
+            label = f"{analysis.detection.protocol.value}/{analysis.detection.status.value}"
+        else:  # pragma: no cover - every session gets an analysis
+            label = "no protocol analysis"
         print(
             f"  {session.session_id}  {session.flow.client} -> {session.flow.server}  "
             f"{session.completeness.value}{marker}  "
             f"c2s={session.client_to_server.bytes_reconstructed}B "
-            f"s2c={session.server_to_client.bytes_reconstructed}B  [{hint}]",
+            f"s2c={session.server_to_client.bytes_reconstructed}B  [{label}]",
             file=stream,
         )
+        if analysis is not None and analysis.upgrade is not None:
+            upgrade = analysis.upgrade
+            boundaries = []
+            if upgrade.client_boundary is not None:
+                boundaries.append(
+                    f"client@{upgrade.client_boundary.stream_offset}"
+                    f"({upgrade.client_boundary.basis})"
+                )
+            if upgrade.server_boundary is not None:
+                boundaries.append(
+                    f"server@{upgrade.server_boundary.stream_offset}"
+                    f"({upgrade.server_boundary.basis})"
+                )
+            suffix = ("  boundaries " + ", ".join(boundaries)) if boundaries else ""
+            print(
+                f"      {upgrade.mechanism.value}: {upgrade.state.value}{suffix}",
+                file=stream,
+            )
 
-    total_warnings = len(result.warnings) + sum(len(s.warnings) for s in result.sessions)
+    total_warnings = (
+        len(result.warnings)
+        + sum(len(s.warnings) for s in result.sessions)
+        + sum(len(a.warnings) for a in result.protocols)
+    )
     if total_warnings:
         print(f"warnings     : {total_warnings} (see the JSON report)", file=stream)
 
@@ -200,17 +276,27 @@ def _run_analyze(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
     config = _config_from_args(args)
     result = analyze_capture(args.capture, config=config)
     include_segments = not args.no_segments
+    include_events = not args.no_protocol_events
     indent = None if args.compact else 2
 
     if args.output is not None:
         path = write_json_report(
-            result, args.output, indent=indent, include_segments=include_segments
+            result,
+            args.output,
+            indent=indent,
+            include_segments=include_segments,
+            include_protocol_events=include_events,
         )
         if not args.quiet:
             print(f"report       : {path}", file=err)
     else:
         print(
-            result_to_json(result, indent=indent, include_segments=include_segments),
+            result_to_json(
+                result,
+                indent=indent,
+                include_segments=include_segments,
+                include_protocol_events=include_events,
+            ),
             file=out,
         )
     if not args.quiet:

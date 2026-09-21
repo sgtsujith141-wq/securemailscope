@@ -45,6 +45,28 @@ _LIMITATIONS: Final[tuple[str, ...]] = (
 )
 
 
+#: Which email protocol a conventional port suggests. A hint, never proof.
+PORT_PROTOCOL: Final[dict[int, str]] = {
+    25: "SMTP",
+    465: "SMTP",
+    587: "SMTP",
+    2525: "SMTP",
+    110: "POP3",
+    995: "POP3",
+    143: "IMAP",
+    993: "IMAP",
+}
+
+#: Ports whose conventional use is TLS from the first byte, with no plaintext
+#: phase and therefore no observable application protocol.
+IMPLICIT_TLS_PORTS: Final[frozenset[int]] = frozenset({465, 993, 995})
+
+
+def protocol_for_port(port: int) -> str | None:
+    """The protocol a port conventionally carries, or ``None``."""
+    return PORT_PROTOCOL.get(port)
+
+
 def is_service_port(port: int) -> bool:
     return port in SERVICE_PORTS
 

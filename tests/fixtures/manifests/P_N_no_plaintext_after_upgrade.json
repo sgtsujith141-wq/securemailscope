@@ -1,0 +1,67 @@
+{
+  "name": "P_N_no_plaintext_after_upgrade",
+  "filename": "p_n_no_plaintext_after_upgrade.pcap",
+  "description": "After the upgrade is accepted, the client's encrypted region deliberately contains bytes that spell a plaintext AUTH command. Parsing must not resume, so no authentication observation may be produced and the credential must not leak.",
+  "generation": "securemailscope.testing.protocol_fixtures._fixture_n",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "d0137d77105a19f81844a53522de2e46a0e4b1b07f1ebf227bbb442ee6c056fd",
+  "file_size_bytes": 1136,
+  "expected_packet_count": 10,
+  "expected_tcp_packet_count": 10,
+  "expected_timestamps_ns": [
+    1704067200000000000,
+    1704067200001000000,
+    1704067200002000000,
+    1704067200003000000,
+    1704067200004000000,
+    1704067200005000000,
+    1704067200006000000,
+    1704067200007000000,
+    1704067200008000000,
+    1704067200009000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": [
+    {
+      "session_index": 0,
+      "protocol": "SMTP",
+      "detection_status": "CONFIRMED",
+      "confidence_basis": "GREETING_AND_MATCHED_EXCHANGE",
+      "parse_state": "HANDED_OFF_TO_TLS",
+      "port_hint": "SMTP",
+      "port_hint_agrees": true,
+      "implicit_tls_observed": false,
+      "upgrade": {
+        "mechanism": "STARTTLS",
+        "state": "TLS_BYTES_OBSERVED",
+        "advertised": true,
+        "requested": true,
+        "response_code": "220",
+        "server_boundary_offset": 166,
+        "server_boundary_basis": "SERVER_SUCCESS_REPLY_END",
+        "client_boundary_offset": 31,
+        "client_boundary_basis": "FIRST_TLS_RECORD",
+        "tls_record_count": 2,
+        "handshake_analyzed": false
+      },
+      "authentication": [],
+      "key_events": [],
+      "forbidden_event_types": [
+        "AUTHENTICATION_COMMAND",
+        "AUTHENTICATION_CONTINUATION"
+      ],
+      "expected_warning_codes": []
+    }
+  ],
+  "forbidden_strings": [
+    "dummy-user@example.invalid",
+    "NotARealPassword123",
+    "AGR1bW15LXVzZXJAZXhhbXBsZS5pbnZhbGlkAE5vdEFSZWFsUGFzc3dvcmQxMjM=",
+    "ZHVtbXktdXNlckBleGFtcGxlLmludmFsaWQ=",
+    "Tm90QVJlYWxQYXNzd29yZDEyMw=="
+  ]
+}

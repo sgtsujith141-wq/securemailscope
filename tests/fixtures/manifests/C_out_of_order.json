@@ -78,5 +78,7 @@
   ],
   "expected_warning_codes": [],
   "expected_capture_truncated": false,
-  "expected_error": null
+  "expected_error": null,
+  "expected_protocols": null,
+  "forbidden_strings": []
 }

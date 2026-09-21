@@ -64,7 +64,21 @@ reading the capture and writing the report.
    └──────────────────────────────┬──────────────────────────────┘
                                   │
    ┌──────────────────────────────▼──────────────────────────────┐
-   │ protocols/hints.py   port-derived hints, always INFERRED    │
+   │ protocols/reader.py       gap-safe bounded line reader      │
+   │   runs -> lines, never across a hole; oversized lines cut   │
+   │   and resynchronised; overlap-conflict bytes flagged        │
+   └──────────────────────────────┬──────────────────────────────┘
+                                  │  interleaved by capture order
+   ┌──────────────────────────────▼──────────────────────────────┐
+   │ protocols/smtp.py | imap.py | pop3.py                       │
+   │   real state machines: outstanding-command queues, IMAP tag │
+   │   matching, multiline replies, literals, DATA bodies        │
+   └──────────────────────────────┬──────────────────────────────┘
+                                  │
+   ┌──────────────────────────────▼──────────────────────────────┐
+   │ protocols/framing.py   TLS record framing (evidence only)   │
+   │ protocols/analyzer.py  pick the winning parser on evidence  │
+   │ protocols/hints.py     port hints, always INFERRED          │
    └──────────────────────────────┬──────────────────────────────┘
                                   │
    ┌──────────────────────────────▼──────────────────────────────┐
@@ -85,7 +99,7 @@ per-code emission cap.
 | `diagnostics.py` | Bounded warning collection | `models` |
 | `ingestion/` | Container parsing and dissection | `models`, `config`, `diagnostics` |
 | `network/` | Flows, sequence space, reassembly, sessions | `models`, `config`, `diagnostics`, `ingestion`, `protocols` |
-| `protocols/` | Application protocol handling (hints in M1) | `models` |
+| `protocols/` | Line reading, SMTP/IMAP/POP3 parsing, TLS framing, detection | `models`, `config`, `diagnostics` |
 | `reporting/` | Serialisation | `models` |
 | `pipeline.py` | Orchestration | everything above |
 | `cli.py` | Command line | `pipeline`, `reporting`, `config` |
@@ -169,18 +183,86 @@ Memory is bounded by `max_total_payload_bytes` for reconstructed data plus
 `max_segments_per_direction` for provenance records. Container parsing is
 streaming: one packet record is resident at a time regardless of file size.
 
+## The application protocol layer (M2)
+
+### Parsers are chosen by evidence, not by port
+
+All three parsers run speculatively over the same reconstructed streams and
+each reports how much application-level evidence it found: a conforming
+greeting, commands matching its grammar, and commands matched to their
+responses in capture order. The highest score wins. A port number only breaks
+a genuine tie, and never lifts a detection to `CONFIRMED`.
+
+This is what lets the engine identify SMTP on port 8025 and refuse to call a
+session IMAP merely because it is on port 143. Losing parsers write their
+diagnostics to a throwaway sink, so only the winner's warnings survive.
+
+### Reading never crosses a hole
+
+`protocols/reader.py` assembles lines from *within a single contiguous run*.
+A run boundary ends the line as `complete=False`, and the next line reports
+`preceded_by_gap` with the size of the hole. `skip_bytes` -- used for IMAP
+literals -- stops at a run boundary and says so. Bytes overlapping an
+unresolved TCP overlap conflict are flagged `ambiguous` and are never treated
+as protocol evidence.
+
+A hole while an upgrade command is outstanding clears the pending queue and
+sets a flag that forces the upgrade state to `INCOMPLETE`. The engine will not
+claim a successful negotiation it did not see.
+
+### Command/response correlation
+
+Each parser keeps a queue of outstanding commands. SMTP matches replies FIFO,
+so with pipelined `EHLO`/`STARTTLS` a `220` answering `EHLO` cannot be read as
+accepting `STARTTLS`. Intermediate replies (`354` for `DATA`, `334` for an AUTH
+challenge) do not complete their command. IMAP matches on the client's tag, so
+a tagged `OK` carrying a different tag never accepts `STARTTLS`. POP3 has no
+tags, so a response is matched to the single command outstanding when it
+arrived.
+
+### Content that is not protocol
+
+An SMTP `DATA` body, an IMAP literal and a POP3 dot-terminated response are
+all *content*. They are skipped by terminator or by declared length and never
+parsed as commands, which is why a message body containing the text
+`STARTTLS` produces no upgrade. Only a line consisting of exactly `.` ends a
+dot-terminated body -- `..stuffed` does not. Each skip is bounded; exceeding
+the bound stops parsing rather than resuming at a guessed offset.
+
+### The TLS transition
+
+Client and server have independent boundaries and independent bases:
+
+* The **server** boundary is the end of its success reply -- the final line of
+  a multiline `220`, not the first.
+* The **client** boundary is where TLS record framing actually validates. The
+  end of the upgrade command is where it is *expected*, not where it is
+  assumed; when no framing validates there, the boundary is reported
+  `NOT_OBSERVED`.
+
+TLS bytes arriving in the same TCP payload as the acceptance reply are
+preserved and forwarded, not discarded. After an accepted upgrade, plaintext
+parsing stops unconditionally -- a failure to decode the following bytes never
+causes a fall back to plaintext parsing.
+
+`UpgradeState` separates what was seen: `UPGRADE_ADVERTISED` (offered),
+`UPGRADE_REQUESTED` (asked, no answer seen), `UPGRADE_ACCEPTED` (server said
+yes), `TLS_BYTES_OBSERVED` (and TLS-framed bytes followed), `UPGRADE_REJECTED`,
+and `INCOMPLETE`. None of these means a handshake completed;
+`handshake_analyzed` is a constant `False` for the whole of M2.
+
 ## Planned evolution
 
 The TCP layer is the foundation every later milestone stands on, which is why
 M1 spent its effort there. Later stages attach to it without modifying it:
 
-- **M2** consumes `payload_runs()` per direction to parse SMTP/IMAP/POP3
-  command and response grammar, and to detect `STARTTLS` / `STLS` upgrade
-  points. Each parsed element keeps the packet references of the run it came
-  from.
-- **M3** frames TLS records over the same runs, reconstructs handshakes and
-  extracts negotiated parameters. A gap in a run means the record layer stops
-  there rather than guessing.
+- **M2 (done)** consumes `payload_runs()` per direction to parse SMTP/IMAP/POP3
+  command and response grammar and to reconstruct `STARTTLS` / `STLS` state.
+  Each parsed element keeps the packet references of the bytes it came from.
+- **M3** reconstructs TLS handshakes starting from the boundaries and record
+  observations M2 produced, and extracts negotiated parameters. A gap in a run
+  means the record layer stops there rather than guessing. M2 deliberately
+  leaves the record *contents* untouched so M3 owns that entirely.
 - **M4–M6** add assessment, correlation and ML on top of those observations,
   never replacing them.
 - **M7–M8** add a local FastAPI adapter and a React UI around the unchanged

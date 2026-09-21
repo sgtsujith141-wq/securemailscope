@@ -1,0 +1,78 @@
+{
+  "name": "P_Q_imap_literal_fake_commands",
+  "filename": "p_q_imap_literal_fake_commands.pcap",
+  "description": "An IMAP APPEND literal contains a complete fake STARTTLS exchange. The literal must be skipped by its declared length, so no upgrade may be reported. LOGIN credentials in the same dialogue must not appear in the output.",
+  "generation": "securemailscope.testing.protocol_fixtures._fixture_q",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "44efedf2d0064200e2f39d367c1618afe06fb8fbf6e23a2a00133081cc12dfa5",
+  "file_size_bytes": 1279,
+  "expected_packet_count": 14,
+  "expected_tcp_packet_count": 14,
+  "expected_timestamps_ns": [
+    1704067200000000000,
+    1704067200001000000,
+    1704067200002000000,
+    1704067200003000000,
+    1704067200004000000,
+    1704067200005000000,
+    1704067200006000000,
+    1704067200007000000,
+    1704067200008000000,
+    1704067200009000000,
+    1704067200010000000,
+    1704067200011000000,
+    1704067200012000000,
+    1704067200013000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": [
+    {
+      "session_index": 0,
+      "protocol": "IMAP",
+      "detection_status": "CONFIRMED",
+      "confidence_basis": "GREETING_AND_MATCHED_EXCHANGE",
+      "parse_state": "COMPLETE",
+      "port_hint": "IMAP",
+      "port_hint_agrees": true,
+      "implicit_tls_observed": false,
+      "upgrade": null,
+      "authentication": [
+        {
+          "command_verb": "LOGIN",
+          "direction": "CLIENT_TO_SERVER",
+          "stream_offset": 0,
+          "before_upgrade": true,
+          "mechanism": null,
+          "continuation_exchanges": 0
+        }
+      ],
+      "key_events": [
+        {
+          "event_type": "LITERAL_SKIPPED",
+          "direction": "CLIENT_TO_SERVER",
+          "stream_offset": 59,
+          "end_offset": 134,
+          "command_verb": null,
+          "reply_code": null,
+          "tag": null,
+          "packets": []
+        }
+      ],
+      "forbidden_event_types": [
+        "UPGRADE_REQUESTED",
+        "UPGRADE_ACCEPTED"
+      ],
+      "expected_warning_codes": [
+        "PLAINTEXT_AUTHENTICATION_OBSERVED"
+      ]
+    }
+  ],
+  "forbidden_strings": [
+    "dummy-user@example.invalid",
+    "NotARealPassword123"
+  ]
+}

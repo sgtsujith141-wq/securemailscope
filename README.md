@@ -25,9 +25,11 @@ or "not built yet".
 |---|---|---|
 | Capture ingestion (pcap + pcapng) | **IMPLEMENTED** | Content-based format detection, streaming, bounded |
 | TCP session reconstruction | **IMPLEMENTED** | Reordering, retransmission, gaps, overlap conflicts, tuple reuse |
-| Protocol hints | **PARTIAL** | Port-derived hints only, always labelled `INFERRED` |
-| SMTP / IMAP / POP3 parsing | NOT IMPLEMENTED | M2 |
-| STARTTLS / implicit TLS detection | NOT IMPLEMENTED | M2 / M3 |
+| SMTP / IMAP / POP3 parsing | **IMPLEMENTED** | Real state machines; detection from payload, not ports |
+| STARTTLS / STLS state reconstruction | **IMPLEMENTED** | Advertisement, request, outcome, both transition boundaries |
+| Implicit TLS detection | **IMPLEMENTED** | Record framing only; the protocol inside stays a port hint |
+| Authentication observation | **IMPLEMENTED** | Presence and mechanism only — never credentials |
+| TLS record framing | **PARTIAL** | Enough to locate and bound TLS bytes; contents untouched |
 | TLS handshake analysis | NOT IMPLEMENTED | M3 |
 | Certificate assessment | NOT IMPLEMENTED | M3 / M4 |
 | Risk assessment and findings | NOT IMPLEMENTED | M4 |
@@ -35,8 +37,10 @@ or "not built yet".
 | ML-assisted analysis | NOT IMPLEMENTED | M6 |
 | REST backend / web UI | NOT IMPLEMENTED | M7+ |
 
-The engine emits **no TLS or certificate findings of any kind**. Nothing in
-this repository fabricates a cryptographic observation.
+The engine reports **no negotiated TLS version, no cipher suite and no
+certificate**. `handshake_analyzed` is a constant `false` in every report:
+"the server agreed to start TLS" and "a TLS handshake completed" are different
+facts, and only the first is observable in M2.
 
 ---
 
@@ -95,11 +99,25 @@ Useful flags:
 Exit codes: `0` success, `2` bad input (missing file, not a capture, too
 large), `1` unexpected error.
 
+| `--no-protocol-events` | Omit per-line protocol event lists (much smaller reports) |
+
 ### Try it without a capture of your own
 
 ```bash
 make fixtures
-securemailscope analyze tests/fixtures/generated/f_missing_segment.pcap --quiet | jq '.sessions[0].client_to_server | {bytes_reconstructed, runs, gaps}'
+
+# TCP reconstruction with a hole in the stream
+securemailscope analyze tests/fixtures/generated/f_missing_segment.pcap --quiet \
+  | jq '.sessions[0].client_to_server | {bytes_reconstructed, runs, gaps}'
+
+# A STARTTLS negotiation, with both transition boundaries
+securemailscope analyze tests/fixtures/generated/p_a_smtp_starttls_accepted.pcap --quiet \
+  | jq '.protocols[0] | {detection: .detection.status, state: .upgrade.state,
+        client: .upgrade.client_boundary, server: .upgrade.server_boundary}'
+
+# Plaintext authentication, recorded without the credential
+securemailscope analyze tests/fixtures/generated/p_m_auth_before_tls.pcap --quiet \
+  | jq '.protocols[0].authentication'
 ```
 
 ## What the report contains
@@ -114,6 +132,11 @@ Every statement carries its evidence. The output distinguishes:
 Reconstructed data is reported as **contiguous runs with offsets**, never as a
 single blob: if bytes are missing, you get two runs and an explicit gap, and
 the gap's contents stay `UNKNOWN`.
+
+Protocol detection has its own ladder — `CONFIRMED`, `PROBABLE`, `PORT_HINT`,
+`UNKNOWN` — and **a port number can never reach `CONFIRMED`**. SMTP on port
+8025 is confirmed from its payload; a silent session on port 993 is a port
+hint and nothing more.
 
 **Reports never contain application payload bytes.** They carry counts,
 offsets, SHA-256 digests and packet references, so a report is safe to attach

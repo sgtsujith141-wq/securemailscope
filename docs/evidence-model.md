@@ -150,6 +150,87 @@ To keep a hostile capture from generating millions of identical records, the
 sink caps emissions per code and replaces the overflow with one explicit
 `WARNINGS_SUPPRESSED` record stating the true total. The count is never lost.
 
+## The application protocol layer (M2)
+
+### Detection has its own ladder
+
+`DetectionStatus` sits alongside `EvidenceStatus` because "which protocol is
+this?" needs a finer answer than four evidence statuses give:
+
+| Status | Requires | `evidence_status` |
+|---|---|---|
+| `CONFIRMED` | A conforming greeting plus at least one command matched to its response, or two matched exchanges without a greeting | `OBSERVED` |
+| `PROBABLE` | Real but incomplete application evidence | `INFERRED` |
+| `PORT_HINT` | Nothing but the TCP port | `INFERRED` |
+| `UNKNOWN` | Neither | `UNKNOWN` |
+
+**A port number can never reach `CONFIRMED`.** `confidence_basis` records
+exactly which rung was used (`GREETING_AND_MATCHED_EXCHANGE`,
+`SINGLE_MATCHED_EXCHANGE`, `SERVER_PORT_ONLY`, ...), and `port_hint_agrees`
+says whether the payload and the port told the same story. When they disagree,
+the payload wins and the disagreement is stated in `limitations`.
+
+### Text that may appear in a report
+
+No bytes from a capture become report text unless they pass
+`protocols/redaction.py`:
+
+| Field | Rule |
+|---|---|
+| `command_verb` | Matched against a closed per-protocol vocabulary. An unrecognised token is reported as unrecognised, never quoted. |
+| `mechanism` | Matched against a closed list of SASL mechanism names. |
+| `tag` | IMAP tag shape only: 32 characters from a restricted alphabet. |
+| `capabilities` | Shape-filtered, and only ever taken from a line a parser already identified as a capability advertisement in a *server* reply. |
+| `reply_code` | Three digits, or `+OK` / `-ERR` / `OK` / `NO` / `BAD`. |
+| `detail` | Written by the engine. Never contains capture content. |
+
+Shape alone is not sufficient for verbs: a base64 SASL payload such as
+`dXNlcgBteXBhc3N3b3Jk` is alphanumeric and short, so a naive "looks like a
+verb" filter would pass a credential straight into a report. This was caught
+while building the filter, and is why verbs are allowlisted.
+
+Greeting banners, command arguments, mailbox names, addresses, message bodies,
+IMAP literals and SASL payloads are never recorded at all -- not as text, not
+as hex, not as a digest.
+
+### Authentication observations
+
+`AuthenticationObservation` records that an attempt happened and nothing about
+what was sent: protocol, verb, mechanism (when it is a recognised name),
+direction, offset, packet references, whether an accepted TLS upgrade was in
+effect, and a *count* of continuation rounds. `credentials_recorded` is a
+constant `False`, present so a reader does not have to take the guarantee on
+trust, and asserted by the test suite.
+
+`occurred_before_tls_upgrade` is an observation, not a verdict. Whether
+plaintext authentication constitutes a finding is an M4 question.
+
+### An upgrade is not encryption
+
+`UpgradeState` distinguishes six outcomes precisely because "STARTTLS
+happened" is ambiguous. Even `TLS_BYTES_OBSERVED` means only that bytes with
+valid TLS record framing followed the acceptance. Three fields on
+`TLSUpgradeAttempt` exist to make the boundary of our knowledge explicit, and
+all three are constants in M2:
+
+- `handshake_analyzed: False`
+- `handshake_analysis_status: "NOT_IMPLEMENTED"`
+- `negotiated_parameters_available: False`
+
+`TLSFramingEvidence` grades the framing itself. A single well-formed record
+header is `SINGLE_RECORD_HEADER` and carries `INFERRED` status, because
+arbitrary binary can match it by chance. An identifiable ClientHello or
+ServerHello whose inner length agrees with the record length, or a chain of
+records whose lengths line up end to end, is `OBSERVED`.
+
+### Boundaries carry their basis
+
+`TLSBoundary.basis` is one of `SERVER_SUCCESS_REPLY_END` (the end of the
+server's success reply), `FIRST_TLS_RECORD` (where framing actually validated)
+or `NOT_OBSERVED`. A client boundary is never inferred from the end of the
+upgrade command: if no framing validates, the boundary says `NOT_OBSERVED`
+with `UNKNOWN` status rather than guessing.
+
 ## Rules for future milestones
 
 These apply to every stage added after M1:
@@ -163,3 +244,9 @@ These apply to every stage added after M1:
    example — see [limitations.md](limitations.md).
 5. Absence of a finding is never evidence of absence of the condition. Reports
    carry `stage_status` so a reader can tell "not found" from "not looked for".
+6. No capture byte becomes report text without passing a redaction filter. New
+   fields carrying capture-derived strings must be allowlisted or
+   shape-constrained, and covered by a test that a dummy credential cannot
+   reach them.
+7. An upgrade, a record header and a handshake are three different facts. No
+   stage may collapse them.

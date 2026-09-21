@@ -1,0 +1,93 @@
+{
+  "name": "P_A_smtp_starttls_accepted",
+  "filename": "p_a_smtp_starttls_accepted.pcap",
+  "description": "A complete SMTP STARTTLS negotiation that the server accepts, including a retransmission of the STARTTLS segment. Plaintext parsing must stop at the end of the 220 reply and the retransmission must not produce a second request.",
+  "generation": "securemailscope.testing.protocol_fixtures._fixture_a",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "51bd469b14ebf05448ce78d2d7c4726d56c85f4fd28df9d42e741a5c26a33512",
+  "file_size_bytes": 1172,
+  "expected_packet_count": 12,
+  "expected_tcp_packet_count": 12,
+  "expected_timestamps_ns": [
+    1704067200000000000,
+    1704067200001000000,
+    1704067200002000000,
+    1704067200003000000,
+    1704067200004000000,
+    1704067200005000000,
+    1704067200006000000,
+    1704067200007000000,
+    1704067200008000000,
+    1704067200009000000,
+    1704067200010000000,
+    1704067200011000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": [
+    {
+      "session_index": 0,
+      "protocol": "SMTP",
+      "detection_status": "CONFIRMED",
+      "confidence_basis": "GREETING_AND_MATCHED_EXCHANGE",
+      "parse_state": "HANDED_OFF_TO_TLS",
+      "port_hint": "SMTP",
+      "port_hint_agrees": true,
+      "implicit_tls_observed": false,
+      "upgrade": {
+        "mechanism": "STARTTLS",
+        "state": "TLS_BYTES_OBSERVED",
+        "advertised": true,
+        "requested": true,
+        "response_code": "220",
+        "server_boundary_offset": 166,
+        "server_boundary_basis": "SERVER_SUCCESS_REPLY_END",
+        "client_boundary_offset": 31,
+        "client_boundary_basis": "FIRST_TLS_RECORD",
+        "tls_record_count": 2,
+        "handshake_analyzed": false
+      },
+      "authentication": [],
+      "key_events": [
+        {
+          "event_type": "SERVER_GREETING",
+          "direction": "SERVER_TO_CLIENT",
+          "stream_offset": 0,
+          "end_offset": null,
+          "command_verb": null,
+          "reply_code": "220",
+          "tag": null,
+          "packets": []
+        },
+        {
+          "event_type": "UPGRADE_REQUESTED",
+          "direction": "CLIENT_TO_SERVER",
+          "stream_offset": 21,
+          "end_offset": 31,
+          "command_verb": "STARTTLS",
+          "reply_code": null,
+          "tag": null,
+          "packets": []
+        },
+        {
+          "event_type": "UPGRADE_ACCEPTED",
+          "direction": "SERVER_TO_CLIENT",
+          "stream_offset": 136,
+          "end_offset": 166,
+          "command_verb": null,
+          "reply_code": "220",
+          "tag": null,
+          "packets": []
+        }
+      ],
+      "forbidden_event_types": [
+        "AUTHENTICATION_COMMAND"
+      ],
+      "expected_warning_codes": []
+    }
+  ],
+  "forbidden_strings": []
+}

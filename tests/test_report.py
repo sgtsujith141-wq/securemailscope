@@ -56,16 +56,52 @@ def test_report_carries_packet_provenance(fixtures: dict[str, Fixture]) -> None:
 
 
 def test_report_declares_stage_status_honestly(fixtures: dict[str, Fixture]) -> None:
+    """Stage status must track what is actually built.
+
+    Updated in M2: ``EMAIL_PROTOCOL_PARSING`` and ``STARTTLS_DETECTION`` are
+    now implemented, so the assertion changed deliberately. ``TLS_ANALYSIS``
+    and ``CERTIFICATE_ASSESSMENT`` must stay NOT_IMPLEMENTED until M3.
+    """
     data = result_to_dict(analyze_capture(fixtures["A_complete_connection"].path))
     status = data["stage_status"]
     assert status["CAPTURE_INGESTION"] == "IMPLEMENTED"
     assert status["TCP_REASSEMBLY"] == "IMPLEMENTED"
+    assert status["EMAIL_PROTOCOL_PARSING"] == "IMPLEMENTED"
+    assert status["STARTTLS_DETECTION"] == "IMPLEMENTED"
+    # Framing only: enough to bound TLS bytes, not to parse them.
+    assert status["TLS_RECORD_FRAMING"] == "PARTIAL"
     assert status["TLS_ANALYSIS"] == "NOT_IMPLEMENTED"
-    assert status["EMAIL_PROTOCOL_PARSING"] == "NOT_IMPLEMENTED"
-    # No fabricated TLS or certificate findings anywhere in the document.
-    text = json.dumps(data)
-    for forbidden in ("cipher_suite", "certificate", "tls_version", "starttls"):
-        assert forbidden not in text
+    assert status["CERTIFICATE_ASSESSMENT"] == "NOT_IMPLEMENTED"
+    assert data["tool"]["report_schema_version"] == "1.1.0"
+    # No fabricated cryptographic findings anywhere in the document. This is
+    # now a structural check rather than a substring one: the prose legitimately
+    # mentions certificates in order to say they are NOT analysed, so what must
+    # be absent is a *field claiming a value*, not the word.
+    assert _keys_matching(data, {"cipher_suite", "certificate", "tls_version",
+                                 "negotiated_cipher", "certificate_chain",
+                                 "subject", "issuer", "not_after"}) == []
+    assert data["protocol_inventory"]["tls_handshakes_analysed"] == 0
+    for analysis in data["protocols"]:
+        upgrade = analysis.get("upgrade")
+        if upgrade is not None:
+            assert upgrade["handshake_analyzed"] is False
+            assert upgrade["negotiated_parameters_available"] is False
+            assert upgrade["handshake_analysis_status"] == "NOT_IMPLEMENTED"
+
+
+def _keys_matching(node: object, forbidden: set[str], path: str = "") -> list[str]:
+    """Every path in a nested structure whose key is in ``forbidden``."""
+    found: list[str] = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            where = f"{path}.{key}"
+            if key in forbidden:
+                found.append(where)
+            found.extend(_keys_matching(value, forbidden, where))
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            found.extend(_keys_matching(value, forbidden, f"{path}[{index}]"))
+    return found
 
 
 def test_report_echoes_the_limits_in_force(fixtures: dict[str, Fixture]) -> None:

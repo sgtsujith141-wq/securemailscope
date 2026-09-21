@@ -21,26 +21,45 @@ from ..models.analysis import AnalysisResult
 __all__ = ["result_to_dict", "result_to_json", "write_json_report"]
 
 
-def result_to_dict(result: AnalysisResult, *, include_segments: bool = True) -> dict[str, Any]:
+def result_to_dict(
+    result: AnalysisResult,
+    *,
+    include_segments: bool = True,
+    include_protocol_events: bool = True,
+) -> dict[str, Any]:
     """Convert a result to plain Python objects.
 
-    ``include_segments=False`` drops the per-packet segment provenance lists,
-    which dominate report size on large captures.  Runs, gaps and conflicts --
-    everything needed to judge reconstruction quality -- are always kept.
+    ``include_segments=False`` drops the per-packet segment provenance lists
+    and ``include_protocol_events=False`` drops the per-line protocol event
+    lists; both dominate report size on large captures. Everything needed to
+    judge reconstruction quality and upgrade outcomes -- runs, gaps,
+    conflicts, detection, the upgrade attempt and authentication observations
+    -- is always kept.
     """
     data = result.model_dump(mode="json", exclude_none=True)
     if not include_segments:
         for session in data.get("sessions", []):
             for key in ("client_to_server", "server_to_client"):
                 session[key].pop("segments", None)
+    if not include_protocol_events:
+        for analysis in data.get("protocols", []):
+            analysis.pop("events", None)
     return data
 
 
 def result_to_json(
-    result: AnalysisResult, *, indent: int | None = 2, include_segments: bool = True
+    result: AnalysisResult,
+    *,
+    indent: int | None = 2,
+    include_segments: bool = True,
+    include_protocol_events: bool = True,
 ) -> str:
     return json.dumps(
-        result_to_dict(result, include_segments=include_segments),
+        result_to_dict(
+            result,
+            include_segments=include_segments,
+            include_protocol_events=include_protocol_events,
+        ),
         indent=indent,
         ensure_ascii=False,
         sort_keys=False,
@@ -53,10 +72,16 @@ def write_json_report(
     *,
     indent: int | None = 2,
     include_segments: bool = True,
+    include_protocol_events: bool = True,
 ) -> Path:
     """Write the report to ``destination`` and return the resolved path."""
     path = Path(destination).expanduser().resolve(strict=False)
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = result_to_json(result, indent=indent, include_segments=include_segments)
+    payload = result_to_json(
+        result,
+        indent=indent,
+        include_segments=include_segments,
+        include_protocol_events=include_protocol_events,
+    )
     path.write_text(payload + "\n", encoding="utf-8")
     return path

@@ -1,0 +1,89 @@
+{
+  "name": "P_F_pop3_stls_accepted",
+  "filename": "p_f_pop3_stls_accepted.pcap",
+  "description": "POP3 STLS advertised in a multiline CAPA response and accepted with +OK. Plaintext parsing must stop at the end of the +OK line.",
+  "generation": "securemailscope.testing.protocol_fixtures._fixture_f",
+  "file_format": "pcap",
+  "link_type_code": 1,
+  "capture_sha256": "40d831f075da678688e44fba08dd30a5335b4d4a19b3d1e39fb0abbdabe786b1",
+  "file_size_bytes": 936,
+  "expected_packet_count": 10,
+  "expected_tcp_packet_count": 10,
+  "expected_timestamps_ns": [
+    1704067200000000000,
+    1704067200001000000,
+    1704067200002000000,
+    1704067200003000000,
+    1704067200004000000,
+    1704067200005000000,
+    1704067200006000000,
+    1704067200007000000,
+    1704067200008000000,
+    1704067200009000000
+  ],
+  "expected_sessions": [],
+  "expected_warning_codes": [],
+  "expected_capture_truncated": false,
+  "expected_error": null,
+  "expected_protocols": [
+    {
+      "session_index": 0,
+      "protocol": "POP3",
+      "detection_status": "CONFIRMED",
+      "confidence_basis": "GREETING_AND_MATCHED_EXCHANGE",
+      "parse_state": "HANDED_OFF_TO_TLS",
+      "port_hint": "POP3",
+      "port_hint_agrees": true,
+      "implicit_tls_observed": false,
+      "upgrade": {
+        "mechanism": "STLS",
+        "state": "TLS_BYTES_OBSERVED",
+        "advertised": true,
+        "requested": true,
+        "response_code": "+OK",
+        "server_boundary_offset": 99,
+        "server_boundary_basis": "SERVER_SUCCESS_REPLY_END",
+        "client_boundary_offset": 12,
+        "client_boundary_basis": "FIRST_TLS_RECORD",
+        "tls_record_count": 2,
+        "handshake_analyzed": false
+      },
+      "authentication": [],
+      "key_events": [
+        {
+          "event_type": "SERVER_GREETING",
+          "direction": "SERVER_TO_CLIENT",
+          "stream_offset": 0,
+          "end_offset": null,
+          "command_verb": null,
+          "reply_code": "+OK",
+          "tag": null,
+          "packets": []
+        },
+        {
+          "event_type": "UPGRADE_REQUESTED",
+          "direction": "CLIENT_TO_SERVER",
+          "stream_offset": 6,
+          "end_offset": null,
+          "command_verb": "STLS",
+          "reply_code": null,
+          "tag": null,
+          "packets": []
+        },
+        {
+          "event_type": "UPGRADE_ACCEPTED",
+          "direction": "SERVER_TO_CLIENT",
+          "stream_offset": 72,
+          "end_offset": null,
+          "command_verb": null,
+          "reply_code": "+OK",
+          "tag": null,
+          "packets": []
+        }
+      ],
+      "forbidden_event_types": [],
+      "expected_warning_codes": []
+    }
+  ],
+  "forbidden_strings": []
+}

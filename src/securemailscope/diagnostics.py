@@ -9,6 +9,7 @@ without ever pretending the extra events did not happen.
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Sequence
 
 from .models.evidence import AnalysisWarning, PacketReference, Severity, WarningCode
 
@@ -55,6 +56,21 @@ class WarningSink:
                 details=dict(details),
             )
         )
+
+    def extend(self, warnings: Sequence[AnalysisWarning]) -> None:
+        """Adopt warnings produced by a scratch sink.
+
+        The protocol layer runs several candidate parsers speculatively and
+        keeps only the winner's diagnostics, so those are collected in a
+        throwaway sink and replayed here. The per-code cap still applies.
+        """
+        for warning in warnings:
+            self._counts[warning.code] += 1
+            if self._counts[warning.code] > self._max_per_code:
+                continue
+            if warning.capture_id is None and self._capture_id is not None:
+                warning.capture_id = self._capture_id
+            self._warnings.append(warning)
 
     def count(self, code: WarningCode) -> int:
         """Total occurrences of ``code``, including suppressed ones."""

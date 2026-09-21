@@ -53,6 +53,23 @@ class AnalysisConfig:
     #: Warnings emitted per distinct code before further ones are summarised.
     max_warnings_per_code: int = 100
 
+    # --- application protocol layer (M2) ------------------------------------
+    #: Longest protocol line accepted before the reader gives up on it and
+    #: resynchronises at the next terminator. RFC 5321 caps an SMTP command at
+    #: 512 octets and a reply line at 512; IMAP lines are longer in practice,
+    #: so this is generous while still bounding a line with no terminator.
+    max_line_bytes: int = 8192
+    #: Largest IMAP literal skipped rather than parsed. Beyond this the parser
+    #: cannot safely tell where the command resumes, so it stops.
+    max_literal_bytes: int = 1_048_576
+    #: Largest SMTP DATA body or POP3 multiline response skipped while looking
+    #: for its terminator.
+    max_message_body_bytes: int = 4_194_304
+    #: Protocol events recorded per session before the rest are summarised.
+    max_protocol_events_per_session: int = 2_000
+    #: TLS records probed at a transition boundary. Framing evidence only.
+    max_tls_records_probed: int = 8
+
     #: When true the report may carry a short hex preview of payload bytes.
     #: Off by default: reports must be safe to share.
     include_payload_preview: bool = False
@@ -61,6 +78,11 @@ class AnalysisConfig:
 
     def __post_init__(self) -> None:
         numeric = [
+            "max_line_bytes",
+            "max_literal_bytes",
+            "max_message_body_bytes",
+            "max_protocol_events_per_session",
+            "max_tls_records_probed",
             "max_capture_bytes",
             "max_packets",
             "max_packet_bytes",
