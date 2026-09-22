@@ -22,6 +22,7 @@ from sqlalchemy import text
 
 from securemailscope.backend.app import AppState, create_app
 from securemailscope.backend.database import (
+    SCHEMA_VERSION,
     Base,
     CaptureRow,
     Database,
@@ -684,7 +685,7 @@ def test_the_schema_migration_widens_the_primary_keys(tmp_path: Path) -> None:
 
     database = Database(path)
     try:
-        assert database.schema_version == 2
+        assert database.schema_version == SCHEMA_VERSION
         with database.engine.connect() as connection:
             kept = connection.execute(
                 text("SELECT title FROM findings WHERE finding_id='find-1'")
@@ -722,7 +723,7 @@ def test_the_migration_is_a_no_op_on_a_current_database(tmp_path: Path) -> None:
 
     second = Database(path)
     try:
-        assert second.migrate() == 2
+        assert second.migrate() == SCHEMA_VERSION
         with second.engine.connect() as connection:
             after = connection.execute(
                 text("SELECT name FROM sqlite_master ORDER BY name")

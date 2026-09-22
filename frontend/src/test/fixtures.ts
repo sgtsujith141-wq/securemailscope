@@ -28,6 +28,7 @@ export const investigation: InvestigationSummary = {
   posture_score: 59,
   score_status: 'AVAILABLE',
   score_band: 'WEAK',
+  score_scope: 'capture aa_tls10_static_rsa.pcap',
   coverage_ratio: 0.7551,
   severity_counts: { HIGH: 2, MEDIUM: 1, INFO: 1 },
   protocol_counts: { IMAP: 1 },

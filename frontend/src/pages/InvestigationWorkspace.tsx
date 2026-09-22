@@ -53,6 +53,9 @@ export function InvestigationWorkspace({ investigationId }: { investigationId: s
             : <>{inv.posture_score}<span className="text-mist-400 text-sm">/100</span></>}
           note={inv.posture_score === null ? inv.score_status ?? undefined
             : `${inv.score_band} · coverage ${inv.coverage_ratio !== null ? (inv.coverage_ratio * 100).toFixed(0) + '%' : 'unknown'}`}
+          detail={inv.posture_score !== null && inv.capture_count > 1
+            ? inv.score_scope ?? undefined
+            : undefined}
           tone={inv.posture_score === null ? 'unknown' : 'default'} />
       </div>
 

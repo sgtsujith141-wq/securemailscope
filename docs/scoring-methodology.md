@@ -132,6 +132,43 @@ Fixture `T_G_client_hello_only` reaches 4% coverage and is scored
 `SCORE_UNAVAILABLE`; fixture `A_complete_connection`, a plain TCP session with
 no applicable controls at all, likewise.
 
+## An investigation of several captures
+
+A posture score describes **one capture**. An investigation may hold many, and
+a single headline number then has to mean something.
+
+**The headline is the weakest scored capture, not an average and not the
+first.** The scope sentence names which capture it came from and gives the
+range, so the figure is never read as describing every capture equally:
+
+> weakest of 7 scored capture(s) in this investigation
+> (02-weak-legacy-tls.pcap); scores ranged 59 to 100
+
+Two reasons for the floor rather than a mean.
+
+*An average would be a number the engine never produced.* This project does not
+invent figures: every number in a report is one the analysis actually
+calculated. There is no validated methodology for weighting captures against
+each other — a capture holding one session and a capture holding four hundred
+are not equal inputs — so no mean is computed rather than computing one that
+looks authoritative and is not.
+
+*Posture is a floor.* An attacker does not need every path to be weak. If one
+observed configuration accepts TLS 1.0 with static RSA, the infrastructure has
+that weakness whether or not six other captures were clean.
+
+Until M9 the headline was taken from `results[0]` — whichever capture happened
+to sort first. An investigation whose first capture was clean therefore
+displayed a perfect score while carrying HIGH severity findings from another
+capture in the same set. Every finding was still listed, so nothing was
+deleted, but the number a reader looks at first described one capture and was
+presented as describing all of them.
+`tests/test_report_hardening.py::test_the_headline_score_is_the_weakest_capture_not_the_first`
+is the regression, and it deliberately orders the strongest capture first.
+
+A single-capture investigation is unaffected: the headline is that capture's
+score, and the scope names it as before.
+
 ## Score bands
 
 | Band | Range |

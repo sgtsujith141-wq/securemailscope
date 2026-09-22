@@ -108,6 +108,9 @@ class InvestigationSummary(_Model):
     posture_score: int | None = None
     score_status: str | None = None
     score_band: str | None = None
+    #: What the headline score describes. For an investigation of several
+    #: captures this names the weakest one and the range it sits in.
+    score_scope: str | None = None
     coverage_ratio: float | None = None
     severity_counts: dict[str, int] = Field(default_factory=dict)
     protocol_counts: dict[str, int] = Field(default_factory=dict)

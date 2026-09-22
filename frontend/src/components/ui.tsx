@@ -31,10 +31,17 @@ export function Panel({ title, children, actions, className = '' }: {
   )
 }
 
-export function Metric({ label, value, note, tone = 'default', testId }: {
+export function Metric({ label, value, note, detail, tone = 'default', testId }: {
   label: string
   value: ReactNode
   note?: ReactNode
+  /**
+   * A longer sentence under the note, for a number that needs its scope
+   * stated. The investigation posture uses it to say that the headline is the
+   * weakest capture of several and to give the range, so the figure is never
+   * read as an average across every capture.
+   */
+  detail?: ReactNode
   tone?: 'default' | 'unknown'
   /** Set where an end-to-end test needs to read this value back. */
   testId?: string
@@ -46,6 +53,7 @@ export function Metric({ label, value, note, tone = 'default', testId }: {
         {value}
       </div>
       {note && <div className="text-[11px] text-mist-300 mt-1">{note}</div>}
+      {detail && <div className="text-[11px] text-mist-400 mt-1 leading-snug">{detail}</div>}
     </div>
   )
 }

@@ -369,6 +369,7 @@ class AnalysisService:
             row.posture_score = posture.score if posture else None
             row.score_status = posture.status if posture else None
             row.score_band = posture.band if posture else None
+            row.score_scope = posture.scope if posture else None
             row.coverage_ratio = posture.coverage_ratio if posture else None
             row.policy_id = report.policy_id
             row.policy_version = report.policy_version

@@ -32,6 +32,7 @@ from securemailscope.pipeline import analyze_capture
 from securemailscope.reporting.html_report import find_external_references, render_html
 from securemailscope.reporting.pdf_report import render_pdf
 from securemailscope.reporting.report_model import build_report
+from tests.narrowing import present
 
 FIXTURES = Path(__file__).parent / "fixtures" / "generated"
 
@@ -289,3 +290,94 @@ def test_a_large_investigation_still_reports(state: AppState) -> None:
         assert all(size > 1000 for size in sizes.values()), sizes
         # Openable: see benchmarks/thresholds.json T5.
         assert max(sizes.values()) <= 32 * 1024 * 1024, sizes
+
+
+# ---------------------------------------------------------------------------
+# The headline score must describe the investigation
+# ---------------------------------------------------------------------------
+def test_the_headline_score_is_the_weakest_capture_not_the_first() -> None:
+    """Regression: a strong capture must not hide a weak one behind it.
+
+    ``build_report`` used to take its posture from ``results[0]`` -- whichever
+    capture happened to sort first. An investigation whose first capture was
+    clean therefore displayed a perfect score while carrying HIGH severity
+    findings from another capture in the same investigation. The findings were
+    all listed, so nothing was deleted, but the number a reader looks at first
+    described one capture and was presented as describing all of them.
+
+    A posture is a floor. The headline is the weakest scored capture, the
+    range travels with it, and the scope names the capture it came from.
+    """
+    from securemailscope.intelligence import analyze_batch
+
+    # Deliberately ordered strong-first, which is the case that used to fail.
+    names = [
+        "t_r_valid_trusted_chain.pcap",   # clean
+        "aa_tls10_static_rsa.pcap",       # weak: TLS 1.0, static RSA
+        "ac_rc4_weak_cipher.pcap",        # weak: RC4
+    ]
+    outcome = analyze_batch([FIXTURES / name for name in names])
+    per_capture: list[int] = [
+        present(
+            present(result.assessment, "an assessment").posture_score.score,
+            "a posture score",
+        )
+        for result in outcome.results
+    ]
+    assert per_capture[0] == max(per_capture), (
+        "this test needs the strongest capture first to be meaningful"
+    )
+    assert min(per_capture) < max(per_capture), "the captures must differ"
+
+    report = build_report(outcome.results, outcome.investigation)
+    posture = report.posture
+    assert posture is not None
+
+    assert posture.score == min(per_capture), (
+        f"the headline reported {posture.score} for an investigation whose "
+        f"weakest capture scored {min(per_capture)}"
+    )
+    assert posture.lowest_capture_score == min(per_capture)
+    assert posture.highest_capture_score == max(per_capture)
+    assert posture.scored_capture_count == len(per_capture)
+    # The scope must say what the number describes, not leave it implied.
+    assert "weakest" in (posture.scope or "")
+    assert str(min(per_capture)) in (posture.scope or "")
+    assert str(max(per_capture)) in (posture.scope or "")
+
+
+def test_a_single_capture_report_is_unchanged() -> None:
+    """The weakest-of rule must not alter the one-capture case."""
+    result = analyze_capture(FIXTURES / "aa_tls10_static_rsa.pcap")
+    report = build_report([result])
+    posture = report.posture
+    assert posture is not None
+    assert result.assessment is not None
+    assert posture.score == result.assessment.posture_score.score
+    assert posture.scored_capture_count == 1
+    assert "weakest" not in (posture.scope or "")
+
+
+def test_every_high_finding_survives_into_the_rendered_formats() -> None:
+    """A weak capture's findings appear even when another capture is clean."""
+    from securemailscope.intelligence import analyze_batch
+
+    outcome = analyze_batch(
+        [
+            FIXTURES / "t_r_valid_trusted_chain.pcap",
+            FIXTURES / "aa_tls10_static_rsa.pcap",
+        ]
+    )
+    report = build_report(outcome.results, outcome.investigation)
+    high = [
+        finding
+        for finding in report.findings
+        if finding.severity in (FindingSeverity.CRITICAL.value, FindingSeverity.HIGH.value)
+    ]
+    assert high, "the weak capture must contribute a high-severity finding"
+
+    html = render_html(report)
+    pdf_text = _pdf_text(render_pdf(report))
+    for finding in high:
+        assert finding.finding_id in html
+        assert finding.finding_id in pdf_text

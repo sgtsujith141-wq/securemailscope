@@ -64,7 +64,7 @@ __all__ = [
 ]
 
 #: Bumped with every migration step below.
-SCHEMA_VERSION: Final = 2
+SCHEMA_VERSION: Final = 3
 
 
 def utcnow() -> datetime:
@@ -140,6 +140,10 @@ class InvestigationRow(Base):
     posture_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
     score_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
     score_band: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    #: What the headline score describes. For a multi-capture investigation it
+    #: names the weakest capture and the range, so the number is never read as
+    #: an average or as describing every capture equally.
+    score_scope: Mapped[str | None] = mapped_column(Text, nullable=True)
     coverage_ratio: Mapped[float | None] = mapped_column(Float, nullable=True)
     policy_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     policy_version: Mapped[str | None] = mapped_column(String(24), nullable=True)
@@ -359,8 +363,24 @@ def _migration_2(connection: Any) -> None:
         connection.execute(text(f"DROP TABLE {table}_old"))
 
 
+def _migration_3(connection: Any) -> None:
+    """Add ``investigations.score_scope``.
+
+    The headline posture of a multi-capture investigation is the weakest
+    capture's score, not the first capture's. This column carries the sentence
+    that says so, so the dashboard can show what the number describes rather
+    than leaving a reader to assume it is an average.
+    """
+    columns = {
+        row[1]
+        for row in connection.execute(text("PRAGMA table_info(investigations)")).fetchall()
+    }
+    if "score_scope" not in columns:
+        connection.execute(text("ALTER TABLE investigations ADD COLUMN score_scope TEXT"))
+
+
 #: Ordered. Index i applies when user_version == i, then sets it to i + 1.
-_MIGRATIONS: Final = (_migration_1, _migration_2)
+_MIGRATIONS: Final = (_migration_1, _migration_2, _migration_3)
 
 
 @event.listens_for(Engine, "connect")

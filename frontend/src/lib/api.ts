@@ -48,6 +48,8 @@ export interface InvestigationSummary {
   posture_score: number | null
   score_status: string | null
   score_band: string | null
+  /** What the headline score describes; names the weakest capture and range. */
+  score_scope: string | null
   coverage_ratio: number | null
   severity_counts: Record<string, number>
   protocol_counts: Record<string, number>

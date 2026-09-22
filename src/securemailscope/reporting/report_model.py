@@ -24,6 +24,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 if TYPE_CHECKING:
     from ..models.analysis import AnalysisResult
+    from ..models.assessment import AssessmentResult
     from ..models.intelligence import Investigation
 
 __all__ = [
@@ -133,6 +134,12 @@ class ReportScore(_Frozen):
     explanation: str | None = None
     scope: str | None = None
     limitations: tuple[str, ...] = ()
+    #: For a multi-capture investigation: how many captures carried a score,
+    #: and the best and worst of them. A single headline number cannot
+    #: describe several captures, so the range travels with it.
+    scored_capture_count: int = 1
+    lowest_capture_score: int | None = None
+    highest_capture_score: int | None = None
 
 
 class ReportRemediation(_Frozen):
@@ -459,6 +466,12 @@ def _ml_block(result: AnalysisResult) -> ReportML | None:
     )
 
 
+def _require(assessment: AssessmentResult | None) -> AssessmentResult:
+    """Narrow an assessment that the caller has already filtered for."""
+    assert assessment is not None
+    return assessment
+
+
 def build_report(
     results: list[AnalysisResult],
     investigation: Investigation | None = None,
@@ -545,12 +558,51 @@ def build_report(
             severity_distribution.get(finding.severity, 0) + 1
         )
 
-    primary = results[0]
+    # The headline posture describes the *investigation*, so it cannot simply
+    # be the first capture's score. An investigation of seven captures where
+    # one scores 59 and the rest score 100 is not a 100: reporting the first
+    # capture's number would let a weak configuration hide behind a strong one
+    # that merely happened to sort earlier.
+    #
+    # A posture is a floor, not an average. The weakest scored capture is the
+    # headline, the range travels with it, and the scope says which capture it
+    # came from. Nothing is averaged, because no averaging methodology has been
+    # defined or validated -- the number reported is always one the engine
+    # actually produced for one capture.
+    scored = [
+        result
+        for result in results
+        if result.assessment is not None
+        and result.assessment.posture_score.score is not None
+    ]
+    if scored:
+        primary = min(
+            scored,
+            key=lambda result: _require(result.assessment).posture_score.score or 0,
+        )
+    else:
+        primary = results[0]
     assessment = primary.assessment
     posture = None
     remediations: list[ReportRemediation] = []
     if assessment is not None:
         score = assessment.posture_score
+        capture_scores = sorted(
+            _require(result.assessment).posture_score.score or 0 for result in scored
+        )
+        scope = score.scope
+        if len(results) > 1:
+            if capture_scores:
+                scope = (
+                    f"weakest of {len(capture_scores)} scored capture(s) in this "
+                    f"investigation ({primary.capture.source_name}); scores "
+                    f"ranged {capture_scores[0]} to {capture_scores[-1]}"
+                )
+            else:
+                scope = (
+                    f"no capture in this investigation of {len(results)} could "
+                    "be scored"
+                )
         posture = ReportScore(
             status=score.status.value,
             score=score.score,
@@ -563,8 +615,11 @@ def build_report(
             unknown_units=score.tally.unknown,
             formula=score.formula,
             explanation=score.explanation,
-            scope=score.scope,
+            scope=scope,
             limitations=tuple(score.limitations),
+            scored_capture_count=len(capture_scores),
+            lowest_capture_score=capture_scores[0] if capture_scores else None,
+            highest_capture_score=capture_scores[-1] if capture_scores else None,
         )
         remediations = [
             ReportRemediation(
