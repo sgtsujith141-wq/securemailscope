@@ -22,17 +22,17 @@ classifiers = [
 # are declared as optional extras so the engine stays installable and testable
 # on its own -- see docs/adr/0001-engine-independent-of-web-stack.md.
 dependencies = [
-  "scapy==2.6.1",
+  "scapy==2.7.0",
   "pydantic==2.9.2",
   # X.509 parsing and the RFC 5280 verification API (M3). The TLS record and
   # handshake layers do not need it; certificates/ degrades to NOT_AVAILABLE
   # if it is missing, so the engine still runs without it.
-  "cryptography==43.0.3",
+  "cryptography==50.0.1",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "pytest==8.3.3",
+  "pytest==9.1.1",
   "ruff==0.7.4",
   "mypy==1.13.0",
   # Property-based testing for the malformed-input suite (M8). Generating the
@@ -41,22 +41,22 @@ dev = [
   "hypothesis==6.119.4",
 ]
 backend = [
-  "fastapi==0.115.5",
+  "fastapi==0.141.1",
   # Declared explicitly because backend/app.py imports it directly, to
   # register a handler for the base HTTPException the router itself raises.
   # A FastAPI-only handler would not catch a routing 404. Relying on it as a
   # transitive of FastAPI would work until FastAPI changed its own floor.
-  "starlette==0.41.3",
+  "starlette==1.6.0",
   "uvicorn==0.32.1",
   "sqlalchemy==2.0.36",
-  "jinja2==3.1.4",
-  "python-multipart==0.0.17",
+  "jinja2==3.1.6",
+  "python-multipart==0.0.32",
   "reportlab==4.2.5",
 ]
 # Verifying a generated PDF: text extraction and page rasterisation. Only the
 # test suite needs these; the application renders without them.
 reporting-tests = [
-  "pypdf==5.1.0",
+  "pypdf==6.19.0",
   "pypdfium2==4.30.0",
   "httpx==0.27.2",
 ]
@@ -114,7 +114,11 @@ ignore = [
 
 [tool.mypy]
 python_version = "3.12"
-files = ["src/securemailscope"]
+# M9 widened this from src/ alone. Test and script code was previously
+# unchecked, which hid 82 genuine type errors -- mostly optional values
+# dereferenced without narrowing, where a failure would have surfaced as an
+# opaque AttributeError instead of a stated assertion.
+files = ["src/securemailscope", "tests", "scripts"]
 strict = false
 warn_unused_configs = true
 warn_redundant_casts = true
@@ -122,3 +126,13 @@ warn_unused_ignores = true
 disallow_untyped_defs = true
 no_implicit_optional = true
 ignore_missing_imports = true
+
+# Test and script functions are exempt from the annotation requirement only.
+# Every other check -- optional narrowing, argument types, attribute access --
+# applies to them exactly as it does to the package. Requiring `-> None` on
+# several hundred test functions would add noise, not safety; requiring that a
+# test not dereference an Optional without asserting it is real safety.
+[[tool.mypy.overrides]]
+module = ["tests.*", "scripts.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false

@@ -10,7 +10,7 @@ PY      := $(BIN)/python
 PIP     := $(BIN)/pip
 
 .DEFAULT_GOAL := help
-.PHONY: help venv install fixtures test lint typecheck check demo clean secrets-check benchmark benchmark-all lock
+.PHONY: help venv install fixtures test lint typecheck check demo clean secrets-check benchmark benchmark-all lock hashes sbom audit
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -59,10 +59,16 @@ benchmark-all: ## Measure performance including the stress profile
 	$(BIN)/python scripts/check_benchmarks.py
 
 lock: ## Regenerate requirements-lock.txt from the current environment
-	@{ head -9 requirements-lock.txt; \
-	   $(BIN)/pip list --format=freeze | grep -v "^securemailscope" | grep -v "^-e" | sort; \
-	 } > requirements-lock.txt.new && mv requirements-lock.txt.new requirements-lock.txt
-	@echo "requirements-lock.txt regenerated"
+	$(BIN)/python scripts/write_lock.py
+
+hashes: ## Regenerate requirements-lock-hashes.txt (downloads every wheel)
+	$(BIN)/python scripts/write_lock.py --hashes
+
+sbom: ## Generate the CycloneDX SBOM for Python and the frontend
+	$(BIN)/python scripts/generate_sbom.py
+
+audit: ## Audit Python dependencies for known vulnerabilities
+	.venv-release/bin/pip-audit -r requirements-lock.txt --progress-spinner off
 
 secrets-check: ## Refuse to proceed if capture data or secrets are staged
 	@./scripts/check_staged.sh

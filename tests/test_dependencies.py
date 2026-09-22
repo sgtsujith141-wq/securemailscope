@@ -77,7 +77,10 @@ def _imported(paths: list[Path]) -> dict[str, list[Path]]:
 def test_every_third_party_import_is_declared() -> None:
     """Nothing may rely on a package that merely happens to be installed."""
     declared = set().union(*_declared().values())
-    declared |= {"securemailscope", "pytest"}
+    # First-party: the package itself, its test package (``tests/`` has an
+    # ``__init__.py`` and shares helpers across modules), and pytest, which is
+    # declared under the ``dev`` extra but imported everywhere.
+    declared |= {"securemailscope", "tests", "pytest"}
 
     sources = sorted(SRC.rglob("*.py"))
     sources += sorted((ROOT / "tests").rglob("*.py"))

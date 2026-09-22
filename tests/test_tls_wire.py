@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 import pytest
 
 from securemailscope.certificates.parse import parse_certificate
@@ -33,6 +35,9 @@ from securemailscope.tls.registry import (
     lookup_version,
 )
 from securemailscope.tls.wire import ByteReader, TLSParseError
+
+#: The key kinds ``SyntheticCA.issue`` accepts.
+KeyKind = Literal["ec256", "ec384", "rsa1024", "rsa2048", "ed25519"]
 
 
 # -- bounded reader ----------------------------------------------------------
@@ -272,7 +277,7 @@ def test_malformed_der_fails_safely() -> None:
     [("ec256", "EC", True), ("rsa2048", "RSA", True), ("ed25519", "Ed25519", False)],
 )
 def test_public_key_sizes_are_reported_only_where_meaningful(
-    key_kind: str, algorithm: str, has_size: bool
+    key_kind: KeyKind, algorithm: str, has_size: bool
 ) -> None:
     from securemailscope.testing.certs import SyntheticCA
 

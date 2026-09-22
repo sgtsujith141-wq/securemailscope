@@ -37,7 +37,22 @@ from securemailscope.ml.registry import (
     load_model,
     read_manifest,
 )
+from securemailscope.models.analysis import AnalysisResult
+from securemailscope.models.assessment import AssessmentResult
 from securemailscope.pipeline import analyze_capture
+from tests.narrowing import present
+
+
+def assessment(result: AnalysisResult) -> AssessmentResult:
+    """The assessment block, asserted present.
+
+    ``AnalysisResult.assessment`` is optional because the engine runs happily
+    with assessment disabled. These tests always enable it, so this narrows the
+    type for the checker and fails with a sentence rather than an
+    ``AttributeError`` if the block is ever missing.
+    """
+    assert result.assessment is not None, "the analysis produced no assessment"
+    return result.assessment
 
 pytestmark = pytest.mark.filterwarnings("ignore")
 
@@ -528,7 +543,7 @@ def test_a_missing_model_is_reported_not_raised_into_the_analysis(tmp_path) -> N
     assert result.ml.ml_status.value == "MODEL_UNAVAILABLE"
     # Everything else is complete.
     assert result.tls and result.assessment is not None
-    assert result.assessment.posture_score is not None
+    assert assessment(result).posture_score is not None
 
 
 def test_an_unsupported_model_version_is_refused(installed_models) -> None:
@@ -660,7 +675,7 @@ def test_ml_never_modifies_a_deterministic_result() -> None:
 def test_no_ml_prediction_enters_a_security_finding() -> None:
     result = analyze_capture(Path("tests/fixtures/generated/aa_tls10_static_rsa.pcap"))
     assert result.assessment is not None and result.ml is not None
-    serialised = json.dumps(result.assessment.model_dump(mode="json"))
+    serialised = json.dumps(assessment(result).model_dump(mode="json"))
     for token in ("anomal", "machine-learning", "predicted_class", "raw_model_score"):
         assert token.lower() not in serialised.lower(), (
             f"{token!r} reached the deterministic assessment block"
@@ -714,7 +729,10 @@ def test_repeated_inference_is_identical() -> None:
     """Z: same capture, same model, same output."""
     path = Path("tests/fixtures/generated/aa_tls10_static_rsa.pcap")
     runs = [
-        json.dumps(analyze_capture(path).ml.model_dump(mode="json"), sort_keys=True)
+        json.dumps(
+            present(analyze_capture(path).ml, "an ML block").model_dump(mode="json"),
+            sort_keys=True,
+        )
         for _ in range(3)
     ]
     assert runs[0] == runs[1] == runs[2]

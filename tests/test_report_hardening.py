@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -139,7 +140,9 @@ def test_the_pdf_has_no_javascript_or_launch_actions(model) -> None:
     reader = PdfReader(io.BytesIO(pdf))
 
     dangerous = {"/JavaScript", "/JS", "/Launch", "/SubmitForm", "/ImportData", "/GoToR"}
-    catalog = reader.trailer["/Root"]
+    # pypdf types every resolved object as the base PdfObject; the catalogue
+    # is a dictionary, so it is narrowed here rather than assumed.
+    catalog = cast("dict[str, Any]", reader.trailer["/Root"].get_object())
     assert "/OpenAction" not in catalog, "the PDF runs something when it is opened"
     assert "/AA" not in catalog, "the PDF carries additional-actions triggers"
     assert "/Names" not in catalog or "/JavaScript" not in catalog["/Names"]

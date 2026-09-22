@@ -20,6 +20,7 @@ from fastapi.testclient import TestClient
 from securemailscope.backend.app import AppState, create_app
 from securemailscope.backend.database import CaptureRow
 from securemailscope.backend.security import ALLOWED_HOSTS, TOKEN_HEADER, allowed_origins
+from tests.narrowing import present
 
 FIXTURES = Path(__file__).parent / "fixtures" / "generated"
 
@@ -335,7 +336,11 @@ def test_an_uploaded_filename_cannot_escape_the_store(
         assert response.status_code == 200, response.text
         capture_id = response.json()["capture_id"]
         with state.database.session() as session:
-            stored = Path(session.get(CaptureRow, capture_id).stored_path).resolve()
+            stored = Path(
+                present(
+                    session.get(CaptureRow, capture_id), "the stored capture row"
+                ).stored_path
+            ).resolve()
         assert state.root.resolve() in stored.parents, stored
         assert ".." not in stored.parts
 

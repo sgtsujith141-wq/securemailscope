@@ -18,6 +18,7 @@ from securemailscope.backend.app import AppState, create_app
 from securemailscope.backend.database import CaptureRow, Database, JobRow
 from securemailscope.backend.security import TOKEN_HEADER
 from securemailscope.backend.storage import CaptureStorage, UploadRejected
+from tests.narrowing import present
 
 pytestmark = pytest.mark.filterwarnings("ignore")
 
@@ -222,8 +223,9 @@ def test_a_failed_capture_stays_visible(client: TestClient, state: AppState) -> 
     # A stored capture whose bytes are later truncated: it passed upload
     # validation but cannot be analysed.
     with state.database.session() as session:
-        row = session.get(CaptureRow, good)
-        good_path = row.stored_path
+        good_path = present(
+            session.get(CaptureRow, good), "the stored capture row"
+        ).stored_path
     broken_path = Path(good_path).parent / "deadbeef00000000000000000000beef.bin"
     broken_path.write_bytes(b"\xd4\xc3\xb2\xa1truncated")
     with state.database.session() as session:
@@ -288,10 +290,12 @@ def test_an_interrupted_job_is_never_reported_as_completed(tmp_path: Path) -> No
     recovered = Database(tmp_path / "db.sqlite3")
     assert recovered.recover_interrupted_jobs() == 1
     with recovered.session() as session:
-        job = session.get(JobRow, "job-x")
+        job = present(session.get(JobRow, "job-x"), "job-x")
         assert job.status == "FAILED"
         assert "restarted" in (job.error or "")
-        assert session.get(InvestigationRow, "inv-x").status == "FAILED"
+        assert present(
+            session.get(InvestigationRow, "inv-x"), "inv-x"
+        ).status == "FAILED"
     recovered.close()
 
 
@@ -412,7 +416,12 @@ def test_deleting_a_capture_removes_the_file_but_keeps_results(
     detail = analyse(client, state, [capture["capture_id"]])
     identifier = detail["investigation"]["investigation_id"]
     with state.database.session() as session:
-        path = Path(session.get(CaptureRow, capture["capture_id"]).stored_path)
+        path = Path(
+            present(
+                session.get(CaptureRow, capture["capture_id"]),
+                "the stored capture row",
+            ).stored_path
+        )
     assert path.is_file()
 
     response = client.delete(f"/api/captures/{capture['capture_id']}")

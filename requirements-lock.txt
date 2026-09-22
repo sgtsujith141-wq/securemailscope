@@ -1,12 +1,13 @@
-# Fully-resolved Python environment for SecureMailScope, including transitive
-# dependencies. Regenerate with: make lock
+# Fully-resolved Python environment for SecureMailScope, including
+# transitive dependencies. Regenerate with: make lock
 #
 # Generated from a venv built by 'pip install -e .[dev,backend,reporting-tests,ml]'
-# on 2026-09-21 with Python 3.12.14 and pip 26.2.1.
+# on 2026-09-22 with Python 3.12.14 and pip 26.2.1.
 #
-# Versions are pinned exactly. Hashes are NOT pinned: see
-# docs/dependency-audit.md for what that does and does not protect against.
+# Versions are pinned exactly. For byte-level pinning see
+# requirements-lock-hashes.txt.
 #
+annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
 attrs==26.1.0
@@ -15,8 +16,8 @@ cffi==2.1.1
 chardet==7.6.0
 click==8.5.0
 cloudpickle==3.1.2
-cryptography==43.0.3
-fastapi==0.115.5
+cryptography==50.0.1
+fastapi==0.141.1
 greenlet==3.5.6
 h11==0.16.0
 httpcore==1.0.9
@@ -24,31 +25,34 @@ httpx==0.27.2
 hypothesis==6.119.4
 idna==3.20
 iniconfig==2.3.0
-Jinja2==3.1.4
+Jinja2==3.1.6
 joblib==1.6.0
 MarkupSafe==3.0.3
-mypy_extensions==1.1.0
 mypy==1.13.0
+mypy_extensions==1.1.0
 numpy==2.1.3
 packaging==26.3
 pillow==12.3.0
+pip==26.2.1
 pluggy==1.6.0
 pycparser==3.0
-pydantic_core==2.23.4
 pydantic==2.9.2
-pypdf==5.1.0
+pydantic_core==2.23.4
+Pygments==2.21.0
+pypdf==6.19.0
 pypdfium2==4.30.0
-pytest==8.3.3
-python-multipart==0.0.17
+pytest==9.1.1
+python-multipart==0.0.32
 reportlab==4.2.5
 ruff==0.7.4
-scapy==2.6.1
+scapy==2.7.0
 scikit-learn==1.5.2
 scipy==1.18.1
 sniffio==1.3.1
 sortedcontainers==2.4.0
 SQLAlchemy==2.0.36
-starlette==0.41.3
+starlette==1.6.0
 threadpoolctl==3.7.0
+typing-inspection==0.4.4
 typing_extensions==4.16.0
 uvicorn==0.32.1

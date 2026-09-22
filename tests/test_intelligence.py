@@ -27,6 +27,8 @@ from securemailscope.intelligence.fingerprints import (
     compare_fingerprints,
     configuration_fingerprint,
 )
+from securemailscope.models.analysis import AnalysisResult
+from securemailscope.models.assessment import AssessmentResult
 from securemailscope.models.intelligence import (
     CaptureStatus,
     DriftStatus,
@@ -40,6 +42,18 @@ from securemailscope.testing.investigation_fixtures import (
     InvestigationFixture,
     build_investigation_fixtures,
 )
+
+
+def assessment(result: AnalysisResult) -> AssessmentResult:
+    """The assessment block, asserted present.
+
+    ``AnalysisResult.assessment`` is optional because the engine runs happily
+    with assessment disabled. These tests always enable it, so this narrows the
+    type for the checker and fails with a sentence rather than an
+    ``AttributeError`` if the block is ever missing.
+    """
+    assert result.assessment is not None, "the analysis produced no assessment"
+    return result.assessment
 
 GROUP_NAMES = [fixture.name for fixture in build_investigation_fixtures()]
 
@@ -605,8 +619,8 @@ def test_a_withheld_score_is_reported_as_incomparable(
     second = analyze_capture(paths[1], config=AnalysisConfig(minimum_score_coverage_percent=80))
     assert first.assessment is not None and second.assessment is not None
     assert (
-        first.assessment.policy.policy_fingerprint
-        != second.assessment.policy.policy_fingerprint
+        assessment(first).policy.policy_fingerprint
+        != assessment(second).policy.policy_fingerprint
     )
 
     from securemailscope.intelligence.engine import _build_investigation
@@ -637,11 +651,11 @@ def test_score_drift_across_different_policies_is_not_comparable(
     )
     assert first.assessment is not None and second.assessment is not None
     assert (
-        first.assessment.policy.policy_fingerprint
-        != second.assessment.policy.policy_fingerprint
+        assessment(first).policy.policy_fingerprint
+        != assessment(second).policy.policy_fingerprint
     )
-    assert first.assessment.sessions[0].posture_score.score is not None
-    assert second.assessment.sessions[0].posture_score.score is not None
+    assert assessment(first).sessions[0].posture_score.score is not None
+    assert assessment(second).sessions[0].posture_score.score is not None
 
     from securemailscope.intelligence.engine import _build_investigation
 
@@ -1047,7 +1061,9 @@ def test_no_credential_material_reaches_an_investigation(tmp_path: Path) -> None
         paths.append(path)
         forbidden.update(spec.forbidden_strings)
     assert forbidden, "the chosen fixtures must actually carry dummy credentials"
-    assert hashlib.sha256  # the import is used above; keeps the intent explicit
+    # The digest helper is used above; naming it here keeps the intent explicit
+    # without asserting on a function object, which is always truthy.
+    assert hashlib.sha256 is not None
 
     outcome = analyze_batch(paths)
     serialised = json.dumps(investigation_to_dict(outcome), ensure_ascii=False)

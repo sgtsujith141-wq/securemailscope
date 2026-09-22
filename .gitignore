@@ -122,3 +122,9 @@ local-evidence/
 # Benchmark output: generated captures never enter git; results.json is
 # committed deliberately by the M8 report, so it is not ignored here.
 benchmarks/captures/
+
+# Release tooling lives in its own environment so the SBOM describes the
+# product rather than the tools that audit it.
+.venv-release/
+.venv-hashes/
+.venv-engine/

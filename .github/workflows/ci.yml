@@ -93,14 +93,19 @@ jobs:
       - name: Type check
         run: mypy
 
-      - name: Test
-        run: pytest -q
-
-      - name: Install TShark and cross-check the dissection
+      - name: Install TShark
+        # Installed before the tests, not after, so the independent
+        # cross-check runs as part of the default suite on every push rather
+        # than as an optional extra a reader has to go looking for.
         run: |
           sudo apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq tshark
-          SECUREMAILSCOPE_TSHARK=1 pytest tests/test_tshark_crosscheck.py -q
+          tshark --version | head -1
+
+      - name: Test, with the TShark cross-check enabled
+        env:
+          SECUREMAILSCOPE_TSHARK: "1"
+        run: pytest -q
 
   clean-install:
     name: Clean install from a bare checkout
@@ -120,6 +125,16 @@ jobs:
           .venv-engine/bin/pip install --upgrade pip
           .venv-engine/bin/pip install .
 
+      - name: The hash-pinned lock installs, byte for byte
+        # `--require-hashes` refuses an artefact whose SHA-256 does not match
+        # the one recorded at lock time, so this proves the lock describes
+        # bytes and not just version numbers.
+        run: |
+          python -m venv .venv-hashes
+          .venv-hashes/bin/pip install --upgrade pip
+          .venv-hashes/bin/pip install --require-hashes -r requirements-lock-hashes.txt
+          .venv-hashes/bin/pip check
+
       - name: The engine must work without the web, ML or reporting stacks
         run: |
           .venv-engine/bin/python - <<'PY'
@@ -131,6 +146,59 @@ jobs:
           print("engine imports cleanly with its required dependencies only")
           PY
           .venv-engine/bin/securemailscope --help
+
+  dependency-audit:
+    name: Dependency audit and SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install the release tooling
+        run: |
+          python -m venv .venv-release
+          .venv-release/bin/pip install --upgrade pip
+          .venv-release/bin/pip install pip-audit==2.10.1 cyclonedx-bom==7.4.0
+
+      - name: Audit the locked Python environment
+        run: .venv-release/bin/pip-audit -r requirements-lock.txt --progress-spinner off
+
+      - name: Install the frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: Audit the production frontend tree
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: Generate the SBOM
+        run: python scripts/generate_sbom.py
+
+      - name: The SBOM must carry no local path
+        run: |
+          python - <<'PY'
+          import pathlib, sys
+          bad = []
+          for path in pathlib.Path("sbom").glob("*.json"):
+              text = path.read_text()
+              for marker in ("/home/runner", "/Users/", "<redacted-local-path>"):
+                  if marker in text and marker != "<redacted-local-path>":
+                      bad.append(f"{path}: {marker}")
+          if bad:
+              sys.exit("local paths in the SBOM: " + ", ".join(bad))
+          print("no local paths in the generated SBOM")
+          PY
 
   frontend:
     name: Frontend
@@ -145,7 +213,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -186,7 +254,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 

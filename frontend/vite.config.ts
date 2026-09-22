@@ -1,4 +1,7 @@
-import { defineConfig } from 'vite'
+// `defineConfig` comes from `vitest/config`, not `vite`. From Vitest 3 the
+// `test` key is no longer merged into Vite's own `UserConfig` type, so
+// importing it from `vite` makes `tsc` reject this file.
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 // The dev server proxies /api to the local backend, so the browser talks to

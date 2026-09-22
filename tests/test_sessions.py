@@ -6,6 +6,7 @@ from securemailscope import analyze_capture
 from securemailscope.models.evidence import WarningCode
 from securemailscope.models.tcp import Endpoint
 from securemailscope.network.flows import flow_id_for, normalize
+from tests.narrowing import present
 
 from .conftest import Fixture
 
@@ -103,7 +104,10 @@ def test_session_ids_are_stable_across_runs(fixtures: dict[str, Fixture]) -> Non
 
 def test_protocol_hints_are_labelled_as_hints(fixtures: dict[str, Fixture]) -> None:
     result = analyze_capture(fixtures["G_two_connections"].path)
-    hints = [session.protocol_hint for session in result.sessions]
+    hints = [
+        present(session.protocol_hint, "a protocol hint")
+        for session in result.sessions
+    ]
     assert [hint.value for hint in hints] == ["HINT:SMTP", "HINT:IMAP"]
     for hint in hints:
         assert hint.status.value == "INFERRED"

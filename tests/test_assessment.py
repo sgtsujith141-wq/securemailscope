@@ -31,6 +31,7 @@ from securemailscope.assessment.scoring import SCORE_FORMULA
 from securemailscope.config import AnalysisConfig
 from securemailscope.models.analysis import REPORT_SCHEMA_VERSION, AnalysisResult
 from securemailscope.models.assessment import (
+    AssessmentResult,
     FindingSeverity,
     RuleOutcome,
     ScoreStatus,
@@ -39,6 +40,18 @@ from securemailscope.pipeline import analyze_capture
 from securemailscope.reporting.json_report import result_to_dict
 
 from .conftest import Fixture
+
+
+def assessment(result: AnalysisResult) -> AssessmentResult:
+    """The assessment block, asserted present.
+
+    ``AnalysisResult.assessment`` is optional because the engine runs happily
+    with assessment disabled. These tests always enable it, so this narrows the
+    type for the checker and fails with a sentence rather than an
+    ``AttributeError`` if the block is ever missing.
+    """
+    assert result.assessment is not None, "the analysis produced no assessment"
+    return result.assessment
 
 #: Fixtures carrying hand-computed assessment manifests.
 ASSESSMENT_FIXTURES = [
@@ -59,12 +72,12 @@ def assess(path: Path, **overrides: Any) -> AnalysisResult:
 
 
 def rule_outcomes(result: AnalysisResult, index: int = 0) -> dict[str, Any]:
-    session = result.assessment.sessions[index]
+    session = assessment(result).sessions[index]
     return {item.rule_id: item for item in session.rule_results}
 
 
 def finding_rule_ids(result: AnalysisResult) -> set[str]:
-    return {finding.rule_id for finding in result.assessment.findings}
+    return {finding.rule_id for finding in assessment(result).findings}
 
 
 def expected_for(fixture: Fixture, index: int) -> dict[str, Any]:
@@ -101,7 +114,7 @@ def test_rule_outcomes_match_the_manifest(fixture: Fixture) -> None:
 @pytest.mark.parametrize("fixture", ASSESSMENT_FIXTURES, indirect=True)
 def test_findings_match_the_manifest(fixture: Fixture) -> None:
     result = assess(fixture.path)
-    prioritised = result.assessment.prioritised_findings
+    prioritised = assessment(result).prioritised_findings
     for entry in fixture.expected_assessment:
         expected = entry["findings"]
         assert len(prioritised) == len(expected), (
@@ -132,7 +145,7 @@ def test_unsupported_findings_are_absent(fixture: Fixture) -> None:
 def test_score_arithmetic_matches_the_manifest(fixture: Fixture) -> None:
     result = assess(fixture.path)
     for entry in fixture.expected_assessment:
-        score = result.assessment.sessions[entry["session_index"]].posture_score
+        score = assessment(result).sessions[entry["session_index"]].posture_score
         want = entry["score"]
         assert score.status.value == want["status"]
         assert score.score == want["score"]
@@ -154,7 +167,7 @@ def test_score_arithmetic_matches_the_manifest(fixture: Fixture) -> None:
 @pytest.mark.parametrize("fixture", ASSESSMENT_FIXTURES, indirect=True)
 def test_remediations_match_the_manifest(fixture: Fixture) -> None:
     result = assess(fixture.path)
-    actual = [item.remediation_id for item in result.assessment.remediations]
+    actual = [item.remediation_id for item in assessment(result).remediations]
     for entry in fixture.expected_assessment:
         assert actual == entry["remediation_ids"]
 
@@ -190,7 +203,7 @@ def test_every_finding_cites_a_real_packet(fixture: Fixture) -> None:
     # anything the pipeline produced, is what makes this an independent test.
     recorded = fixture.manifest["expected_timestamps_ns"]
     packet_count = fixture.manifest["expected_packet_count"]
-    for finding in result.assessment.findings:
+    for finding in assessment(result).findings:
         assert finding.evidence_refs, (
             f"{finding.rule_id} was promoted to a finding with no evidence"
         )
@@ -208,7 +221,7 @@ def test_every_finding_cites_a_real_packet(fixture: Fixture) -> None:
 @pytest.mark.parametrize("fixture", ALL_FIXTURE_NAMES, indirect=True)
 def test_every_rule_result_is_explained(fixture: Fixture) -> None:
     result = assess(fixture.path)
-    for session in result.assessment.sessions:
+    for session in assessment(result).sessions:
         for item in session.rule_results:
             assert item.outcome in set(RuleOutcome), item.outcome
             assert item.rationale.strip(), f"{item.rule_id} has no rationale"
@@ -228,10 +241,10 @@ def test_only_failures_become_findings(fixture: Fixture) -> None:
     result = assess(fixture.path)
     outcomes = {
         (session.session_id, item.rule_id): item
-        for session in result.assessment.sessions
+        for session in assessment(result).sessions
         for item in session.rule_results
     }
-    for finding in result.assessment.findings:
+    for finding in assessment(result).findings:
         item = outcomes[(finding.session_id, finding.rule_id)]
         assert item.outcome is RuleOutcome.FAIL
         assert item.counts_toward_score, (
@@ -244,8 +257,8 @@ def test_only_failures_become_findings(fixture: Fixture) -> None:
 def test_finding_ids_are_stable_and_distinct(fixture: Fixture) -> None:
     first = assess(fixture.path)
     second = assess(fixture.path)
-    ids_first = [finding.finding_id for finding in first.assessment.findings]
-    ids_second = [finding.finding_id for finding in second.assessment.findings]
+    ids_first = [finding.finding_id for finding in assessment(first).findings]
+    ids_second = [finding.finding_id for finding in assessment(second).findings]
     assert ids_first == ids_second, "finding IDs changed between identical runs"
     assert len(set(ids_first)) == len(ids_first), "duplicate finding IDs"
 
@@ -255,8 +268,8 @@ def test_finding_ids_differ_across_captures(fixtures: dict[str, Fixture]) -> Non
     b = assess(fixtures["AC_rc4_weak_cipher"].path)
     shared = finding_rule_ids(a) & finding_rule_ids(b)
     assert "TLS-KEX-001" in shared, "precondition: both fail the same rule"
-    ids_a = {f.rule_id: f.finding_id for f in a.assessment.findings}
-    ids_b = {f.rule_id: f.finding_id for f in b.assessment.findings}
+    ids_a = {f.rule_id: f.finding_id for f in assessment(a).findings}
+    ids_b = {f.rule_id: f.finding_id for f in assessment(b).findings}
     assert ids_a["TLS-KEX-001"] != ids_b["TLS-KEX-001"], (
         "the same rule in two different captures must not share a finding ID"
     )
@@ -272,7 +285,7 @@ def test_finding_id_changes_with_the_policy_version(fixtures: dict[str, Fixture]
 
     raw = analyze_capture(path, config=AnalysisConfig(assess_security=False))
     other = assess_capture(raw, policy=shifted)
-    before = {f.rule_id: f.finding_id for f in baseline.assessment.findings}
+    before = {f.rule_id: f.finding_id for f in assessment(baseline).findings}
     after = {f.rule_id: f.finding_id for f in other.findings}
     assert before.keys() == after.keys()
     for rule_id in before:
@@ -289,8 +302,8 @@ def test_score_follows_the_published_formula(fixture: Fixture) -> None:
     """Recompute the score from the reported weights, independently."""
     result = assess(fixture.path)
     for scope in (
-        result.assessment.posture_score,
-        *(session.posture_score for session in result.assessment.sessions),
+        assessment(result).posture_score,
+        *(session.posture_score for session in assessment(result).sessions),
     ):
         assert scope.formula == SCORE_FORMULA
         if scope.status is ScoreStatus.SCORE_UNAVAILABLE:
@@ -312,8 +325,8 @@ def test_score_follows_the_published_formula(fixture: Fixture) -> None:
 def test_coverage_arithmetic_is_consistent(fixture: Fixture) -> None:
     result = assess(fixture.path)
     for scope in (
-        result.assessment.posture_score,
-        *(session.posture_score for session in result.assessment.sessions),
+        assessment(result).posture_score,
+        *(session.posture_score for session in assessment(result).sessions),
     ):
         coverage = scope.coverage
         assert coverage.weighted_evaluated <= coverage.weighted_applicable
@@ -340,8 +353,8 @@ def test_deductions_never_exceed_the_evaluated_weight(fixture: Fixture) -> None:
     """The floor of the score is 0, and it is reached by arithmetic, not clamping."""
     result = assess(fixture.path)
     for scope in (
-        result.assessment.posture_score,
-        *(session.posture_score for session in result.assessment.sessions),
+        assessment(result).posture_score,
+        *(session.posture_score for session in assessment(result).sessions),
     ):
         assert scope.weighted_deductions <= scope.weighted_evaluated + 1e-9
 
@@ -374,8 +387,8 @@ def test_unknown_evidence_cannot_improve_the_score(fixtures: dict[str, Fixture])
     assert informed_outcomes["CERT-005"].outcome is RuleOutcome.PASS
     assert blind_outcomes["CERT-005"].outcome is RuleOutcome.UNKNOWN
 
-    informed_score = informed.assessment.posture_score
-    blind_score = blind.assessment.posture_score
+    informed_score = assessment(informed).posture_score
+    blind_score = assessment(blind).posture_score
     assert blind_score.coverage.coverage_ratio < informed_score.coverage.coverage_ratio
     if blind_score.score is not None and informed_score.score is not None:
         assert blind_score.score <= informed_score.score, (
@@ -386,7 +399,7 @@ def test_unknown_evidence_cannot_improve_the_score(fixtures: dict[str, Fixture])
 def test_insufficient_evidence_produces_no_score(fixtures: dict[str, Fixture]) -> None:
     """Acceptance gate 9: below the coverage floor, refuse to score."""
     result = assess(fixtures["T_G_client_hello_only"].path)
-    score = result.assessment.posture_score
+    score = assessment(result).posture_score
     assert score.status is ScoreStatus.SCORE_UNAVAILABLE
     assert score.score is None
     assert not score.coverage.sufficient
@@ -398,10 +411,10 @@ def test_a_session_with_nothing_to_assess_is_not_scored(
 ) -> None:
     """A plain TCP session has no applicable controls, and no score."""
     result = assess(fixtures["A_complete_connection"].path)
-    score = result.assessment.posture_score
+    score = assessment(result).posture_score
     assert score.status is ScoreStatus.SCORE_UNAVAILABLE
     assert score.score is None
-    assert result.assessment.findings == ()
+    assert assessment(result).findings == ()
 
 
 def test_more_failures_never_raise_the_score(fixtures: dict[str, Fixture]) -> None:
@@ -411,8 +424,8 @@ def test_more_failures_never_raise_the_score(fixtures: dict[str, Fixture]) -> No
     failure is the more severe of the two. The more severe failure must not
     produce the higher score.
     """
-    rc4 = assess(fixtures["AC_rc4_weak_cipher"].path).assessment.posture_score
-    null = assess(fixtures["AB_null_cipher_duplicate_evidence"].path).assessment.posture_score
+    rc4 = assessment(assess(fixtures["AC_rc4_weak_cipher"].path)).posture_score
+    null = assessment(assess(fixtures["AB_null_cipher_duplicate_evidence"].path)).posture_score
     assert rc4.score is not None and null.score is not None
     assert null.weighted_deductions > rc4.weighted_deductions
     assert null.score < rc4.score
@@ -423,11 +436,11 @@ def test_disabling_a_rule_removes_it_from_both_sides(
 ) -> None:
     """A disabled rule leaves the population entirely, not just the numerator."""
     path = fixtures["AC_rc4_weak_cipher"].path
-    baseline = assess(path).assessment.posture_score
-    without = assess(path, disabled_rules="TLS-KEX-001").assessment.posture_score
+    baseline = assessment(assess(path)).posture_score
+    without = assessment(assess(path, disabled_rules="TLS-KEX-001")).posture_score
     assert "TLS-KEX-001" not in {
         item.rule_id
-        for session in assess(path, disabled_rules="TLS-KEX-001").assessment.sessions
+        for session in assessment(assess(path, disabled_rules="TLS-KEX-001")).sessions
         for item in session.rule_results
     }
     assert without.weighted_evaluated < baseline.weighted_evaluated
@@ -439,7 +452,7 @@ def test_severity_weights_are_reported_not_hidden(
 ) -> None:
     """Every deduction names its group, weight and rule, so it can be checked."""
     result = assess(fixtures["AA_tls10_static_rsa_multiple_findings"].path)
-    score = result.assessment.posture_score
+    score = assessment(result).posture_score
     assert len(score.deduction_detail) == score.tally.failed
     total = 0.0
     for line in score.deduction_detail:
@@ -454,7 +467,7 @@ def test_severity_weights_are_reported_not_hidden(
 def test_one_weakness_is_counted_once(fixtures: dict[str, Fixture]) -> None:
     """AB fails two cipher rules for one setting, and is charged for one."""
     result = assess(fixtures["AB_null_cipher_duplicate_evidence"].path)
-    session = result.assessment.sessions[0]
+    session = assessment(result).sessions[0]
     failed = [
         item for item in session.rule_results if item.outcome is RuleOutcome.FAIL
     ]
@@ -475,7 +488,7 @@ def test_each_dedup_group_contributes_at_most_one_deduction(
     fixture: Fixture,
 ) -> None:
     result = assess(fixture.path)
-    for session in result.assessment.sessions:
+    for session in assessment(result).sessions:
         charged: list[str] = [
             item.dedup_group
             for item in session.rule_results
@@ -492,13 +505,13 @@ def test_each_dedup_group_contributes_at_most_one_deduction(
 @pytest.mark.parametrize("fixture", ALL_FIXTURE_NAMES, indirect=True)
 def test_prioritisation_is_a_total_order(fixture: Fixture) -> None:
     result = assess(fixture.path)
-    prioritised = result.assessment.prioritised_findings
+    prioritised = assessment(result).prioritised_findings
     assert [item.rank for item in prioritised] == list(
         range(1, len(prioritised) + 1)
     ), "ranks must be dense and start at 1"
     assert len({item.finding_id for item in prioritised}) == len(prioritised)
     assert {item.finding_id for item in prioritised} == {
-        finding.finding_id for finding in result.assessment.findings
+        finding.finding_id for finding in assessment(result).findings
     }, "every finding must be prioritised exactly once"
 
 
@@ -507,7 +520,7 @@ def test_prioritisation_is_stable_across_runs(fixture: Fixture) -> None:
     runs = [
         [
             (item.rank, item.finding_id)
-            for item in assess(fixture.path).assessment.prioritised_findings
+            for item in assessment(assess(fixture.path)).prioritised_findings
         ]
         for _ in range(3)
     ]
@@ -523,14 +536,14 @@ def test_priority_comes_from_the_matrix_not_a_product(fixture: Fixture) -> None:
     the two axes separate and the lookup checkable.
     """
     result = assess(fixture.path)
-    for item in result.assessment.prioritised_findings:
+    for item in assessment(result).prioritised_findings:
         assert item.priority is PRIORITY_MATRIX[(item.severity, item.confidence)]
 
 
 @pytest.mark.parametrize("fixture", ALL_FIXTURE_NAMES, indirect=True)
 def test_more_severe_findings_are_never_ranked_lower(fixture: Fixture) -> None:
     order = list(FindingSeverity)
-    prioritised = assess(fixture.path).assessment.prioritised_findings
+    prioritised = assessment(assess(fixture.path)).prioritised_findings
     ranks = [order.index(item.severity) for item in prioritised]
     assert ranks == sorted(ranks), (
         f"severity order violated: {[(i.rule_id, i.severity.value) for i in prioritised]}"
@@ -541,7 +554,7 @@ def test_asset_criticality_is_never_invented(fixtures: dict[str, Fixture]) -> No
     """Criticality is operator-supplied. Absent, it stays absent."""
     result = assess(fixtures["AA_tls10_static_rsa_multiple_findings"].path)
     assert DEFAULT_POLICY.asset_criticality == {}
-    for item in result.assessment.prioritised_findings:
+    for item in assessment(result).prioritised_findings:
         assert item.asset_criticality is None
 
 
@@ -553,14 +566,14 @@ def test_remediations_answer_findings_that_exist(fixture: Fixture) -> None:
     """Advice is produced for what failed, never for what might have."""
     result = assess(fixture.path)
     raised = finding_rule_ids(result)
-    offered = {item.remediation_id for item in result.assessment.remediations}
+    offered = {item.remediation_id for item in assessment(result).remediations}
     expected: set[str] = set()
     for rule_id in raised:
         expected.update(RULES[rule_id].remediation_ids)
     assert offered == expected, (
         f"offered {sorted(offered)} for findings {sorted(raised)}"
     )
-    for item in result.assessment.remediations:
+    for item in assessment(result).remediations:
         assert item.remediation_id in REMEDIATIONS
         assert item.recommended_action.strip()
         assert item.validation_steps, f"{item.remediation_id} has no validation steps"
@@ -568,8 +581,8 @@ def test_remediations_answer_findings_that_exist(fixture: Fixture) -> None:
 
 def test_no_remediation_without_a_finding(fixtures: dict[str, Fixture]) -> None:
     result = assess(fixtures["T_R_valid_trusted_chain"].path)
-    if not result.assessment.findings:
-        assert result.assessment.remediations == ()
+    if not assessment(result).findings:
+        assert assessment(result).remediations == ()
 
 
 def test_the_catalogue_has_no_dangling_references() -> None:
@@ -648,7 +661,7 @@ def test_truncated_capture_does_not_manufacture_findings(
 ) -> None:
     for name in ("T_L_truncated_record", "I1_truncated_capture", "O_snapshot_truncated"):
         result = assess(fixtures[name].path)
-        for finding in result.assessment.findings:
+        for finding in assessment(result).findings:
             assert finding.evidence_refs, (
                 f"{name}: {finding.rule_id} has no evidence behind it"
             )
@@ -687,7 +700,7 @@ def test_unknown_cipher_suite_is_not_assumed_weak(
     item = rule_outcomes(result)["TLS-CIPHER-006"]
     assert item.limitations, "an unrecognised suite must carry a stated limitation"
     # Nothing at all should be reported about this session's cipher.
-    assert not any(f.rule_id.startswith("TLS-CIPHER") for f in result.assessment.findings)
+    assert not any(f.rule_id.startswith("TLS-CIPHER") for f in assessment(result).findings)
 
 
 def test_unknown_key_exchange_group_is_not_a_forward_secrecy_failure(
@@ -728,7 +741,7 @@ def test_missing_reference_hostname_is_never_a_mismatch(
     for name in ("T_T_hostname_scenarios", "T_U_unknown_reference_identity",
                  "T_A_tls12_complete_handshake"):
         result = assess(fixtures[name].path)
-        for index in range(len(result.assessment.sessions)):
+        for index in range(len(assessment(result).sessions)):
             assert outcome_of(result, "CERT-006", index) is RuleOutcome.UNKNOWN, name
         assert "CERT-006" not in finding_rule_ids(result), name
 
@@ -753,7 +766,7 @@ def test_rejected_starttls_is_reported_as_configuration_not_attack(
     for name in ("P_B_smtp_starttls_rejected", "P_G_pop3_stls_rejected"):
         result = assess(fixtures[name].path)
         assert "MAIL-003" in finding_rule_ids(result), name
-        finding = next(f for f in result.assessment.findings if f.rule_id == "MAIL-003")
+        finding = next(f for f in assessment(result).findings if f.rule_id == "MAIL-003")
         combined = " ".join(
             (finding.description, finding.technical_impact, *finding.limitations)
         ).lower()
@@ -892,11 +905,11 @@ def test_the_policy_is_reported_with_its_own_caveats(
 ) -> None:
     """The score must never be presented as an industry-validated measure."""
     result = assess(fixtures["AC_rc4_weak_cipher"].path)
-    policy = result.assessment.policy
+    policy = assessment(result).policy
     assert policy.policy_id and policy.policy_version and policy.policy_fingerprint
     joined = " ".join(policy.limitations).lower()
     assert "not validated industry benchmarks" in joined or "project-defined" in joined
-    score = result.assessment.posture_score
+    score = assessment(result).posture_score
     assert score.policy_id == policy.policy_id
     assert score.policy_version == policy.policy_version
     assert score.limitations, "the score must carry its limitations"
@@ -906,8 +919,8 @@ def test_overrides_are_recorded_and_change_the_fingerprint(
     fixtures: dict[str, Fixture],
 ) -> None:
     path = fixtures["AC_rc4_weak_cipher"].path
-    baseline = assess(path).assessment.policy
-    changed = assess(path, minimum_score_coverage_percent=80).assessment.policy
+    baseline = assessment(assess(path)).policy
+    changed = assessment(assess(path, minimum_score_coverage_percent=80)).policy
     assert baseline.overrides_applied == ()
     assert changed.overrides_applied, "an override must be recorded in the report"
     assert changed.policy_fingerprint != baseline.policy_fingerprint

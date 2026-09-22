@@ -279,7 +279,7 @@ DOCUMENTS = {
 
 
 def main(argv: list[str] | None = None) -> int:
-    check = bool(argv) and "--check" in argv
+    check = argv is not None and "--check" in argv
     failures = []
     for relative, build in DOCUMENTS.items():
         path = REPO / relative

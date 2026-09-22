@@ -31,6 +31,7 @@ from securemailscope.backend.database import (
     SessionRow,
 )
 from securemailscope.backend.security import TOKEN_HEADER
+from tests.narrowing import present
 
 pytestmark = pytest.mark.filterwarnings("ignore")
 
@@ -141,7 +142,7 @@ def test_a_failed_persist_rolls_back_to_the_previous_good_state(
 
     # Fail *inside* the persisting transaction, after the deletes and the
     # capture-row updates have already been issued on the session.
-    def explode(results):  # type: ignore[no-untyped-def]
+    def explode(results):
         raise RuntimeError("simulated failure mid-transaction")
 
     monkeypatch.setattr(
@@ -175,7 +176,7 @@ def test_a_first_analysis_that_fails_to_persist_stores_nothing(
         "/api/investigations", json={"name": "T", "capture_ids": [capture]}
     ).json()["investigation_id"]
 
-    def explode(results):  # type: ignore[no-untyped-def]
+    def explode(results):
         raise RuntimeError("simulated failure mid-transaction")
 
     monkeypatch.setattr(
@@ -209,7 +210,9 @@ def test_no_completed_job_references_missing_results(
             .one()
         )
         assert job.status == "COMPLETED"
-        investigation = session.get(InvestigationRow, identifier)
+        investigation = present(
+            session.get(InvestigationRow, identifier), "the investigation row"
+        )
         sessions = (
             session.query(SessionRow)
             .filter(SessionRow.investigation_id == identifier)
@@ -254,11 +257,13 @@ def test_an_interrupted_job_fails_and_its_investigation_follows(tmp_path: Path) 
     assert recovered.recover_interrupted_jobs() == 2
     with recovered.session() as session:
         for job_id in ("job-i", "job-q"):
-            job = session.get(JobRow, job_id)
+            job = present(session.get(JobRow, job_id), job_id)
             assert job.status == "FAILED"
             assert job.finished_at is not None
             assert "restarted" in (job.error or "")
-        assert session.get(InvestigationRow, "inv-i").status == "FAILED"
+        assert present(
+            session.get(InvestigationRow, "inv-i"), "inv-i"
+        ).status == "FAILED"
     recovered.close()
 
 
@@ -359,7 +364,7 @@ def test_cancellation_is_not_offered_because_it_is_not_implemented(
         f"/api/investigations/{identifier}/cancel"
     ).status_code in (404, 405)
     assert client.delete(f"/api/jobs/{identifier}").status_code in (404, 405)
-    routes = {getattr(r, "path", "") for r in client.app.routes}
+    routes = {getattr(r, "path", "") for r in create_app(state).routes}
     assert not any("cancel" in path or "abort" in path for path in routes)
     jobs = client.get(f"/api/investigations/{identifier}/jobs").json()
     assert all(job["status"] != "CANCELLED" for job in jobs)
@@ -515,7 +520,7 @@ def test_deleting_a_capture_leaves_the_database_consistent(
         assert connection.execute(text("PRAGMA foreign_key_check")).fetchall() == []
 
     with state.database.session() as session:
-        row = session.get(CaptureRow, capture)
+        row = present(session.get(CaptureRow, capture), "the capture row")
         assert row.status == "DELETED"
         assert row.stored_path == ""
     # The investigation is not silently discarded.
@@ -530,7 +535,9 @@ def test_a_capture_file_removed_behind_the_application_fails_visibly(
     """Disk state can change under us. Analysis must fail, not fabricate."""
     capture = upload(client, "aa_tls10_static_rsa.pcap")
     with state.database.session() as session:
-        Path(session.get(CaptureRow, capture).stored_path).unlink()
+        Path(
+            present(session.get(CaptureRow, capture), "the capture row").stored_path
+        ).unlink()
 
     identifier = client.post(
         "/api/investigations", json={"name": "T", "capture_ids": [capture]}
