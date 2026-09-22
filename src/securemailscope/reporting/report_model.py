@@ -593,10 +593,15 @@ def build_report(
         scope = score.scope
         if len(results) > 1:
             if capture_scores:
+                # Identified by capture id, not by filename. In the
+                # application an upload is stored under a server-generated
+                # name, so the engine never sees what the analyst called it --
+                # whereas the capture id appears under every capture in the
+                # interface and in all three report formats.
                 scope = (
-                    f"weakest of {len(capture_scores)} scored capture(s) in this "
-                    f"investigation ({primary.capture.source_name}); scores "
-                    f"ranged {capture_scores[0]} to {capture_scores[-1]}"
+                    f"weakest of {len(capture_scores)} scored capture(s) in "
+                    f"this investigation ({primary.capture.capture_id}); "
+                    f"scores ranged {capture_scores[0]} to {capture_scores[-1]}"
                 )
             else:
                 scope = (

@@ -1,7 +1,7 @@
 {
   "schema": "smsrehearsal/1",
   "what_this_is": "A record of an actual demonstration run against the real backend and the real forensic engine, using only the synthetic demo dataset. Timings are wall-clock on the machine that ran it.",
-  "recorded_at": "2026-09-22T02:46:59.338Z",
+  "recorded_at": "2026-09-22T02:58:03.796Z",
   "dataset": "demo/captures (see demo/manifest.json)",
   "steps_total": 14,
   "steps_failed": 0,
@@ -11,14 +11,14 @@
       "step": 1,
       "name": "launch the application",
       "outcome": "OK",
-      "seconds": 0.34,
+      "seconds": 0.33,
       "screenshot": "docs/screenshots/01-empty-state.png"
     },
     {
       "step": 2,
       "name": "upload seven synthetic captures",
       "outcome": "OK",
-      "seconds": 0.22,
+      "seconds": 0.21,
       "screenshot": "docs/screenshots/02-upload.png"
     },
     {
@@ -27,7 +27,7 @@
       "outcome": "OK",
       "seconds": 0.9,
       "observed": {
-        "posture_score": "Posture score59/100WEAK · coverage 76%",
+        "posture_score": "Posture score59/100WEAK · coverage 76%weakest of 7 scored capture(s) in this investigation (sha256:1347e9180a6337f41b76e6c1481cc5f9bb8659d7907a670b33337ef6e3ad4e47); scores ranged 59 to 100",
         "sessions": "Sessions7",
         "findings": "Findings7"
       },
@@ -44,7 +44,7 @@
       "step": 5,
       "name": "inspect the session inventory",
       "outcome": "OK",
-      "seconds": 0.13,
+      "seconds": 0.14,
       "observed": {
         "rows": 7
       },
@@ -79,14 +79,14 @@
       "step": 9,
       "name": "evidence timeline",
       "outcome": "OK",
-      "seconds": 0.15,
+      "seconds": 0.14,
       "screenshot": "docs/screenshots/09-timeline.png"
     },
     {
       "step": 10,
       "name": "ML analysis and its limitations",
       "outcome": "OK",
-      "seconds": 0.15,
+      "seconds": 0.13,
       "observed": {
         "states_baseline_is_not_ml": true,
         "states_not_confirmed_threats": true
@@ -100,9 +100,9 @@
       "seconds": 0.94,
       "observed": {
         "report_bytes": {
-          "json": 111839,
+          "json": 111874,
           "html": 57194,
-          "pdf": 35560
+          "pdf": 35559
         }
       },
       "screenshot": "docs/screenshots/11-reports.png"
@@ -111,14 +111,14 @@
       "step": 12,
       "name": "analyse the two-capture drift investigation",
       "outcome": "OK",
-      "seconds": 1,
+      "seconds": 1.08,
       "screenshot": "docs/screenshots/12-drift-investigation.png"
     },
     {
       "step": 13,
       "name": "cryptographic drift between the two captures",
       "outcome": "OK",
-      "seconds": 0.71,
+      "seconds": 0.72,
       "observed": {
         "drift_panel": "Cryptographic intelligenceObserved within analyzed captures only.Cryptographic DNAServer entitiesDriftCorrelationsBlast radiusA different negotiated parameter is not automatically a server configuration change. Where the clients offered different things, the comparison is reported as INCONCLUSIVE ra"
       },
@@ -128,7 +128,7 @@
       "step": 14,
       "name": "blast radius",
       "outcome": "OK",
-      "seconds": 0.63,
+      "seconds": 0.64,
       "screenshot": "docs/screenshots/14-blast-radius.png"
     }
   ]

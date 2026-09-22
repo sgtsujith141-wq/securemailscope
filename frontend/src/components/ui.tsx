@@ -53,7 +53,15 @@ export function Metric({ label, value, note, detail, tone = 'default', testId }:
         {value}
       </div>
       {note && <div className="text-[11px] text-mist-300 mt-1">{note}</div>}
-      {detail && <div className="text-[11px] text-mist-400 mt-1 leading-snug">{detail}</div>}
+      {detail && (
+        // `break-all` because this carries a capture id: a 64-character hash
+        // has no break opportunity, so without it the sentence overflows the
+        // card and the identifier is clipped. Truncating the id instead would
+        // defeat the point -- a partial hash cannot be cross-referenced.
+        <div className="text-[11px] text-mist-400 mt-1 leading-snug break-all">
+          {detail}
+        </div>
+      )}
     </div>
   )
 }

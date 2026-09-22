@@ -129,6 +129,7 @@ def _investigation_summary(row: InvestigationRow) -> InvestigationSummary:
         posture_score=row.posture_score,
         score_status=row.score_status,
         score_band=row.score_band,
+        score_scope=row.score_scope,
         coverage_ratio=row.coverage_ratio,
         severity_counts=_json_field(row.severity_counts, {}),
         protocol_counts=_json_field(row.protocol_counts, {}),
