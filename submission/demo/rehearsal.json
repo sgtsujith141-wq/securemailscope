@@ -1,7 +1,7 @@
 {
   "schema": "smsrehearsal/1",
   "what_this_is": "A record of an actual demonstration run against the real backend and the real forensic engine, using only the synthetic demo dataset. Timings are wall-clock on the machine that ran it.",
-  "recorded_at": "2026-09-22T02:58:03.796Z",
+  "recorded_at": "2026-09-23T13:41:02.683Z",
   "dataset": "demo/captures (see demo/manifest.json)",
   "steps_total": 14,
   "steps_failed": 0,
@@ -11,15 +11,15 @@
       "step": 1,
       "name": "launch the application",
       "outcome": "OK",
-      "seconds": 0.33,
-      "screenshot": "docs/screenshots/01-empty-state.png"
+      "seconds": 0.34,
+      "screenshot": "submission/assets/screenshots/00-first-run.png"
     },
     {
       "step": 2,
       "name": "upload seven synthetic captures",
       "outcome": "OK",
-      "seconds": 0.21,
-      "screenshot": "docs/screenshots/02-upload.png"
+      "seconds": 0.22,
+      "screenshot": "submission/assets/screenshots/09-upload.png"
     },
     {
       "step": 3,
@@ -27,92 +27,92 @@
       "outcome": "OK",
       "seconds": 0.9,
       "observed": {
-        "posture_score": "Posture score59/100WEAK · coverage 76%weakest of 7 scored capture(s) in this investigation (sha256:1347e9180a6337f41b76e6c1481cc5f9bb8659d7907a670b33337ef6e3ad4e47); scores ranged 59 to 100",
+        "posture_score": "Posture score59/100WEAK · coverage 76%weakest of 7 scored capture(s) in this investigation (sha256:9f74b937d6ec8a40e755b6b96b79a7e52a3c81ca8549985e77b8fdfaf2371b17); scores ranged 59 to 100",
         "sessions": "Sessions7",
         "findings": "Findings7"
       },
-      "screenshot": "docs/screenshots/03-investigation-workspace.png"
+      "screenshot": "submission/assets/screenshots/01-investigation-overview.png"
     },
     {
       "step": 4,
       "name": "overview across the investigation",
       "outcome": "OK",
-      "seconds": 0.14,
-      "screenshot": "docs/screenshots/04-overview.png"
+      "seconds": 0.15,
+      "screenshot": "submission/assets/screenshots/10-overview.png"
     },
     {
       "step": 5,
       "name": "inspect the session inventory",
       "outcome": "OK",
-      "seconds": 0.14,
+      "seconds": 0.15,
       "observed": {
         "rows": 7
       },
-      "screenshot": "docs/screenshots/05-sessions.png"
+      "screenshot": "submission/assets/screenshots/04-session-tls-details.png"
     },
     {
       "step": 6,
       "name": "open a session and read its negotiation",
       "outcome": "OK",
-      "seconds": 0.15,
-      "screenshot": "docs/screenshots/06-session-detail.png"
+      "seconds": 0.16,
+      "screenshot": "submission/assets/screenshots/11-session-detail.png"
     },
     {
       "step": 7,
       "name": "open a security finding and its packet evidence",
       "outcome": "OK",
-      "seconds": 0.24,
+      "seconds": 0.5,
       "observed": {
         "findings_listed": 7,
-        "evidence_text": "PacketCapture timestampStream offsetSource observationStatus#42026-06-01 12:00:00.003 UTCNOT APPLICABLEassessment rule TLS-CIPHER-003INFERRED#52026-06-01 12:00:00.004 UTCNOT APPLICABLEassessment rule "
+        "evidence_text": "PacketCapture timestampStream offsetSource observationStatus#42026-06-01 12:00:00.003 UTCNOT APPLICABLEassessment rule TLS-KEX-001INFERRED#52026-06-01 12:00:00.004 UTCNOT APPLICABLEassessment rule TLS"
       },
-      "screenshot": "docs/screenshots/07-finding-evidence.png"
+      "screenshot": "submission/assets/screenshots/03-evidence-chain.png"
     },
     {
       "step": 8,
       "name": "cryptographic fingerprints",
       "outcome": "OK",
       "seconds": 0.14,
-      "screenshot": "docs/screenshots/08-intelligence-fingerprints.png"
+      "screenshot": "submission/assets/screenshots/12-cryptographic-dna.png"
     },
     {
       "step": 9,
       "name": "evidence timeline",
       "outcome": "OK",
       "seconds": 0.14,
-      "screenshot": "docs/screenshots/09-timeline.png"
+      "screenshot": "submission/assets/screenshots/06-timeline.png"
     },
     {
       "step": 10,
       "name": "ML analysis and its limitations",
       "outcome": "OK",
-      "seconds": 0.13,
+      "seconds": 0.14,
       "observed": {
         "states_baseline_is_not_ml": true,
         "states_not_confirmed_threats": true
       },
-      "screenshot": "docs/screenshots/10-ml-analysis.png"
+      "screenshot": "submission/assets/screenshots/07-ml-honesty.png"
     },
     {
       "step": 11,
       "name": "export JSON, HTML and PDF reports",
       "outcome": "OK",
-      "seconds": 0.94,
+      "seconds": 0.87,
       "observed": {
         "report_bytes": {
-          "json": 111874,
-          "html": 57194,
-          "pdf": 35559
+          "json": 112047,
+          "html": 57242,
+          "pdf": 35446
         }
       },
-      "screenshot": "docs/screenshots/11-reports.png"
+      "screenshot": "submission/assets/screenshots/08-reports.png"
     },
     {
       "step": 12,
       "name": "analyse the two-capture drift investigation",
       "outcome": "OK",
-      "seconds": 1.08,
-      "screenshot": "docs/screenshots/12-drift-investigation.png"
+      "seconds": 1.07,
+      "screenshot": "submission/assets/screenshots/13-drift-investigation.png"
     },
     {
       "step": 13,
@@ -122,14 +122,14 @@
       "observed": {
         "drift_panel": "Cryptographic intelligenceObserved within analyzed captures only.Cryptographic DNAServer entitiesDriftCorrelationsBlast radiusA different negotiated parameter is not automatically a server configuration change. Where the clients offered different things, the comparison is reported as INCONCLUSIVE ra"
       },
-      "screenshot": "docs/screenshots/13-drift.png"
+      "screenshot": "submission/assets/screenshots/05-cryptographic-drift.png"
     },
     {
       "step": 14,
       "name": "blast radius",
       "outcome": "OK",
-      "seconds": 0.64,
-      "screenshot": "docs/screenshots/14-blast-radius.png"
+      "seconds": 0.63,
+      "screenshot": "submission/assets/screenshots/14-blast-radius.png"
     }
   ]
 }

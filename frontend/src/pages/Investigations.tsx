@@ -93,7 +93,12 @@ export function Investigations() {
     setError(null)
     try {
       const investigation = await api.createInvestigation(
-        pending[0]?.name ? `Investigation of ${pending[0].name}` : 'Investigation',
+        // Name it for the set, not for whichever capture sorted first. A
+        // seven-capture investigation called "Investigation of
+        // 01-secure-baseline.pcap" misdescribes itself at a glance.
+        ids.length === 1 && pending[0]?.name
+          ? `Investigation of ${pending[0].name}`
+          : `Investigation of ${ids.length} captures`,
         ids,
       )
       select(investigation.investigation_id)

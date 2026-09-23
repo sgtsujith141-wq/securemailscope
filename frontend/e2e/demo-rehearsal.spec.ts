@@ -20,7 +20,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const ROOT = join(process.cwd(), '..')
-const SHOTS = join(ROOT, 'docs', 'screenshots')
+const SHOTS = join(ROOT, 'submission', 'assets', 'screenshots')
 const DEMO = join(ROOT, 'demo', 'captures')
 const RECORD = join(ROOT, 'submission', 'demo', 'rehearsal.json')
 
@@ -71,7 +71,7 @@ async function record<T>(
 async function shot(page: Page, file: string): Promise<void> {
   await page.screenshot({ path: join(SHOTS, file), fullPage: true })
   const last = steps[steps.length - 1]
-  if (last) last.screenshot = `docs/screenshots/${file}`
+  if (last) last.screenshot = `submission/assets/screenshots/${file}`
 }
 
 test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) => {
@@ -91,7 +91,7 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
     await page.goto('/')
     await expect(page.getByRole('navigation')).toBeVisible()
   })
-  await shot(page, '01-empty-state.png')
+  await shot(page, '00-first-run.png')
 
   // -- 2. Upload the demo dataset ------------------------------------------
   const files = [
@@ -108,7 +108,7 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
     await page.setInputFiles('[data-testid="file-input"]', files.map(upload))
     await expect(page.getByText('ACCEPTED').first()).toBeVisible({ timeout: 60_000 })
   })
-  await shot(page, '02-upload.png')
+  await shot(page, '09-upload.png')
 
   // -- 3. Analyse ----------------------------------------------------------
   const investigationId = await record(
@@ -124,7 +124,7 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
       findings: (await page.getByTestId('finding-count').textContent())?.trim(),
     }),
   )
-  await shot(page, '03-investigation-workspace.png')
+  await shot(page, '01-investigation-overview.png')
   expect(investigationId).toMatch(/^inv-[0-9a-f]+$/)
 
   // -- 4. Overview ---------------------------------------------------------
@@ -132,7 +132,7 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
     await nav(page, 'Overview')
     await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible()
   })
-  await shot(page, '04-overview.png')
+  await shot(page, '10-overview.png')
 
   // -- 5. Sessions: TLS version and cipher suite per session ---------------
   await record(
@@ -145,7 +145,7 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
       rows: await page.locator('[data-testid="session-table"] tbody tr').count(),
     }),
   )
-  await shot(page, '05-sessions.png')
+  await shot(page, '04-session-tls-details.png')
 
   // -- 6. Session detail: reconstruction, negotiation, certificate ---------
   await record('open a session and read its negotiation', async () => {
@@ -153,7 +153,7 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
     await expect(page.getByRole('heading', { level: 1, name: 'Session detail' })).toBeVisible()
     await expect(page.getByText('TLS negotiation').first()).toBeVisible()
   })
-  await shot(page, '06-session-detail.png')
+  await shot(page, '11-session-detail.png')
 
   // -- 7. A finding, and the packets it was read from ----------------------
   await record(
@@ -162,6 +162,11 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
       await nav(page, 'Findings')
       await expect(page.getByTestId('findings-list')).toBeVisible()
       await page.getByTestId('finding-row').first().click()
+      await expect(page.getByTestId('finding-detail')).toBeVisible()
+      await page.screenshot({
+        path: join(SHOTS, '02-high-severity-finding.png'),
+        fullPage: true,
+      })
       await page.getByTestId('finding-detail').getByTestId('evidence-toggle').click()
       await expect(page.getByTestId('evidence-panel')).toBeVisible()
     },
@@ -172,21 +177,21 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
       )?.replace(/\s+/g, ' ').slice(0, 200),
     }),
   )
-  await shot(page, '07-finding-evidence.png')
+  await shot(page, '03-evidence-chain.png')
 
   // -- 8. Cryptographic intelligence ---------------------------------------
   await record('cryptographic fingerprints', async () => {
     await nav(page, 'Intelligence')
     await expect(page.getByTestId('tab-fingerprints')).toBeVisible()
   })
-  await shot(page, '08-intelligence-fingerprints.png')
+  await shot(page, '12-cryptographic-dna.png')
 
   // -- 9. Evidence timeline -------------------------------------------------
   await record('evidence timeline', async () => {
     await nav(page, 'Evidence timeline')
     await expect(page.getByTestId('timeline-list')).toBeVisible()
   })
-  await shot(page, '09-timeline.png')
+  await shot(page, '06-timeline.png')
 
   // -- 10. ML, with its stated limits ---------------------------------------
   await record(
@@ -204,7 +209,7 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
         .isVisible(),
     }),
   )
-  await shot(page, '10-ml-analysis.png')
+  await shot(page, '07-ml-honesty.png')
 
   // -- 11. Export the PDF report --------------------------------------------
   const sizes: Record<string, number> = {}
@@ -223,7 +228,7 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
     },
     async () => ({ report_bytes: sizes }),
   )
-  await shot(page, '11-reports.png')
+  await shot(page, '08-reports.png')
 
   // -- 12. The drift investigation, as a second investigation ---------------
   await record('analyse the two-capture drift investigation', async () => {
@@ -236,7 +241,7 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
     await page.getByTestId('analyse-button').click()
     await expect(page).toHaveURL(/\/investigations\/inv-/, { timeout: 180_000 })
   })
-  await shot(page, '12-drift-investigation.png')
+  await shot(page, '13-drift-investigation.png')
 
   await record(
     'cryptographic drift between the two captures',
@@ -252,7 +257,7 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
         .slice(0, 300),
     }),
   )
-  await shot(page, '13-drift.png')
+  await shot(page, '05-cryptographic-drift.png')
 
   await record('blast radius', async () => {
     await page.getByTestId('tab-blast_radius').click()

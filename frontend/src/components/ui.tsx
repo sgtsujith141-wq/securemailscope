@@ -47,12 +47,12 @@ export function Metric({ label, value, note, detail, tone = 'default', testId }:
   testId?: string
 }) {
   return (
-    <div className="panel px-4 py-3" data-testid={testId}>
+    <div className="surface px-2.5 py-2 flex flex-col" data-testid={testId}>
       <div className="label">{label}</div>
-      <div className={`text-2xl font-semibold mt-1 ${tone === 'unknown' ? 'text-mist-300 text-base' : ''}`}>
+      <div className={`text-2xl font-semibold mt-0.5 leading-none ${tone === 'unknown' ? 'text-mist-300 text-base leading-snug' : ''}`}>
         {value}
       </div>
-      {note && <div className="text-[11px] text-mist-300 mt-1">{note}</div>}
+      {note && <div className="text-xs text-mist-300 mt-1">{note}</div>}
       {detail && (
         // `break-all` because this carries a capture id: a 64-character hash
         // has no break opportunity, so without it the sentence overflows the
