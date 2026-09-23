@@ -15,7 +15,7 @@ export default defineConfig({
   //   npx playwright test demo-rehearsal
   testIgnore: process.env.SMS_SCREENSHOTS
     ? []
-    : ['screenshots.spec.ts', 'demo-rehearsal.spec.ts'],
+    : ['screenshots.spec.ts', 'demo-rehearsal.spec.ts', 'demo-capture.spec.ts'],
   timeout: 90_000,
   expect: { timeout: 15_000 },
   fullyParallel: false,
@@ -27,6 +27,8 @@ export default defineConfig({
     headless: true,
     trace: 'off',
     screenshot: 'only-on-failure',
+    // Raw footage is an editing input, not a submission artefact.
+    video: 'off',
   },
   webServer: [
     {

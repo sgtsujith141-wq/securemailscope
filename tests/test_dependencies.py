@@ -80,7 +80,7 @@ def _imported(paths: list[Path]) -> dict[str, list[Path]]:
 #: presentation or audit tooling to them would make both describe the tools
 #: that build the submission instead.
 TOOLING_ONLY: dict[str, set[str]] = {
-    "scripts/build_presentation.py": {"pptx"},
+    "scripts/build_presentation.py": {"pptx", "PIL"},
     "scripts/generate_sbom.py": set(),
 }
 
