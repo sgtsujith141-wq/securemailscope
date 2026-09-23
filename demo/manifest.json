@@ -13,7 +13,7 @@
       "generator": "securemailscope.testing (project fixture generator)",
       "demonstrates": "A sound TLS configuration with a certificate that verifies against a supplied trust store.",
       "why_it_matters": "A posture tool that only ever reports problems is not measuring anything. This is the control: it shows what a clean result looks like, so a finding elsewhere means something.",
-      "sha256": "70c30ebc4f9c5f81c8e4a0d65cf59b8f01a5fd8c8505d49e12582e582bdeb081",
+      "sha256": "eef1d398893125cf19ed665e9ae15b3ce9b84cc32216164ad414bd896eb8d0e3",
       "size_bytes": 1229,
       "observed": {
         "sessions": 1,
@@ -35,8 +35,8 @@
       "generator": "securemailscope.testing (project fixture generator)",
       "demonstrates": "TLS 1.0 with static RSA key exchange: an obsolete protocol version and no forward secrecy, in one session.",
       "why_it_matters": "The central case. Several independent rules fail on the same session, each citing the packet it read the evidence from.",
-      "sha256": "1347e9180a6337f41b76e6c1481cc5f9bb8659d7907a670b33337ef6e3ad4e47",
-      "size_bytes": 991,
+      "sha256": "9f74b937d6ec8a40e755b6b96b79a7e52a3c81ca8549985e77b8fdfaf2371b17",
+      "size_bytes": 992,
       "observed": {
         "sessions": 1,
         "tls_sessions": 1,
@@ -61,8 +61,8 @@
       "generator": "securemailscope.testing (project fixture generator)",
       "demonstrates": "A negotiated RC4 cipher suite.",
       "why_it_matters": "A prohibited primitive, distinct from an out-of-date protocol version. Shows the rules separating two different kinds of weakness.",
-      "sha256": "d8fb8d916102eb84d7f5c39f591434e7f98de376073a6876e60c4d0d0b69d75c",
-      "size_bytes": 991,
+      "sha256": "4e13126eda6d1412f5fd915382014eeecd341c8754d124fcb06f9e0b26100716",
+      "size_bytes": 992,
       "observed": {
         "sessions": 1,
         "tls_sessions": 1,
@@ -131,8 +131,8 @@
       "generator": "securemailscope.testing (project fixture generator)",
       "demonstrates": "A complete TLS 1.2 handshake whose certificate chain is visible on the wire.",
       "why_it_matters": "Certificate evidence: subject, issuer, validity dates, key size and signature algorithm, all read from bytes that were actually transmitted.",
-      "sha256": "b4447c036fccf67987d6e812b608e5fc612e61a8757c53a828fabc5f6dc20cb2",
-      "size_bytes": 1721,
+      "sha256": "a139fc2434f30d2e4e19cd15c45e5860e8bdad660afa194b60c9a65a6303a880",
+      "size_bytes": 1723,
       "observed": {
         "sessions": 1,
         "tls_sessions": 1,
@@ -153,7 +153,7 @@
       "generator": "securemailscope.testing (project fixture generator)",
       "demonstrates": "A TLS 1.3 handshake, where the Certificate message is encrypted.",
       "why_it_matters": "The honest limitation. TLS 1.3 encrypts the certificate, so no passive tool can read it. The report states NOT_AVAILABLE with the reason rather than leaving a blank or guessing.",
-      "sha256": "134da6917e0212d757758796ac976a81c9c53cee15a6fc03242f8789bdb44181",
+      "sha256": "4d32493358db5527a17004c97ea004adcf172cf21371590b178a758b2ecc3db5",
       "size_bytes": 2214,
       "observed": {
         "sessions": 1,
@@ -175,7 +175,7 @@
       "generator": "securemailscope.testing.investigation_fixtures (B_version_downgrade)",
       "demonstrates": "Part of a two-capture investigation of one endpoint, an hour apart.",
       "why_it_matters": "The client offers the same suites in both captures, and the server selects TLS 1.2 and then TLS 1.0. Because the offer did not change, the difference is attributable to the server, and drift is reported as OBSERVED_CHANGE rather than as a guess.",
-      "sha256": "4598064c930e01b2d6e812b136f56e219af8cfdebc3bc1c08e9f2d75b6c1494e",
+      "sha256": "0507c2d0975c82a3e767c0cff1f8d619847f27642aea01417f023f331384af37",
       "size_bytes": 999,
       "observed": {
         "sessions": 1,
@@ -200,7 +200,7 @@
       "generator": "securemailscope.testing.investigation_fixtures (B_version_downgrade)",
       "demonstrates": "Part of a two-capture investigation of one endpoint, an hour apart.",
       "why_it_matters": "The client offers the same suites in both captures, and the server selects TLS 1.2 and then TLS 1.0. Because the offer did not change, the difference is attributable to the server, and drift is reported as OBSERVED_CHANGE rather than as a guess.",
-      "sha256": "dca68ba2f5fba290d64dc0e64499364ab8b653c36358db0857339e0cdc0dc1d8",
+      "sha256": "a96807f77f783f36d33ed6eedc5314a5b891be815fe54315d27b1d6b62b7c82a",
       "size_bytes": 999,
       "observed": {
         "sessions": 1,

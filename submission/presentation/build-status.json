@@ -1,0 +1,14 @@
+{
+  "template": "SIH2026-IDEA-Presentation-Format.pptx",
+  "template_slides": 7,
+  "submitted_slides": 6,
+  "instruction_slide_deleted": true,
+  "unresolved_fields": [
+    "problem_statement_title",
+    "theme",
+    "team_id"
+  ],
+  "submission_ready": false,
+  "pptx": "submission/presentation/SecureMailScope-SIH26159.pptx",
+  "pdf": "submission/presentation/SecureMailScope-SIH26159.pdf"
+}

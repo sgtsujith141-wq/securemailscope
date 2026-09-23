@@ -1,0 +1,25 @@
+{
+  "_comment": [
+    "The four values the official SIH title slide requires that cannot be",
+    "derived from this repository. Fill them and re-run:",
+    "    python scripts/build_presentation.py",
+    "",
+    "A value left as null is rendered as a visible [UNRESOLVED: ...] marker and",
+    "the build refuses to label the PDF submission-ready. That is deliberate:",
+    "a deck with an invisible placeholder is worse than one that says so."
+  ],
+  "problem_statement_id": "SIH26159",
+  "problem_statement_title": null,
+  "theme": null,
+  "ps_category": "Software",
+  "team_id": null,
+  "team_name": "Team Zero-Day",
+  "_sources": {
+    "problem_statement_id": "Stated in the project directives and throughout the repository.",
+    "ps_category": "Software: the deliverable is software only, no hardware.",
+    "team_name": "Confirmed by the user on 2026-09-22.",
+    "problem_statement_title": "NOT KNOWN. The canonical SIH26159 title is not recorded anywhere in this repository and must be copied from the SIH portal verbatim.",
+    "theme": "NOT KNOWN. The user's deck for a different NTRO problem statement (SIH26164) used 'Blockchain & Cybersecurity', but that has not been confirmed for SIH26159.",
+    "team_id": "NOT KNOWN. Issued by the SIH portal at registration."
+  }
+}
