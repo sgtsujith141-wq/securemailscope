@@ -1,184 +1,101 @@
 # SIH26159 requirement coverage
 
-**SecureMailScope** — AI-Assisted Cryptographic Security Posture Assessment for
-Secure Email Communications
-Team **Zero-Day** · National Technical Research Organisation · Category: Software
+**SecureMailScope: AI-Assisted Cryptographic Security Posture Assessment for
+Secure Email Communications**
 
-Audited against the release commit before any presentation claim was written.
-No slide asserts anything this table does not support.
+Team **Zero-Day** · National Technical Research Organisation (NTRO) ·
+Category: Software
+
+Audited against the release commit **before** any presentation claim was
+written. No slide asserts anything this table does not support, and no PARTIAL
+was promoted to IMPLEMENTED for presentation optics.
 
 | Status | Meaning |
 |---|---|
 | **IMPLEMENTED** | Built, tested against hand-derived expectations, working |
-| **PARTIAL** | Real, but the requirement is not met in full; the gap is stated |
-| **NOT VERIFIED** | Code exists; nothing in this repository proves it works |
+| **PARTIAL** | Real, but not met in full; the gap is stated |
+| **NOT VERIFIED** | Code exists; nothing here proves it works |
 | **NOT IMPLEMENTED** | No code exists |
 
 ---
 
-## 1. Automatic email-protocol identification
-
-| | |
-|---|---|
-| **Module** | `protocols/` (3,406 loc) — SMTP, IMAP and POP3 state machines |
-| **Status** | **IMPLEMENTED** |
-| **Evidence** | `tests/test_protocols.py`, `tests/test_protocol_behaviour.py`, `tests/test_protocol_reader.py`. Fixtures P_A–P_T include non-standard ports (`P_H_smtp_nonstandard_port`, `P_I_pop3_on_imap_port`) and decoys (`P_P_data_body_fake_starttls`, `P_Q_imap_literal_fake_commands`). |
-| **How** | Identification is from the dialogue, never the port. A port yields a `HINT:` value carrying evidence status `INFERRED` and the limitation "NOT a confirmed protocol". |
-| **Limitation** | A session that begins mid-stream may never show a greeting; it is reported `UNKNOWN`, not guessed. |
-
-## 2. TCP stream reconstruction
-
-| | |
-|---|---|
-| **Module** | `network/` (~900 loc) — `reassembly.py`, `seqspace.py`, `flows.py` |
-| **Status** | **IMPLEMENTED** |
-| **Evidence** | `tests/test_reassembly.py`, `tests/test_sessions.py`. Fixtures cover out-of-order (C), duplicates (D), retransmission (E), missing segments (F), overlap conflicts (H), tuple reuse (J), mid-stream (M). |
-| **How** | Bytes two segments disagree about are flagged ambiguous rather than silently resolved. |
-| **Limitation** | A gap is a gap: reconstruction stops at a hole rather than interpolating. |
-
-## 3. STARTTLS / STLS detection and validation
-
-| | |
-|---|---|
-| **Module** | `protocols/starttls.py` |
-| **Status** | **IMPLEMENTED** |
-| **Evidence** | Fixtures P_A (accepted), P_B (rejected), P_D (IMAP), P_F/P_G (POP3 STLS), P_J (no response), P_K (gap during upgrade), P_N (no plaintext after upgrade). |
-| **How** | Advertisement, request, outcome, and the exact packet in each direction where plaintext stops. |
-| **Limitation** | If the capture ends before the server answers, the outcome is `UNKNOWN`. |
-
-## 4. TLS handshake reconstruction
-
-| | |
-|---|---|
-| **Module** | `tls/` — record framing, handshake reassembly |
-| **Status** | **IMPLEMENTED** |
-| **Evidence** | `tests/test_tls.py`, `tests/test_tls_wire.py`. Fixtures T_I (record split across packets), T_J (handshake split across records), T_K (multiple messages one record), T_L (truncated), T_M (missing segment), T_N (conflicting bytes). |
-| **How** | Parsing stops at a hole; ambiguous bytes are never parsed. |
-
-## 5. TLS version and cipher-suite identification
-
-| | |
-|---|---|
-| **Module** | `tls/version.py`, `tls/registry.py` |
-| **Status** | **IMPLEMENTED** |
-| **Evidence** | `tests/test_tls.py`; ten independent **TShark cross-checks** compare our dissection against Wireshark's. |
-| **How** | The negotiated version is read from the `supported_versions` extension, never from `legacy_version` (which reads 0x0303 for TLS 1.3). Offered and selected are kept strictly apart. |
-
-## 6. Key-exchange identification where observable
-
-| | |
-|---|---|
-| **Module** | `tls/keyexchange.py` |
-| **Status** | **IMPLEMENTED** |
-| **Evidence** | `tests/test_tls.py`, `tests/test_tls_wire.py::test_a_group_family_maps_to_the_key_exchange_method_without_guessing` |
-| **How** | From the `key_share` extension for TLS 1.3 and the suite for TLS 1.2 — never inferred from a TLS 1.3 suite name, which encodes only an AEAD and a hash (RFC 8446 §B.4). |
-| **Limitation** | A post-quantum hybrid group is reported as the generic `EPHEMERAL`, not forced into ECDHE or DHE. |
-
-## 7. X.509 certificate extraction and validation where observable
-
-| | |
-|---|---|
-| **Module** | `certificates/` (861 loc) |
-| **Status** | **PARTIAL** |
-| **Evidence** | `tests/test_certificates.py`. Fixtures T_O (expired), T_P (not yet valid), T_Q (self-signed), T_R (valid trusted chain), T_S (incomplete chain), T_T (hostname scenarios), T_Y (malformed lengths). |
-| **How** | Five independent checks — dates, chain, hostname, key, signature — with no defaults assumed. |
-| **Limitation** | **TLS 1.3 encrypts the Certificate message.** No passive tool can read it without decryption material. Reported `NOT_AVAILABLE` with the reason, never blank and never guessed. This is a property of the protocol, not a gap in the implementation. |
-
-## 8. Certificate expiry / public-key / key-length / signature analysis
-
-| | |
-|---|---|
-| **Module** | `certificates/parse.py`, `certificates/validate.py` |
-| **Status** | **PARTIAL** (same TLS 1.3 constraint as #7) |
-| **Evidence** | `tests/test_tls_wire.py::test_public_key_sizes_are_reported_only_where_meaningful` — sizes are reported for RSA and EC and omitted for Ed25519, where a "size" would be meaningless. |
-| **Limitation** | Revocation is **NOT IMPLEMENTED** and permanently out of scope: an OCSP or CRL request would violate the passive-only rule. `revocation_checks_performed` is `0` in every report. |
-
-## 9. Weak cryptography / insecure configuration detection
-
-| | |
-|---|---|
-| **Module** | `assessment/` (3,416 loc) — 25 rules under a versioned policy |
-| **Status** | **IMPLEMENTED** |
-| **Evidence** | `tests/test_assessment.py` (225 tests). Demo: `02-weak-legacy-tls.pcap` → 4 findings, score 59; `03-broken-cipher.pcap` → 2 findings, score 70. |
-| **How** | Policy is the single source of prohibited primitives. A finding id changes when the policy changes, so a stale id cannot be mistaken for a current verdict. |
-
-## 10. Forward-secrecy assessment
-
-| | |
-|---|---|
-| **Module** | `tls/forward_secrecy.py` |
-| **Status** | **IMPLEMENTED** |
-| **Evidence** | Rule `TLS-KEX-001`; fixture `aa_tls10_static_rsa` / demo `02-weak-legacy-tls.pcap`. |
-| **Limitation** | Forward secrecy is a property of the negotiated key exchange. Handshake completion is **not verifiable** from a passive capture, and the finding says so in its own limitation text. |
-
-## 11. AI/ML-assisted risk classification and anomaly analysis
-
-| | |
-|---|---|
-| **Module** | `ml/` (3,196 loc) — 93-feature schema, dataset, evaluation, registry, inference |
-| **Status** | **PARTIAL — and deliberately so** |
-| **Evidence** | `tests/test_ml.py`, `docs/ml-evaluation.md`, `docs/ml-model-card.md` |
-| **Anomaly detection** | A **deterministic rarity baseline** is the selected detector. An Isolation Forest was trained, measured and **not selected** because the baseline scored better. Both are shipped; the interface states which is in use and that the baseline is "a deterministic frequency table, not a machine-learning model". |
-| **Supervised classification** | Trained and measured on synthetic data (macro-F1 0.5624). Reported **`NOT_VALIDATED`** for real-world use. No independent representative validation has been obtained. It does not drive any finding or any score. |
-| **Limitation** | All ML evaluation is synthetic, by design: the project does not ingest private email traffic. Synthetic evaluation does not establish real-world accuracy. |
-
-## 12. Security posture scoring and threat prioritisation
-
-| | |
-|---|---|
-| **Module** | `assessment/scoring.py`, `assessment/prioritization.py` |
-| **Status** | **IMPLEMENTED** |
-| **Evidence** | `tests/test_assessment.py`; `docs/scoring-methodology.md` |
-| **How** | `score = 100 × (W(evaluated) − W(failed)) / W(evaluated)`, printed with its arithmetic. A rule that could not be evaluated is excluded from **both** sides rather than counted as a pass or a violation. Priority comes from a severity × confidence matrix. |
-| **Limitation** | A project-defined analytical metric, not a validated measure of organisational security. For several captures the headline is the **weakest** capture with the range stated — never an average, because no weighting methodology has been validated. |
-
-## 13. Actionable remediation
-
-| | |
-|---|---|
-| **Module** | `assessment/catalog.py` — 12 remediations |
-| **Status** | **IMPLEMENTED** |
-| **Evidence** | `tests/test_assessment.py`; `docs/remediation-catalog.md` |
-| **How** | Each carries a technical explanation, a recommended action, an expected security effect and the rules it answers. |
-
-## 14. Interactive forensic dashboard
-
-| | |
-|---|---|
-| **Module** | `frontend/` (4,400+ loc), `backend/` (2,756 loc) |
-| **Status** | **IMPLEMENTED** |
-| **Evidence** | 88 frontend tests, 5 Playwright specs against the real backend, a 22-step acceptance walkthrough including a backend restart. |
-| **How** | FastAPI on loopback over the unchanged engine; React with strict TypeScript. Navigation follows the investigation workflow. |
-| **Limitation** | Analysis **cannot be cancelled** — a running analysis finishes or fails. The absence is asserted by test so it cannot be mistaken for a broken control. |
-
-## 15. JSON / PDF / HTML reports
-
-| | |
-|---|---|
-| **Module** | `reporting/` (1,582 loc) |
-| **Status** | **IMPLEMENTED** |
-| **Evidence** | `tests/test_report.py`, `tests/test_report_hardening.py` (38 tests) |
-| **How** | One canonical `ReportModel` feeds all three, so their facts cannot disagree. Parity is asserted across capture ids, session counts, finding ids, severities, score, remediations and ML validation status. |
-| **Security** | The HTML report fetches nothing — `render_html` raises rather than emit a report that would load an external resource. The PDF is built from the model through ReportLab, which has no URL resolver, so "no external request" is structural. |
+| # | Requirement | Implementation | Status | Test / evidence | Limitation |
+|---|---|---|---|---|---|
+| 1 | Passive PCAP/PCAPNG analysis | `ingestion/` (1,166 loc) | **IMPLEMENTED** | `test_ingestion.py`, `test_formats.py`; 10 TShark cross-checks | Format from content, never the extension. Eight hard resource limits. |
+| 2 | Automatic SMTP identification | `protocols/smtp.py` | **IMPLEMENTED** | `test_protocols.py`; fixtures P_A, P_C, P_H, P_T | From the dialogue, not the port. A port yields a `HINT:` with status INFERRED. |
+| 3 | Automatic IMAP identification | `protocols/imap.py` | **IMPLEMENTED** | `test_protocols.py`; fixtures P_D, P_E, P_Q | Mid-stream sessions without a greeting are UNKNOWN, not guessed. |
+| 4 | Automatic POP3 identification | `protocols/pop3.py` | **IMPLEMENTED** | `test_protocols.py`; fixtures P_F, P_G, P_I, P_R | Correctly identifies POP3 served on an IMAP port. |
+| 5 | TCP stream reconstruction | `network/reassembly.py`, `seqspace.py` | **IMPLEMENTED** | `test_reassembly.py`, `test_sessions.py` | Bidirectional, with byte-accurate stream offsets. |
+| 6 | Retransmission / out-of-order / gap handling | `network/reassembly.py` | **IMPLEMENTED** | Fixtures C, D, E, F, H, J | Bytes two segments disagree about are flagged ambiguous, never silently resolved. |
+| 7 | STARTTLS / STLS detection | `protocols/starttls.py` | **IMPLEMENTED** | Fixtures P_A, P_D, P_F | Advertisement, request and outcome tracked separately. |
+| 8 | STARTTLS acceptance / refusal validation | `protocols/starttls.py` | **IMPLEMENTED** | Fixtures P_B, P_G, P_J, P_K | A refusal is reported as a refusal, not as 'no TLS offered'. Demo capture 05 scores 86 with one finding. |
+| 9 | TLS handshake reconstruction | `tls/records.py`, `tls/handshake.py` | **IMPLEMENTED** | `test_tls.py`; fixtures T_I–T_N | Parsing stops at a hole. Ambiguous bytes are never parsed. |
+| 10 | TLS version extraction | `tls/version.py` | **IMPLEMENTED** | `test_tls.py`; TShark cross-check | Read from `supported_versions`, never from `legacy_version` (0x0303 for TLS 1.3). |
+| 11 | Cipher-suite extraction | `tls/registry.py` | **IMPLEMENTED** | `test_tls_wire.py`; IANA registry | Offered and selected kept strictly apart. GREASE values identified. |
+| 12 | Key-exchange identification | `tls/keyexchange.py` | **IMPLEMENTED** | `test_tls_wire.py::test_a_group_family_maps_to_the_key_exchange_method_without_guessing` | From `key_share` for TLS 1.3. A post-quantum hybrid is EPHEMERAL, not forced into a classical family. |
+| 13 | Forward-secrecy assessment | `tls/forward_secrecy.py` | **IMPLEMENTED** | Rule `TLS-KEX-001`; demo capture 02 | A property of the negotiated exchange. Handshake completion is not verifiable, and the finding says so. |
+| 14 | X.509 extraction | `certificates/parse.py` | **PARTIAL** | `test_certificates.py`; fixtures T_O–T_Y | **TLS 1.3 encrypts the Certificate message.** Reported NOT_AVAILABLE with the reason. TLS 1.2 chains are read in full. |
+| 15 | Certificate expiry analysis | `certificates/validate.py` | **PARTIAL** | Fixtures T_O (expired), T_P (not yet valid) | Same TLS 1.3 constraint. Dates are compared against capture time, not wall-clock. |
+| 16 | Public-key algorithm / length analysis | `certificates/parse.py` | **PARTIAL** | `test_tls_wire.py::test_public_key_sizes_are_reported_only_where_meaningful` | Sizes reported for RSA and EC, omitted for Ed25519 where a size is meaningless. |
+| 17 | Signature-algorithm analysis | `certificates/parse.py` | **PARTIAL** | `test_certificates.py` | Same TLS 1.3 constraint. |
+| 18 | Chain / hostname validation | `certificates/validate.py` | **PARTIAL** | Fixtures T_Q, T_R, T_S, T_T, T_U | RFC 5280 path verification and RFC 6125 identity matching, where a trust store is supplied. |
+| 19 | Weak-cryptography detection | `assessment/rules.py` | **IMPLEMENTED** | `test_assessment.py` (225 tests) | 25 rules under a versioned policy. Demo 02 → 4 findings, 03 → 2. |
+| 20 | Insecure-configuration detection | `assessment/policy.py` | **IMPLEMENTED** | `test_assessment.py` | Policy is the single source of prohibited primitives; ids change when policy changes. |
+| 21 | Security scoring | `assessment/scoring.py` | **IMPLEMENTED** | `test_assessment.py`; `docs/scoring-methodology.md` | Arithmetic printed with the score. A project metric, not a validated measure of organisational security. |
+| 22 | Assessment coverage | `assessment/scoring.py` | **IMPLEMENTED** | `test_assessment.py` | Unevaluable rules are excluded from **both** sides of the fraction. |
+| 23 | Threat prioritisation | `assessment/prioritization.py` | **IMPLEMENTED** | `test_assessment.py` | Severity × confidence matrix producing P1–P4. |
+| 24 | Remediation | `assessment/catalog.py` | **IMPLEMENTED** | `test_assessment.py`; `docs/remediation-catalog.md` | 12 remediations, each with expected security effect. |
+| 25 | Evidence provenance | `models/evidence.py` | **IMPLEMENTED** | `test_intelligence.py`, `test_report_hardening.py` | Four statuses: OBSERVED, INFERRED, UNKNOWN, NOT_AVAILABLE. Packet numbers only — never payload bytes. |
+| 26 | Cryptographic DNA | `intelligence/fingerprints.py` | **IMPLEMENTED** | `test_intelligence.py` | An observed profile, not proof of machine identity — stated in the interface. |
+| 27 | Drift detection | `intelligence/drift.py` | **IMPLEMENTED** | `test_intelligence.py`; demo captures 08-1/08-2 | Attributable only when client offers match; otherwise INCONCLUSIVE. |
+| 28 | Cross-session correlation | `intelligence/correlation.py` | **IMPLEMENTED** | `test_intelligence.py` | Relationship basis stated. No inferred topology. |
+| 29 | Blast-radius analysis | `intelligence/blast_radius.py` | **IMPLEMENTED** | `test_intelligence.py` | Always qualified: 'Observed within analyzed captures only.' |
+| 30 | AI/ML analysis | `ml/` (3,196 loc) | **PARTIAL** | `test_ml.py`; `docs/ml-evaluation.md`, `ml-model-card.md` | **Selected detector is a deterministic rarity baseline, not a model.** Isolation Forest trained, measured, not selected. Classifier NOT_VALIDATED; drives no finding or score. |
+| 31 | Interactive dashboard | `frontend/`, `backend/` | **IMPLEMENTED** | 88 frontend tests; 5 Playwright specs; 22-step acceptance walkthrough | Cancellation is NOT IMPLEMENTED and its absence is asserted by test. |
+| 32 | JSON export | `reporting/report_model.py` | **IMPLEMENTED** | `test_report.py` | Schema 1.4.0, additive since 1.0.0. |
+| 33 | HTML export | `reporting/html_report.py` | **IMPLEMENTED** | `test_report_hardening.py` | `render_html` raises rather than emit a report that fetches an external resource. |
+| 34 | PDF export | `reporting/pdf_report.py` | **IMPLEMENTED** | `test_report_hardening.py` | Built from the model via ReportLab, which has no URL resolver — so 'no external request' is structural. |
+| 35 | Local / passive privacy model | whole engine; `scapy_guard.py` | **IMPLEMENTED** | `test_robustness.py` (7 passive tests) | Socket constructors replaced with raising stubs and the whole pipeline run through them. Scapy's neighbour resolver disabled. |
 
 ---
 
 ## Summary
 
-| Status | Count | Requirements |
-|---|---:|---|
-| IMPLEMENTED | 11 | 1, 2, 3, 4, 5, 6, 9, 10, 12, 13, 14, 15 |
-| PARTIAL | 3 | 7, 8 (TLS 1.3 encrypts certificates); 11 (ML honesty) |
-| NOT VERIFIED | 0 | — |
-| NOT IMPLEMENTED | 0 | Revocation checking is out of scope by the passive rule, recorded under #8 |
+| Status | Count |
+|---|---:|
+| IMPLEMENTED | **29** |
+| PARTIAL | **6** |
+| NOT VERIFIED | 0 |
+| NOT IMPLEMENTED | 0 |
+| **Total** | **35** |
 
-Every PARTIAL is partial for a stated reason that is a property of the problem,
-not an unfinished implementation:
+## Why the PARTIALs are partial
 
-- **TLS 1.3 certificate visibility** is a protocol guarantee. A passive
-  observer without decryption material cannot read what is encrypted.
-- **Supervised ML validation** requires a representative real-world corpus this
-  project deliberately does not collect.
+Every one is limited by a property of the problem, not by unfinished work.
 
-Neither is hidden. Both appear in the interface, in every report, and on the
-submission slides.
+**Requirements 14–18 — certificate analysis.** TLS 1.3 encrypts the
+Certificate message. A passive observer without decryption material cannot
+read what is not on the wire. SecureMailScope reports `NOT_AVAILABLE` with the
+reason rather than leaving a blank or inferring a value. For TLS 1.2 the chain
+is read and verified in full: dates, chain, hostname, key size and signature
+algorithm.
+
+**Requirement 30 — AI/ML.** Three things are kept separate and named
+separately, because conflating them would be the easiest way to overclaim:
+
+- The **selected anomaly method is a deterministic rarity baseline**, and the
+  interface says it is a frequency table, not a machine-learning model.
+- An **Isolation Forest** was trained and evaluated. It measured worse than
+  the baseline, so it was not selected. It ships labelled experimental.
+- The **supervised classifier** is `NOT_VALIDATED` for real-world use. It was
+  trained on controlled synthetic configurations (macro-F1 0.5624), which does
+  not establish real-world accuracy. It drives no finding and no score.
+
+## Explicitly out of scope
+
+**Certificate revocation checking** is NOT IMPLEMENTED and permanently so: an
+OCSP or CRL request would violate the passive-only rule.
+`revocation_checks_performed` is `0` in every report, asserted by the test
+suite. The same applies to `handshake_analyzed` (false) and
+`handshakes_cryptographically_verified` (0) — a capture contains no traffic
+keys.

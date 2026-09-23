@@ -39,7 +39,7 @@ from pptx.util import Emu, Inches, Pt
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "submission" / "presentation"
 DEFAULT_TEMPLATE = ROOT / "submission" / "template" / "SIH2026-IDEA-Presentation-Format.pptx"
-SHOTS = ROOT / "submission" / "assets" / "screenshots"
+SHOTS = ROOT / "submission" / "assets" / "screenshots-final"
 FINAL = ROOT / "submission" / "final"
 #: Cropped copies used only by the deck; regenerated on every build.
 CROPS = ROOT / "submission" / "assets" / "crops"
@@ -282,7 +282,7 @@ def slide_2(slide: Any) -> None:
             x += 0.28
 
     # --- the product, and what it answers ------------------------------------
-    _shot(slide, "01-investigation-overview.png", 0.42, 2.76, 6.55,
+    _shot(slide, "02-investigation-overview.png", 0.42, 2.76, 6.55,
           "The investigation overview, on seven synthetic captures. "
           "Actual product output.")
 
@@ -368,14 +368,16 @@ def slide_3(slide: Any) -> None:
             paragraph.alignment = PP_ALIGN.CENTER
         bx += 2.12
 
-    _shot(slide, "03-evidence-chain.png", 6.72, 2.02, 6.20,
-          "A finding, and the packets it was read from. Actual product output.")
+    _shot(slide, "05-evidence-chain.png", 6.72, 2.02, 3.02,
+          "Finding \u2192 packets")
+    _shot(slide, "07-cryptographic-intelligence.png", 9.90, 2.02, 3.02,
+          "Cryptographic DNA")
 
-    tech = _panel(slide, 6.72, 5.52, 6.20, 1.24)
+    tech = _panel(slide, 6.72, 4.02, 6.20, 1.30)
     _write(
         tech.text_frame,
         [
-            ("Technologies", 10, True, INK, 0),
+            ("Technologies", 10, True, ACCENT, 0),
             ("Python 3.12 · Scapy 2.7 (dissection only) · cryptography 50 · "
              "Pydantic 2.9 · FastAPI · SQLite · SQLAlchemy",
              8.5, False, BODY, 0),
@@ -444,7 +446,7 @@ def slide_4(slide: Any, ev: dict[str, Any]) -> None:
         line_spacing=0.90,
     )
 
-    _shot(slide, "05-cryptographic-drift.png", 8.78, 1.56, 4.14,
+    _shot(slide, "08-drift-before-after.png", 8.78, 1.56, 4.14,
           "Cryptographic drift across two captures. Actual product output.")
 
     risks = _panel(slide, 0.42, 4.32, 12.5, 2.44,
@@ -527,11 +529,11 @@ def slide_5(slide: Any) -> None:
         )
         x += 3.18
 
-    _shot(slide, "02-high-severity-finding.png", 0.42, 3.46, 4.02,
+    _shot(slide, "04-finding-evidence-detail.png", 0.42, 3.46, 4.02,
           "A finding, with its rule, severity and remediation.")
-    _shot(slide, "05-cryptographic-drift.png", 4.66, 3.46, 4.02,
+    _shot(slide, "08-drift-before-after.png", 4.66, 3.46, 4.02,
           "Configuration drift between two captures.")
-    _shot(slide, "08-reports.png", 8.90, 3.46, 4.02,
+    _shot(slide, "11-reports.png", 8.90, 3.46, 4.02,
           "JSON, offline HTML and PDF export.")
 
     note = _panel(slide, 0.42, 6.30, 12.5, 0.46,
@@ -630,28 +632,26 @@ def slide_6(slide: Any) -> None:
         line_spacing=0.90,
     )
 
-    project = _panel(slide, 0.42, 5.02, 12.5, 1.74)
+    # Sized to land above the template's footer band, which starts at 6.95in.
+    # A 16:9 crop 4.02in wide is 2.26in tall and would run into it.
+    _shot(slide, "03-findings-workspace.png", 0.42, 4.98, 3.22,
+          "Findings triage")
+    _shot(slide, "06-session-detail.png", 3.78, 4.98, 3.22,
+          "Session inventory")
+
+    project = _panel(slide, 7.14, 4.98, 5.78, 1.72)
     _write(
         project.text_frame,
         [
-            ("Project research, written alongside the code", 10.5, True, ACCENT, 0),
-            ("docs/evidence-model.md — the four evidence statuses and how "
-             "provenance is tracked   ·   docs/scoring-methodology.md — the "
-             "formula, the bands, and why a multi-capture headline is the "
-             "weakest capture rather than an average", 8.5, False, BODY, 0),
-            ("docs/ml-methodology.md, ml-evaluation.md, ml-model-card.md — why "
-             "a deterministic baseline was selected over a trained model by "
-             "measurement, and what neither is fit for   ·   "
-             "docs/limitations.md — what passive analysis cannot do",
-             8.5, False, BODY, 0),
-            ("docs/security-audit.md — threat model, controls, and what the "
-             "audit did not cover   ·   docs/performance-benchmarks.md — "
-             "thresholds committed before measurement, including a published "
-             "failing run   ·   submission/final/REQUIREMENT-COVERAGE.md — "
-             "all 15 problem-statement requirements with status and evidence",
-             8.5, False, BODY, 0),
+            ("Project research", 10, True, ACCENT, 0),
+            ("evidence-model \u00b7 scoring-methodology \u00b7 limitations \u00b7 "
+             "threat-model \u00b7 security-audit", 8, False, BODY, 0),
+            ("ml-methodology \u00b7 ml-evaluation \u00b7 ml-model-card \u00b7 "
+             "performance-benchmarks", 8, False, BODY, 0),
+            ("REQUIREMENT-COVERAGE.md \u2014 all 35 SIH26159 capabilities with "
+             "status and evidence", 8, False, BODY, 0),
         ],
-        line_spacing=0.90,
+        line_spacing=0.88,
     )
 
 
