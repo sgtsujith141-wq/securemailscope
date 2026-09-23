@@ -4,7 +4,7 @@ Prepared for publication. **Not published** — no upload has been made and no
 URL exists. Publishing requires the team's explicit approval.
 
 The file is `submission/final/SecureMailScope-SIH26159-Demo.mp4`:
-3 min 17 s, 1920x1080, 30 fps, H.264.
+3 min 11 s, 1920x1080, 30 fps, H.264 CRF 18.
 
 ---
 

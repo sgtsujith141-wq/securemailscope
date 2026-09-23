@@ -4,7 +4,7 @@ SHA-256 of every file in `submission/`. Regenerate with:
 
     python scripts/write_manifest.py
 
-Generated 2026-09-23T17:30:13+00:00
+Generated 2026-09-23T19:20:08+00:00
 
 | File | Bytes | SHA-256 |
 |---|---:|---|
@@ -111,22 +111,22 @@ Generated 2026-09-23T17:30:13+00:00
 | `submission/assets/screenshots-final/10-ml.png` | 975,912 | `e1ecb7d06c0127b680e8f16716574bdc5059c57016eef395a4d20e505fbb87a7` |
 | `submission/assets/screenshots-final/11-reports.png` | 238,327 | `18927250b42387f43597086d868779aeda9adbabcf79d0dfce7e4dab319aec98` |
 | `submission/assets/screenshots-final/12-pdf.png` | 278,225 | `e37d9783a0a6b41d3240e6ec70f3a20fe88c91092c783fa34f1c5db5a36d0ec0` |
-| `submission/demo/captions.srt` | 2,446 | `51f6797140e8aa3136236b982573aaf87f68cf0f068781d3be56ac7cf98c8b31` |
-| `submission/demo/demo-verification.md` | 3,475 | `b0445a904b7972567044d8c3d6c7d8baeff54d189e5f024c8322632d52e6d7c4` |
-| `submission/demo/final-script.md` | 3,337 | `149a2a7858b1ab87a29528568ce0de231f0f557c54b4b9c26f5ab1cc57d50970` |
+| `submission/demo/captions.srt` | 2,594 | `8b6295fd8edb40a2a0527649f3483a6aa53d08fb07c417b5bd06529c388cd3b1` |
+| `submission/demo/demo-verification.md` | 3,494 | `76f4744146cb3a1f696584b68ca730f93a48eec257e211c35781fa7ba7cc27d4` |
+| `submission/demo/final-script.md` | 3,344 | `9911c89edab9329c46e944028b094daf7329a3c311035bb881331f1aa1904252` |
 | `submission/demo/narration.md` | 4,461 | `32f70c51620bd72bf260fc89da3e6f4476721699d2acc653179e9e69ac70c5fc` |
 | `submission/demo/recording-checklist.md` | 2,245 | `bad31070f84f769350ca0421450af7eaa22d9ae25e52b29b4064b9cdeac36947` |
 | `submission/demo/rehearsal.json` | 4,481 | `e31cd925512a1209171d6a10f86b0287d7282ccce04175007219908fbd997236` |
 | `submission/demo/shot-list.md` | 2,970 | `ebca4b633f6b7ea54fcd423cda598505c57b138db76c26c0f8cf310cd4a370f6` |
 | `submission/demo/storyboard.md` | 3,753 | `06edbd8ca3681013731d3c9106902f65d9ffe0fcca4453a55b8aa2e49cf926d1` |
-| `submission/demo/video-description.md` | 2,868 | `4ccb872f446de231064298f8e432f067b83336856393c287cb579f1fd80cf5e2` |
-| `submission/final/FINAL-QUALITY-CHECK.md` | 4,729 | `e1d3f8b43f1b092d5162b6f1d1557c7c29fa683034fdfd72a8a1c5ce50afaf89` |
-| `submission/final/MANIFEST.md` | 16,758 | `e7050be534fede744d417730ccc49440ec58ab7c898c5030ffc507dbafe628cc` |
+| `submission/demo/video-description.md` | 2,875 | `2c6f055259de57fb13de11ee51263aafb3a9dac8eeb8ef945be6fef4b2c9e483` |
+| `submission/final/FINAL-QUALITY-CHECK.md` | 4,736 | `d6ba5e14e4ba4036b97db0715ea35f1a45f6667471984e8fb319123d41d116bc` |
+| `submission/final/MANIFEST.md` | 16,758 | `41a331c08641468b6ae481e3f51ee5790c65b09106553a2787167a143e81b819` |
 | `submission/final/REQUIREMENT-COVERAGE.md` | 9,994 | `cb61b9a75728125c1d46168b60249e577d9468e0926b5df70c28e5f355c9a038` |
-| `submission/final/SecureMailScope-SIH26159-Demo.mp4` | 13,325,686 | `ea0db0abfd96743b6762b5c3bbd2011e659736a6b9c1950badfcb084fba941da` |
-| `submission/final/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,482,701 | `6d5bcb625a0ade4e49f8433f9f4d6915942824fd035c49d2a722fc58ca8ae7e7` |
-| `submission/final/SecureMailScope-SIH26159-Zero-Day.pptx` | 3,497,846 | `07247a8ccb9c6129b7c3015eeb21157d7b555f89f8e390cbfbb21ce7a58a0e92` |
-| `submission/final/manifest.json` | 22,923 | `20de1c8efb755d810c3b59835012c5fd56437128858b6303bc709ee3cbfee1b9` |
+| `submission/final/SecureMailScope-SIH26159-Demo.mp4` | 44,127,814 | `4db074fbdf7352627431696257489831a4e83409ef2ab28398b164853c19a63c` |
+| `submission/final/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,513,027 | `06855d31d0e61d346dc38e52d14d069c78a9c19aa119baceadf33fa71ff34c4a` |
+| `submission/final/SecureMailScope-SIH26159-Zero-Day.pptx` | 2,380,045 | `78c56e618ec963676ae732714eb69b44ccd01ff5d529e632ca8fc845ac9286cc` |
+| `submission/final/manifest.json` | 22,923 | `5568e784931a565dfc9c613baee0544749db7e0da24eb4ca4df66b56c228e643` |
 | `submission/presentation/SecureMailScope-SIH26159.pdf` | 606,554 | `fa269b0e599d3dcb357e045fd6583b93db238cd0bb5e0037418f56a208b153ae` |
 | `submission/presentation/SecureMailScope-SIH26159.pptx` | 683,037 | `8f6fa86357adbe789845c89122463e68ea126e8644211b225a82539df443278c` |
 | `submission/presentation/build-status.json` | 366 | `ffcdd896947fc9542822ffd90e165ac030088e8ac43a50446e669c521e32015e` |

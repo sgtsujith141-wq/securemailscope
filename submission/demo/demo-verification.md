@@ -6,10 +6,10 @@ the release commit.
 
 | Property | Value |
 |---|---|
-| Duration | 3 min 17 s (197.9 s) |
-| Format | 1920x1080, 30 fps, H.264 (yuv420p), AAC audio |
-| Size | 13,325,686 bytes |
-| SHA-256 | `ea0db0abfd96743b6762b5c3bbd2011e659736a6b9c1950badfcb084fba941da` |
+| Duration | 3 min 11 s (191.4 s) |
+| Format | 1920x1080, 30 fps, H.264 (yuv420p, CRF 18, 1845 kbps), AAC audio |
+| Size | 44,127,814 bytes |
+| SHA-256 | `4db074fbdf7352627431696257489831a4e83409ef2ab28398b164853c19a63c` |
 
 | Check | Result |
 |---|---|

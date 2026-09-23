@@ -1,78 +1,89 @@
 1
-00:00:14,399 --> 00:00:24,633
+00:00:08,000 --> 00:00:18,233
 SecureMailScope analyses email traffic captures. It is passive by design: no
 host in a capture is ever contacted, and nothing leaves this machine.
 
 2
-00:00:33,066 --> 00:00:42,137
-Nine synthetic captures go in, covering SMTP, IMAP and POP3, from a strong
-baseline to obsolete TLS.
+00:00:18,233 --> 00:00:24,471
+Nine synthetic captures go in, covering SMTP, IMAP and POP3.
 
 3
-00:00:42,137 --> 00:00:46,904
+00:00:24,471 --> 00:00:29,238
 Analysis runs entirely locally, against the bytes in the capture.
 
 4
-00:00:46,904 --> 00:00:57,004
+00:00:29,238 --> 00:00:39,338
 The investigation opens on its conclusion: seven high-priority cryptographic
 issues require attention, and the weakest capture scores fifty-nine out of a
 hundred.
 
 5
-00:00:57,004 --> 00:01:08,404
-Beneath it, the negotiated TLS version of every session, the severity
-distribution, the protocols identified from the dialogue rather than the
-port, and what the certificates showed.
+00:00:39,338 --> 00:00:46,505
+Beneath it: the TLS version of every session, the severity distribution, and
+what the certificates showed.
 
 6
-00:01:08,404 --> 00:01:16,137
+00:00:46,505 --> 00:00:54,938
 Then the findings themselves, beside the evidence timeline they were drawn
 from.
 
 7
-00:01:22,704 --> 00:01:29,044
+00:00:54,938 --> 00:01:04,872
 Each finding names the rule it failed, the session it came from and the
 confidence the engine assigned.
 
 8
-00:01:29,044 --> 00:01:40,277
-This one is static RSA key exchange. The negotiated suite offers no forward
-secrecy, so anyone who later obtains the server's long-term key can decrypt
-a recorded session.
+00:01:09,359 --> 00:01:17,859
+Static RSA key exchange. No forward secrecy: anyone who later obtains the
+server's long-term key can decrypt this session.
 
 9
-00:01:40,277 --> 00:01:48,644
-And this is why it was raised: the packet numbers, timestamps and stream
-offsets the rule was evaluated against. Never the payload.
+00:01:17,859 --> 00:01:34,825
+Packets 4 and 5 — the exact packets the rule was evaluated against. Open the
+same two in Wireshark and check.
 
 10
-00:01:48,644 --> 00:01:58,811
-A session reads as the chain it is. Entry point, version, cipher suite, key
-exchange, certificate, each tinted by the findings raised against it.
+00:01:34,825 --> 00:01:42,459
+A session reads as the chain it is: entry point, version, cipher suite, key
+exchange, certificate.
 
 11
-00:02:04,944 --> 00:02:15,644
-Where a capture cannot show something, the tool says so. A TLS 1.3
-certificate is encrypted on the wire, and is reported as not available, with
-the reason.
+00:01:42,459 --> 00:01:54,125
+A TLS 1.3 certificate is encrypted on the wire. It is reported as not
+available, with the reason — never guessed.
 
 12
-00:02:23,477 --> 00:02:33,377
-Drift compares one endpoint across captures. Where the clients asked
-different questions, the comparison is reported as inconclusive rather than
-blamed on the server.
+00:01:54,125 --> 00:02:01,392
+A fingerprint groups configurations. It identifies a setup, not an operator
+— and the page says so.
 
 13
-00:02:33,377 --> 00:02:40,344
+00:02:01,392 --> 00:02:12,759
+Drift compares one endpoint across captures; where the clients asked
+different questions it says inconclusive. Correlations and blast radius stay
+inside the captures analysed.
+
+14
+00:02:12,759 --> 00:02:22,825
 Every timeline event carries its evidence status: observed in a packet, or
 inferred.
 
-14
-00:02:40,344 --> 00:02:48,677
+15
+00:02:22,825 --> 00:02:32,192
 The anomaly detector actually in use is a deterministic rarity baseline, not
 a machine-learning model, and the interface says so.
 
-15
-00:02:57,977 --> 00:03:07,111
-One canonical report model produces JSON, a self-contained HTML document and
-a PDF. Their facts cannot disagree.
+16
+00:02:32,192 --> 00:02:40,525
+One canonical model produces JSON, a self-contained HTML document and a PDF.
+Their facts cannot disagree.
+
+17
+00:02:40,525 --> 00:02:49,492
+Here is that export, opened straight from disk. It fetches nothing external,
+and it is the same report the engine just produced.
+
+18
+00:02:52,331 --> 00:03:01,331
+And the same report as a PDF, paginated, with the generation metadata on
+every page.

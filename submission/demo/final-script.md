@@ -4,8 +4,8 @@ The video is built, not planned: `scripts/build_demo_video.py` assembles it
 from a Playwright recording of the real application and the beat log that
 recording produced. This sheet describes what was built.
 
-**`submission/final/SecureMailScope-SIH26159-Demo.mp4` — 3 min 17 s,
-1920x1080, 30 fps, H.264, AAC.**
+**`submission/final/SecureMailScope-SIH26159-Demo.mp4` — 3 min 11 s,
+1920x1080, 30 fps, H.264 CRF 18, AAC.**
 
 ## Structure
 
