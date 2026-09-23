@@ -51,7 +51,13 @@ test('the complete acceptance walkthrough', async ({ page }) => {
   //     Note: the overview returns this instead of the capabilities panel when
   //     nothing has been analysed, so the backend's reported schema versions
   //     are checked at step 17a, once there is data.
-  await expect(page.getByText(/No captures have been analysed yet/i)).toBeVisible()
+  // With nothing analysed the product explains itself: what it does, what it
+  // accepts, the four steps, and one primary action.
+  await expect(page.getByTestId('first-run')).toBeVisible()
+  await expect(
+    page.getByText(/Investigate cryptographic security directly from captured email traffic/i),
+  ).toBeVisible()
+  await expect(page.getByTestId('start-investigation')).toBeVisible()
 
   // -- 3. Upload two captures ----------------------------------------------
   await navigate(page, 'Investigations')
@@ -118,7 +124,7 @@ test('the complete acceptance walkthrough', async ({ page }) => {
   await expect(page.getByText('TLS negotiation').first()).toBeVisible()
 
   // -- 13. Findings, with a severity filter --------------------------------
-  await navigate(page, 'Security findings')
+  await navigate(page, 'Findings')
   await expect(page.getByTestId('findings-list')).toBeVisible()
   const findingRows = page.getByTestId('finding-row')
   const findingCount = await findingRows.count()
@@ -136,7 +142,7 @@ test('the complete acceptance walkthrough', async ({ page }) => {
   await expect(evidence.getByText(/payload bytes are never included/i)).toBeVisible()
 
   // -- 15. Cross-capture intelligence --------------------------------------
-  await navigate(page, 'Cryptographic intelligence')
+  await navigate(page, 'Intelligence')
   await expect(
     page.getByRole('heading', { level: 1, name: /intelligence/i }),
   ).toBeVisible()
@@ -149,7 +155,7 @@ test('the complete acceptance walkthrough', async ({ page }) => {
   await expect(timeline.getByText(/^Packets /).first()).toBeVisible()
 
   // -- 17. ML analysis keeps its M6 honesty ---------------------------------
-  await navigate(page, 'ML analysis')
+  await navigate(page, 'ML & analytics')
   await expect(
     page.getByText(/deterministic frequency table, not a machine-learning model/i),
   ).toBeVisible()
@@ -217,7 +223,7 @@ test('the complete acceptance walkthrough', async ({ page }) => {
   await page.goto(`/investigations/${investigationId}`)
   await expect(page.getByTestId('posture-score')).toHaveText(observed.score)
   await expect(page.getByTestId('session-count')).toContainText(String(sessionCount))
-  await navigate(page, 'Security findings')
+  await navigate(page, 'Findings')
   await expect(page.getByTestId('findings-list')).toBeVisible()
   await expect(page.getByTestId('finding-row')).toHaveCount(findingCount)
   await navigate(page, 'Sessions')

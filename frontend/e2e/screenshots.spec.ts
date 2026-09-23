@@ -55,13 +55,13 @@ test('capture application screenshots', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'Session detail' })).toBeVisible()
   await page.screenshot({ path: join(OUT, '05-session-detail.png'), fullPage: true })
 
-  await nav('Security findings')
+  await nav('Findings')
   await page.getByTestId('finding-row').first().click()
   await page.getByTestId('finding-detail').getByTestId('evidence-toggle').click()
   await expect(page.getByTestId('evidence-panel')).toBeVisible()
   await page.screenshot({ path: join(OUT, '06-finding-evidence.png'), fullPage: true })
 
-  await nav('Cryptographic intelligence')
+  await nav('Intelligence')
   await expect(page.getByTestId('tab-fingerprints')).toBeVisible()
   await page.screenshot({ path: join(OUT, '07-intelligence-fingerprints.png'), fullPage: true })
   await page.getByTestId('tab-drift').click()
@@ -75,7 +75,7 @@ test('capture application screenshots', async ({ page }) => {
   await expect(page.getByTestId('timeline-list')).toBeVisible()
   await page.screenshot({ path: join(OUT, '10-timeline.png'), fullPage: true })
 
-  await nav('ML analysis')
+  await nav('ML & analytics')
   await expect(page.getByText(/deterministic frequency table/i)).toBeVisible()
   await page.screenshot({ path: join(OUT, '11-ml-analysis.png'), fullPage: true })
 

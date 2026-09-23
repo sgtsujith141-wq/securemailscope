@@ -159,7 +159,7 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
   await record(
     'open a security finding and its packet evidence',
     async () => {
-      await nav(page, 'Security findings')
+      await nav(page, 'Findings')
       await expect(page.getByTestId('findings-list')).toBeVisible()
       await page.getByTestId('finding-row').first().click()
       await page.getByTestId('finding-detail').getByTestId('evidence-toggle').click()
@@ -176,7 +176,7 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
 
   // -- 8. Cryptographic intelligence ---------------------------------------
   await record('cryptographic fingerprints', async () => {
-    await nav(page, 'Cryptographic intelligence')
+    await nav(page, 'Intelligence')
     await expect(page.getByTestId('tab-fingerprints')).toBeVisible()
   })
   await shot(page, '08-intelligence-fingerprints.png')
@@ -192,7 +192,7 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
   await record(
     'ML analysis and its limitations',
     async () => {
-      await nav(page, 'ML analysis')
+      await nav(page, 'ML & analytics')
       await expect(page.getByText(/deterministic frequency table/i)).toBeVisible()
     },
     async () => ({
@@ -241,7 +241,7 @@ test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) =
   await record(
     'cryptographic drift between the two captures',
     async () => {
-      await nav(page, 'Cryptographic intelligence')
+      await nav(page, 'Intelligence')
       await page.getByTestId('tab-drift').click()
       await expect(page.getByTestId('tab-drift')).toBeVisible()
       await page.waitForTimeout(600)

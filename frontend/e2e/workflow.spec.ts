@@ -63,7 +63,7 @@ test('upload, analyse, investigate, navigate to evidence and export', async ({ p
   await expect(page.getByText('TLS negotiation').first()).toBeVisible()
 
   // -- 5. Open a security finding -----------------------------------------
-  await navigate(page, 'Security findings')
+  await navigate(page, 'Findings')
   await expect(page.getByTestId('findings-list')).toBeVisible()
   await page.getByTestId('finding-row').first().click()
   const detail = page.getByTestId('finding-detail')
@@ -124,7 +124,7 @@ async function selectFirstInvestigation(page: import('@playwright/test').Page) {
 
 test('ML analysis preserves the M6 distinctions', async ({ page }) => {
   await selectFirstInvestigation(page)
-  await navigate(page, 'ML analysis')
+  await navigate(page, 'ML & analytics')
   await expect(page.getByRole('heading', { level: 1, name: 'ML analysis' })).toBeVisible()
   // The deterministic baseline must not be presented as machine learning.
   await expect(
@@ -141,8 +141,8 @@ test('an unknown route shows a real not-found page', async ({ page }) => {
 
 test('a refresh preserves the selected investigation', async ({ page }) => {
   await selectFirstInvestigation(page)
-  await navigate(page, 'Security findings')
-  await expect(page.getByRole('heading', { level: 1, name: 'Security findings' })).toBeVisible()
+  await navigate(page, 'Findings')
+  await expect(page.getByRole('heading', { level: 1, name: 'Findings' })).toBeVisible()
   await page.reload()
   // The selection survives, so the page still has data rather than prompting.
   await expect(page.getByTestId('findings-list')).toBeVisible()
