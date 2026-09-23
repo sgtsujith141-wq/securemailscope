@@ -24,12 +24,17 @@ export default {
         // Each primary area carries its own accent, used on the section rule,
         // the icon and the active nav state -- never as background fill.
         area: {
-          investigate: '#4fd1c5',
-          findings: '#ff9f4a',
+          investigate: '#22d3ee',
+          findings: '#fb923c',
           intelligence: '#a78bfa',
-          reports: '#6ba6f7',
+          reports: '#60a5fa',
         },
-        accent: { DEFAULT: '#4fd1c5', dim: '#2b8a83', deep: '#0d3b39' },
+        accent: { DEFAULT: '#22d3ee', dim: '#0e7490', deep: '#083344' },
+        viz: {
+          cyan: '#22d3ee', blue: '#60a5fa', violet: '#a78bfa',
+          magenta: '#e879b9', amber: '#fbbf24', coral: '#fb7185',
+          emerald: '#34d399', slate: '#64748b',
+        },
       },
       fontFamily: {
         sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Inter',
@@ -64,8 +69,12 @@ export default {
         hero: '0 1px 0 0 rgba(255,255,255,0.07) inset, 0 24px 60px -24px rgba(0,0,0,1)',
       },
       backgroundImage: {
-        'panel-sheen': 'linear-gradient(180deg, rgba(255,255,255,0.028) 0%, rgba(255,255,255,0) 42%)',
-        'hero-wash': 'radial-gradient(120% 140% at 0% 0%, rgba(79,209,197,0.10) 0%, rgba(79,209,197,0) 55%)',
+        'panel-sheen': 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 42%)',
+        'hero-wash': 'radial-gradient(120% 140% at 0% 0%, rgba(34,211,238,0.12) 0%, rgba(34,211,238,0) 55%)',
+        // A faint technical grid, so large surfaces read as a workstation
+        // rather than as a flat field of colour.
+        'grid-fine':
+          'linear-gradient(rgba(148,180,220,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(148,180,220,0.035) 1px, transparent 1px)',
       },
     },
   },

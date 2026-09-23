@@ -11,13 +11,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 #: Generated crops are an input to the deck build, not an artifact.
 EXCLUDE = {"crops"}
+#: Files the operating system leaves behind. They are gitignored, so hashing
+#: them would put entries in the manifest for files nobody receiving this
+#: package would ever have.
+EXCLUDE_NAMES = {".DS_Store", "Thumbs.db"}
 
 
 def main() -> int:
     targets = sorted(
         path
         for path in (ROOT / "submission").rglob("*")
-        if path.is_file() and not EXCLUDE & set(path.parts)
+        if path.is_file()
+        and not EXCLUDE & set(path.parts)
+        and path.name not in EXCLUDE_NAMES
     )
     rows = [
         {

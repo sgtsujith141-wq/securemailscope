@@ -68,3 +68,25 @@ export function formatTime(value: string | null | undefined): string {
   if (Number.isNaN(date.getTime())) return 'unknown'
   return date.toISOString().replace('T', ' ').replace('Z', ' UTC')
 }
+
+/**
+ * Just the time of day, to millisecond precision.
+ *
+ * Slicing `formatTime` by hand produced "00:00:00.000 UT" -- the unit clipped
+ * mid-word -- because the offsets were counted against a different format.
+ * Taking the field from the ISO string directly cannot drift that way.
+ */
+export function formatClock(value: string | null | undefined): string {
+  if (!value) return 'unknown'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'unknown'
+  return date.toISOString().slice(11, 23)
+}
+
+/** The calendar date, for a timeline that spans more than one day. */
+export function formatDay(value: string | null | undefined): string {
+  if (!value) return 'unknown date'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'unknown date'
+  return date.toISOString().slice(0, 10)
+}

@@ -51,6 +51,7 @@ import { InvestigationWorkspace } from '../pages/InvestigationWorkspace'
 import { Sessions } from '../pages/Sessions'
 import { SessionDetailPage } from '../pages/SessionDetail'
 import { Findings } from '../pages/Findings'
+import { Intelligence } from '../pages/Intelligence'
 import { Timeline } from '../pages/Timeline'
 import { MLAnalysis } from '../pages/MLAnalysis'
 import { Reports } from '../pages/Reports'
@@ -80,10 +81,14 @@ beforeEach(() => {
     report_schema_version: '1.4.0', database_schema_version: 1,
     ml_available: true, ml_status: 'COMPLETED', analyzer_works_without_ml: true,
   })
-  // The workspace loads its top findings for the attention hero. Tests that
-  // are not about findings still render it, so give the call a default rather
-  // than leaving each of them to stub a request they do not care about.
+  // The workspace dashboard loads its top findings, the sessions its
+  // cryptographic modules aggregate, and the head of the evidence timeline.
+  // Tests that are not about any of those still render them, so give each
+  // call a default rather than leaving every test to stub a request it does
+  // not care about. Tests that *are* about one override it.
   mocked.listFindings.mockResolvedValue(fixtures.page([]))
+  mocked.listSessions.mockResolvedValue(fixtures.page([fixtures.session]))
+  mocked.getTimeline.mockResolvedValue(fixtures.page(fixtures.timeline))
 })
 
 describe('Overview', () => {
@@ -189,7 +194,7 @@ describe('Investigation workspace', () => {
     withRouter(<InvestigationWorkspace investigationId={fixtures.investigation.investigation_id} />)
 
     const headline = await screen.findByTestId('attention-headline')
-    expect(headline).toHaveTextContent(/2 high-priority issues require attention/i)
+    expect(headline).toHaveTextContent(/2 high-priority cryptographic issues require attention/i)
     // Only the urgent ones are promoted; the INFO finding is not.
     expect(screen.getAllByTestId('attention-item')).toHaveLength(2)
   })
@@ -290,6 +295,54 @@ describe('Session detail', () => {
   })
 })
 
+describe('Cryptographic intelligence', () => {
+  beforeEach(() => {
+    mocked.getInvestigation.mockResolvedValue(fixtures.investigationDetail)
+  })
+
+  it('does not render one section\u2019s rows under another section\u2019s tab', async () => {
+    // The hook keeps the previous result while the next request is in flight.
+    // Without a check that the loaded document belongs to the tab now
+    // selected, clicking "Server entities" rendered the fingerprint rows in
+    // the entities table -- every field it reads missing, and every React key
+    // undefined. The fix is asserted here rather than left to a console
+    // warning nobody reads.
+    mocked.getIntelligence.mockImplementation(async (_id: string, section?: string) => {
+      if (section === 'fingerprints') {
+        return {
+          section: 'fingerprints',
+          items: [{
+            fingerprint_id: 'smsfp/1:aaaaaaaaaaaa',
+            algorithm_version: 'smsfp/1',
+            completeness: 'PARTIAL',
+            endpoint: { ip: '198.51.100.25', port: 993 },
+            missing_components: ['alpn_selected'],
+          }],
+          scope_statement: 'Covers only the captures listed.',
+        }
+      }
+      // Never resolves: the entities tab stays in flight for the whole test,
+      // which is exactly the window the defect lived in.
+      return new Promise(() => {})
+    })
+
+    withSelection(<Intelligence />)
+    expect(await screen.findByText('smsfp/1:aaaaaaaaaaaa')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('tab-entities'))
+
+    // The symptom was structural rather than textual: an entities table was
+    // rendered from fingerprint objects, so it had a row per fingerprint with
+    // every cell empty. Assert the table is not there at all while the
+    // entities request is still in flight.
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent(/loading intelligence/i)
+    })
+    expect(screen.queryAllByRole('table')).toHaveLength(0)
+    expect(screen.queryByText('smsfp/1:aaaaaaaaaaaa')).not.toBeInTheDocument()
+  })
+})
+
 describe('Findings and evidence navigation', () => {
   beforeEach(() => {
     mocked.getInvestigation.mockResolvedValue(fixtures.investigationDetail)
@@ -331,7 +384,7 @@ describe('Timeline', () => {
     withSelection(<Timeline />)
     const list = await screen.findByTestId('timeline-list')
     expect(within(list).getByText(/SESSION FIRST PACKET/i)).toBeInTheDocument()
-    expect(within(list).getByText(/Packets 4, 5/)).toBeInTheDocument()
+    expect(within(list).getByText(/packets 4, 5/i)).toBeInTheDocument()
   })
 
   it('discloses clock limitations for a multi-capture investigation', async () => {

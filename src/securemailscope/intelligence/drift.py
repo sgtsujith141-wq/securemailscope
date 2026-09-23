@@ -80,8 +80,23 @@ _NEGOTIATION_LIMITATION: Final = (
 )
 
 
-def _drift_id(entity_id: str, kind: DriftKind, before: str, after: str) -> str:
-    material = f"{entity_id}|{kind.value}|{before}|{after}"
+def _drift_id(
+    entity_id: str,
+    kind: DriftKind,
+    before: str,
+    after: str,
+    *,
+    sessions: tuple[str, str],
+) -> str:
+    """Identify one comparison.
+
+    The two session ids are part of the material. Without them, every pair of
+    sessions on the same entity that happened to hold the same values produced
+    the same identifier -- so a report could list five distinct comparisons
+    under one id, and that id could not be used to refer to any one of them.
+    An identifier that cannot be cross-referenced is not an identifier.
+    """
+    material = f"{entity_id}|{kind.value}|{before}|{after}|{sessions[0]}|{sessions[1]}"
     return "drift-" + hashlib.sha256(material.encode("utf-8")).hexdigest()[:12]
 
 
@@ -134,7 +149,8 @@ def compare_snapshots(
     if before_value is None or after_value is None:
         missing = "the earlier" if before_value is None else "the later"
         return DriftEvent(
-            drift_id=_drift_id(entity_id, kind, str(before_value), str(after_value)),
+            drift_id=_drift_id(entity_id, kind, str(before_value), str(after_value),
+                                 sessions=(before.session_id, after.session_id)),
             kind=kind,
             status=DriftStatus.NOT_COMPARABLE,
             entity_id=entity_id,
@@ -154,7 +170,8 @@ def compare_snapshots(
 
     if before_value == after_value:
         return DriftEvent(
-            drift_id=_drift_id(entity_id, kind, before_value, after_value),
+            drift_id=_drift_id(entity_id, kind, before_value, after_value,
+                                 sessions=(before.session_id, after.session_id)),
             kind=kind,
             status=DriftStatus.UNCHANGED_WITH_EVIDENCE,
             entity_id=entity_id,
@@ -171,7 +188,8 @@ def compare_snapshots(
 
     if offer_sensitive and not offers_comparable:
         return DriftEvent(
-            drift_id=_drift_id(entity_id, kind, before_value, after_value),
+            drift_id=_drift_id(entity_id, kind, before_value, after_value,
+                                 sessions=(before.session_id, after.session_id)),
             kind=kind,
             status=DriftStatus.INCONCLUSIVE,
             entity_id=entity_id,
@@ -193,7 +211,8 @@ def compare_snapshots(
         )
 
     return DriftEvent(
-        drift_id=_drift_id(entity_id, kind, before_value, after_value),
+        drift_id=_drift_id(entity_id, kind, before_value, after_value,
+                                 sessions=(before.session_id, after.session_id)),
         kind=kind,
         status=DriftStatus.OBSERVED_CHANGE,
         entity_id=entity_id,
@@ -239,6 +258,7 @@ def _score_drift(
                 DriftKind.POSTURE_SCORE,
                 str(before.posture_score),
                 str(after.posture_score),
+                sessions=(before.session_id, after.session_id),
             ),
             kind=DriftKind.POSTURE_SCORE,
             status=DriftStatus.NOT_COMPARABLE,
@@ -296,6 +316,7 @@ def _score_drift(
             drift_id=_drift_id(
                 entity_id, DriftKind.POSTURE_SCORE, str(before.posture_score),
                 str(after.posture_score),
+                sessions=(before.session_id, after.session_id),
             ),
             kind=DriftKind.POSTURE_SCORE,
             status=DriftStatus.NOT_COMPARABLE,
@@ -329,6 +350,7 @@ def _score_drift(
         drift_id=_drift_id(
             entity_id, DriftKind.POSTURE_SCORE, str(before.posture_score),
             str(after.posture_score),
+            sessions=(before.session_id, after.session_id),
         ),
         kind=DriftKind.POSTURE_SCORE,
         status=status,

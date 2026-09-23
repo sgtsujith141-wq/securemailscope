@@ -1,95 +1,78 @@
 1
-00:00:00,000 --> 00:00:04,000
-Your email says it uses TLS.
+00:00:14,399 --> 00:00:24,633
+SecureMailScope analyses email traffic captures. It is passive by design: no
+host in a capture is ever contacted, and nothing leaves this machine.
 
 2
-00:00:04,500 --> 00:00:08,000
-But is the cryptography actually secure?
+00:00:33,066 --> 00:00:42,137
+Nine synthetic captures go in, covering SMTP, IMAP and POP3, from a strong
+baseline to obsolete TLS.
 
 3
-00:00:12,000 --> 00:00:18,000
-SecureMailScope — evidence-backed cryptographic investigation for email.
+00:00:42,137 --> 00:00:46,904
+Analysis runs entirely locally, against the bytes in the capture.
 
 4
-00:00:18,000 --> 00:00:26,000
-An organisation can tell you which mail servers it runs. It usually can't tell
-you which TLS versions those servers negotiated last week.
+00:00:46,904 --> 00:00:57,004
+The investigation opens on its conclusion: seven high-priority cryptographic
+issues require attention, and the weakest capture scores fifty-nine out of a
+hundred.
 
 5
-00:00:26,000 --> 00:00:34,000
-Which cipher suites they accepted, or which sessions had no forward secrecy.
+00:00:57,004 --> 00:01:08,404
+Beneath it, the negotiated TLS version of every session, the severity
+distribution, the protocols identified from the dialogue rather than the
+port, and what the certificates showed.
 
 6
-00:00:34,000 --> 00:00:45,000
-An active scanner reports what a server does for a scanner today — not what it
-did for real clients during the period you're investigating.
+00:01:08,404 --> 00:01:16,137
+Then the findings themselves, beside the evidence timeline they were drawn
+from.
 
 7
-00:00:45,000 --> 00:00:52,000
-SecureMailScope reads the packet captures you already have.
+00:01:22,704 --> 00:01:29,044
+Each finding names the rule it failed, the session it came from and the
+confidence the engine assigned.
 
 8
-00:00:52,000 --> 00:01:00,000
-No live probing. No cloud upload. No host in a capture is ever contacted.
+00:01:29,044 --> 00:01:40,277
+This one is static RSA key exchange. The negotiated suite offers no forward
+secrecy, so anyone who later obtains the server's long-term key can decrypt
+a recorded session.
 
 9
-00:01:00,000 --> 00:01:10,000
-This is a synthetic capture of an IMAP session over TLS.
+00:01:40,277 --> 00:01:48,644
+And this is why it was raised: the packet numbers, timestamps and stream
+offsets the rule was evaluated against. Never the payload.
 
 10
-00:01:10,000 --> 00:01:22,000
-The capture is reconstructed into sessions, the email protocol is identified
-from the dialogue rather than the port, and the TLS handshake is parsed.
+00:01:48,644 --> 00:01:58,811
+A session reads as the chain it is. Entry point, version, cipher suite, key
+exchange, certificate, each tinted by the findings raised against it.
 
 11
-00:01:22,000 --> 00:01:32,000
-Fifty-nine out of a hundred. Weak. Four findings, two of them high priority.
+00:02:04,944 --> 00:02:15,644
+Where a capture cannot show something, the tool says so. A TLS 1.3
+certificate is encrypted on the wire, and is reported as not available, with
+the reason.
 
 12
-00:01:32,000 --> 00:01:40,000
-Notice what the interface leads with: not the score — the things that need
-attention.
+00:02:23,477 --> 00:02:33,377
+Drift compares one endpoint across captures. Where the clients asked
+different questions, the comparison is reported as inconclusive rather than
+blamed on the server.
 
 13
-00:01:40,000 --> 00:01:48,000
-Static RSA key exchange. No forward secrecy.
+00:02:33,377 --> 00:02:40,344
+Every timeline event carries its evidence status: observed in a packet, or
+inferred.
 
 14
-00:01:48,000 --> 00:01:58,000
-Instead of just saying "weak cryptography", SecureMailScope shows why it was
-flagged — the RFC it applies, and what to change.
+00:02:40,344 --> 00:02:48,677
+The anomaly detector actually in use is a deterministic rarity baseline, not
+a machine-learning model, and the interface says so.
 
 15
-00:01:58,000 --> 00:02:05,000
-Packets four and five. You can open the same capture in Wireshark and check.
-
-16
-00:02:05,000 --> 00:02:14,000
-Here's a TLS 1.3 session. The certificate reads: not available.
-
-17
-00:02:14,000 --> 00:02:30,000
-TLS 1.3 encrypts the certificate message. A passive capture without decryption
-material cannot expose what isn't on the wire — so the tool says so.
-
-18
-00:02:30,000 --> 00:02:40,000
-Two captures of the same server, an hour apart. Same client offer both times.
-
-19
-00:02:40,000 --> 00:02:55,000
-The server selected TLS 1.2, then TLS 1.0. Because the offer didn't change,
-the difference is attributable to the server.
-
-20
-00:02:55,000 --> 00:03:08,000
-Every investigation exports as JSON, offline HTML, or a forensic PDF.
-
-21
-00:03:08,000 --> 00:03:22,000
-SecureMailScope turns captured email traffic into explainable cryptographic
-evidence — so a security team can see what changed, and know what to fix.
-
-22
-00:03:22,000 --> 00:03:28,000
-SecureMailScope · SIH26159 · Zero-Day
+00:02:57,977 --> 00:03:07,111
+One canonical report model produces JSON, a self-contained HTML document and
+a PDF. Their facts cannot disagree.

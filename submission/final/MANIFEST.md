@@ -4,12 +4,11 @@ SHA-256 of every file in `submission/`. Regenerate with:
 
     python scripts/write_manifest.py
 
-Generated 2026-09-23T15:21:37+00:00
+Generated 2026-09-23T17:25:11+00:00
 
 | File | Bytes | SHA-256 |
 |---|---:|---|
-| `submission/.DS_Store` | 8,196 | `29eaada9b4d352eea100defba65ce53e87f0490700b42ecc4dd3cce63919aea3` |
-| `submission/README.md` | 3,173 | `306de5b3c781dad0a556dc0865e91192fa7a3863d7f1fdb7a2b32762e64e56fc` |
+| `submission/README.md` | 3,768 | `618ac9fa6c2b5c8d0f50ff12b7417e1fa6dd7f8aac5b5e6f600bab53da8cfffb` |
 | `submission/archive/demo-v1/CHANGELOG.md` | 281 | `e7e5ec6f0d285415bbb9da04e35c79c7fccbe73d6e633c4cd30de74d4482d8f5` |
 | `submission/archive/demo-v1/SHA256SUMS` | 761 | `a2344ed7ec7b1a66b7e1aa3aac226484f48b49a206f7ffd26abd3ed9ed91f55a` |
 | `submission/archive/demo-v1/VIDEO.md` | 744 | `79c1b52be197189363e56b61faa71c688aa8d4979268b6e810a419de448b8fb6` |
@@ -22,6 +21,18 @@ Generated 2026-09-23T15:21:37+00:00
 | `submission/archive/demo-v1/shot-list.md` | 2,595 | `804d8c0bea5e49f6c1246221b43a5b0556fdda9aa78c49f64c97f3a12a20a005` |
 | `submission/archive/demo-v1/storyboard.md` | 3,378 | `146ada4fb2aa1bf9394ee0362a9a5875fbd3f4c6874069e701dab49445319e31` |
 | `submission/archive/demo-v1/video-description.md` | 2,370 | `5914a1e32a137a2a9193d8e8e95b1f1c6311db816a5880f28362f508c328875a` |
+| `submission/archive/demo-v2/CHANGELOG.md` | 1,357 | `0f50cd45553fedf26a3fed9d3565165d76f3371597ba96b89bbb6d6d19359122` |
+| `submission/archive/demo-v2/SHA256SUMS` | 897 | `c9ccfb723f7825d3218a5f8ecf16c75302c363c198e641d141cf3a90d59bf43c` |
+| `submission/archive/demo-v2/VIDEO.md` | 1,117 | `0ce99e6b40115fdd549986e38b62c4db3c4df30436b18366e8ee2e7f23082f42` |
+| `submission/archive/demo-v2/captions.srt` | 2,673 | `db3d6faf4de2ea89d148baf9ac29e31fe2fdd1716bb409f06cc25ce6231ee4dd` |
+| `submission/archive/demo-v2/demo-verification.md` | 2,384 | `beecc91315d4132286f677ef1fe456ca3a122226760cb6edef33de2ef68a002d` |
+| `submission/archive/demo-v2/final-script.md` | 2,794 | `dbf5895d440dbbe462c85bd840dd5b1da5554f990ebcddce496ed65e1313ae92` |
+| `submission/archive/demo-v2/narration.md` | 4,086 | `527e66ec8de2ce77393963c807ea11b2feed37e33007a3bfb186a88f6c75cd77` |
+| `submission/archive/demo-v2/recording-checklist.md` | 1,870 | `0a73692175681bb14a458f4f9a04acb2d226aee58f8b62570cabef18758c7389` |
+| `submission/archive/demo-v2/rehearsal.json` | 4,481 | `e31cd925512a1209171d6a10f86b0287d7282ccce04175007219908fbd997236` |
+| `submission/archive/demo-v2/shot-list.md` | 2,595 | `804d8c0bea5e49f6c1246221b43a5b0556fdda9aa78c49f64c97f3a12a20a005` |
+| `submission/archive/demo-v2/storyboard.md` | 3,378 | `146ada4fb2aa1bf9394ee0362a9a5875fbd3f4c6874069e701dab49445319e31` |
+| `submission/archive/demo-v2/video-description.md` | 2,370 | `5914a1e32a137a2a9193d8e8e95b1f1c6311db816a5880f28362f508c328875a` |
 | `submission/archive/ppt-v1/CHANGELOG.md` | 866 | `d0c26baad10a249578bd6dec68e0185f0f032298617ce8cf96b5904db8dc6a1a` |
 | `submission/archive/ppt-v1/SHA256SUMS` | 771 | `9da6deb112fd813a1770309fe4e32fe95ecaa2a78043fbfd482949f52d80695d` |
 | `submission/archive/ppt-v1/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,083,182 | `36bf1dfc73155dd635e80c082d991d9472a95121e3dd60c4d04bc565833b36a8` |
@@ -42,6 +53,16 @@ Generated 2026-09-23T15:21:37+00:00
 | `submission/archive/ppt-v2/slide-renders/slide4.png` | 395,300 | `e4b0d3d478ac2c5a7746577d17f154b2e957e952ac23203f32f5927176a54435` |
 | `submission/archive/ppt-v2/slide-renders/slide5.png` | 395,878 | `76006c7220b73e53b47f8a57d2905f9fcfe38c1f7091c7dcbbf0cee86343887f` |
 | `submission/archive/ppt-v2/slide-renders/slide6.png` | 413,233 | `d164b676127a1834e9eb3ec74d47f3475f57009ed82079f6ef4f3a1b78862a4c` |
+| `submission/archive/ppt-v3/CHANGELOG.md` | 1,619 | `c9e65424e1276657ede979611cf745bcb438774614b8ceb53a4b247c231cb448` |
+| `submission/archive/ppt-v3/SHA256SUMS` | 761 | `b6e2480fc2d2dd0bbb8e4c3579a720cb9e47ca84268105ad747baa88d3d76bd3` |
+| `submission/archive/ppt-v3/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,256,863 | `e509cd45c8633a835e4274e041e18b80466355a53fe6cff7d4c0f77ea8d2cf9e` |
+| `submission/archive/ppt-v3/SecureMailScope-SIH26159-Zero-Day.pptx` | 2,269,237 | `4353d6b78a057ab8d9451f48b7dc57c6dbf2614bbd2666961b987c9b4412ee9a` |
+| `submission/archive/ppt-v3/slide-renders/slide-1.png` | 231,265 | `d88e7cd16df2ea13326b1fe40ed19928d96488a5c9c489efc840f78691cda57c` |
+| `submission/archive/ppt-v3/slide-renders/slide-2.png` | 309,797 | `814af8d873b6fc07ddefd6189b80c1b666c223e065c9ae76ba7ac6266cd58ee5` |
+| `submission/archive/ppt-v3/slide-renders/slide-3.png` | 274,424 | `d44e76720284570a11d651fe7ddaafb158be2c79ecd8cde038da7102c7785f6d` |
+| `submission/archive/ppt-v3/slide-renders/slide-4.png` | 308,307 | `2ea621d8c95c25fe96ed8d04a8002c565caf1d303423de5e1df7e96658c9bab7` |
+| `submission/archive/ppt-v3/slide-renders/slide-5.png` | 333,069 | `f80fb7423727c81a478e42764f0cacc75b6832f6d0f5eacd4fb18a304b00225d` |
+| `submission/archive/ppt-v3/slide-renders/slide-6.png` | 312,530 | `d7b9814a903efee5f3b3939c54d8f355fee04c16df06113c0c7a8ae7cb1d1f04` |
 | `submission/archive/ui-v1/CHANGELOG.md` | 333 | `331ab291fdb245dec668b0ab9942ba66dbae950a04a478703b20858139b7910f` |
 | `submission/archive/ui-v1/SHA256SUMS` | 1,525 | `61429c148d19e2306a0c36354b0a7f34db9efcffeedad9e864493916650fa7a5` |
 | `submission/archive/ui-v1/screenshots/00-first-run.png` | 96,825 | `0d364fbbee052892da04ec35d84cb302ea2fb5471339c0626f4d8650f47a2192` |
@@ -59,42 +80,57 @@ Generated 2026-09-23T15:21:37+00:00
 | `submission/archive/ui-v1/screenshots/12-cryptographic-dna.png` | 138,265 | `b13ead96e114ce33bd33e21760516b8fdd9fab06388e35c02b3d3ceb2f0b51f7` |
 | `submission/archive/ui-v1/screenshots/13-drift-investigation.png` | 218,735 | `d7dcfa32949f0c3009ca8176c35f014d80b98de8517b49d88a4ca1553b5c3459` |
 | `submission/archive/ui-v1/screenshots/14-blast-radius.png` | 79,781 | `c40674e91276d55d30e3dfc427850210971956c966441d88d128132f28d1bbcf` |
-| `submission/assets/screenshots-final/01-landing.png` | 203,892 | `a680f89022e98313313a0329b8acf74e4105161dc0d6ddc9105d22839ffd18c5` |
-| `submission/assets/screenshots-final/02-investigation-overview.png` | 512,631 | `1617283f0c559f0a7347b779dc09fea7ff119c22ca7995a59856f081b4bbe116` |
-| `submission/assets/screenshots-final/03-findings-workspace.png` | 243,288 | `18fcff20c6e3b303eacdc99744983026405bed9754a07cb2f7c97dc41ceeae75` |
-| `submission/assets/screenshots-final/04-finding-evidence-detail.png` | 308,735 | `dd8773190cbdd4fed17235537df3d31427776e546e1b44ea63a2f1e9c9d2009f` |
-| `submission/assets/screenshots-final/05-evidence-chain.png` | 367,784 | `8e2ff88ea1b3f95634cc324e0d890d8c0107b14d0ed08a96289c6855c9e6134d` |
-| `submission/assets/screenshots-final/06-session-detail.png` | 221,383 | `41a746003b085583ab1671943f7b46fdf1f5c4ae688ef9141fbc4f652ac8568a` |
-| `submission/assets/screenshots-final/07-cryptographic-intelligence.png` | 226,739 | `1ec1a4b29e72c81f4fad5e7a9b31f453d81638f717763260d49886d7998f1061` |
-| `submission/assets/screenshots-final/08-drift-before-after.png` | 374,070 | `e408931f91077bd9e04c6b73752b4f203549e57d5c6c9446ec0c0b9425731eff` |
-| `submission/assets/screenshots-final/09-timeline.png` | 1,206,513 | `431cb2d709c57188adf80820bab5cffb71a52bf50fa74e2e8e1810b78208a47b` |
-| `submission/assets/screenshots-final/10-ml-analytics.png` | 738,684 | `9e2017ad11c3349ca4abe990aee0dd244c049bda35a9819ec15a6e77127a78da` |
-| `submission/assets/screenshots-final/11-reports.png` | 167,953 | `929d5a8d6ecdea33970374a30dc9b8a9057ac6b00ed7b0642059d226210dc968` |
-| `submission/assets/screenshots-final/12-pdf-report.png` | 404,676 | `a8bd9a2679bdd2fcac1f420c9ea193c8e0faf0f363aa6e3d68b5adb1a74b2ff9` |
-| `submission/assets/screenshots-final/13-upload-flow.png` | 316,355 | `76c00e72047acc6a1bab101034c6d1aab6934567f916fd76b4be78b356714349` |
-| `submission/assets/screenshots-final/14-starttls-analysis.png` | 410,022 | `3cb6cc9b412a279a0d74783ac4eb04986060987792c9e94c37fd0cd31b3e4ba9` |
-| `submission/assets/screenshots-final/15-tls13-limitation.png` | 285,449 | `d8e6ba46ff66089bf3dbe01615d54521f82fca846facf71134b4ba2ec9d1bd70` |
-| `submission/assets/screenshots-final/16-global-overview.png` | 205,041 | `68bfa6849710820272d46ed206b01278d717ed471885c3613081c8136cc3e134` |
-| `submission/assets/screenshots-final/17-blast-radius.png` | 166,600 | `2c7e434d6fc270d1d6220acf1485bb3e2b4945c80d307ca2f7920f467bb4af3d` |
-| `submission/demo/captions.srt` | 2,673 | `db3d6faf4de2ea89d148baf9ac29e31fe2fdd1716bb409f06cc25ce6231ee4dd` |
-| `submission/demo/demo-verification.md` | 2,384 | `beecc91315d4132286f677ef1fe456ca3a122226760cb6edef33de2ef68a002d` |
-| `submission/demo/final-script.md` | 2,794 | `dbf5895d440dbbe462c85bd840dd5b1da5554f990ebcddce496ed65e1313ae92` |
+| `submission/archive/ui-v2/CHANGELOG.md` | 1,735 | `20e80c1bf1acfb936f98e63da92fef90783d41a2af03e1ee2e576f1425c9cee0` |
+| `submission/archive/ui-v2/SHA256SUMS` | 1,712 | `ead39e13bdd5fae623f3614154c24d479bacc9c014de7ae4935c336e18838a6f` |
+| `submission/archive/ui-v2/screenshots/01-landing.png` | 203,892 | `a680f89022e98313313a0329b8acf74e4105161dc0d6ddc9105d22839ffd18c5` |
+| `submission/archive/ui-v2/screenshots/02-investigation-overview.png` | 512,631 | `1617283f0c559f0a7347b779dc09fea7ff119c22ca7995a59856f081b4bbe116` |
+| `submission/archive/ui-v2/screenshots/03-findings-workspace.png` | 243,288 | `18fcff20c6e3b303eacdc99744983026405bed9754a07cb2f7c97dc41ceeae75` |
+| `submission/archive/ui-v2/screenshots/04-finding-evidence-detail.png` | 308,735 | `dd8773190cbdd4fed17235537df3d31427776e546e1b44ea63a2f1e9c9d2009f` |
+| `submission/archive/ui-v2/screenshots/05-evidence-chain.png` | 367,784 | `8e2ff88ea1b3f95634cc324e0d890d8c0107b14d0ed08a96289c6855c9e6134d` |
+| `submission/archive/ui-v2/screenshots/06-session-detail.png` | 221,383 | `41a746003b085583ab1671943f7b46fdf1f5c4ae688ef9141fbc4f652ac8568a` |
+| `submission/archive/ui-v2/screenshots/07-cryptographic-intelligence.png` | 226,739 | `1ec1a4b29e72c81f4fad5e7a9b31f453d81638f717763260d49886d7998f1061` |
+| `submission/archive/ui-v2/screenshots/08-drift-before-after.png` | 374,070 | `e408931f91077bd9e04c6b73752b4f203549e57d5c6c9446ec0c0b9425731eff` |
+| `submission/archive/ui-v2/screenshots/09-timeline.png` | 1,206,513 | `431cb2d709c57188adf80820bab5cffb71a52bf50fa74e2e8e1810b78208a47b` |
+| `submission/archive/ui-v2/screenshots/10-ml-analytics.png` | 738,684 | `9e2017ad11c3349ca4abe990aee0dd244c049bda35a9819ec15a6e77127a78da` |
+| `submission/archive/ui-v2/screenshots/11-reports.png` | 167,953 | `929d5a8d6ecdea33970374a30dc9b8a9057ac6b00ed7b0642059d226210dc968` |
+| `submission/archive/ui-v2/screenshots/12-pdf-report.png` | 404,676 | `a8bd9a2679bdd2fcac1f420c9ea193c8e0faf0f363aa6e3d68b5adb1a74b2ff9` |
+| `submission/archive/ui-v2/screenshots/13-upload-flow.png` | 316,355 | `76c00e72047acc6a1bab101034c6d1aab6934567f916fd76b4be78b356714349` |
+| `submission/archive/ui-v2/screenshots/14-starttls-analysis.png` | 410,022 | `3cb6cc9b412a279a0d74783ac4eb04986060987792c9e94c37fd0cd31b3e4ba9` |
+| `submission/archive/ui-v2/screenshots/15-tls13-limitation.png` | 285,449 | `d8e6ba46ff66089bf3dbe01615d54521f82fca846facf71134b4ba2ec9d1bd70` |
+| `submission/archive/ui-v2/screenshots/16-global-overview.png` | 205,041 | `68bfa6849710820272d46ed206b01278d717ed471885c3613081c8136cc3e134` |
+| `submission/archive/ui-v2/screenshots/17-blast-radius.png` | 166,600 | `2c7e434d6fc270d1d6220acf1485bb3e2b4945c80d307ca2f7920f467bb4af3d` |
+| `submission/assets/screenshots-final/01-landing.png` | 236,695 | `74b8b5face42205f6675fcad4af73fa5942edf2007e25134775231f70195785a` |
+| `submission/assets/screenshots-final/02-overview.png` | 949,000 | `343b92b37fae20cc9db668b39bfd43ba57b75537c1f981fd814f6e757d2305a2` |
+| `submission/assets/screenshots-final/03-findings.png` | 356,632 | `7841842ff76beae97a12f507e326563c51f4688b607390456ba898018d62da49` |
+| `submission/assets/screenshots-final/04-finding-evidence.png` | 404,435 | `c0a7eaf41581e190e6385a011e9012f5da207be6d0af5d871c9061f326abb31e` |
+| `submission/assets/screenshots-final/05-session.png` | 552,145 | `4bae5e0f2b18d61b427907d2a31b1abcaf8c10ad8c65085e1b898b3c12365e61` |
+| `submission/assets/screenshots-final/06-evidence-provenance.png` | 398,900 | `4f16f950fcc4759f8cbae90a8b6a834d79d5e79fc73c6ba38e257c97355dd8fa` |
+| `submission/assets/screenshots-final/07-crypto-intelligence.png` | 276,974 | `4ed76deb49d5ade8b56e57618d3a408ee35b402d7514fc2e385485cd1fb0dcb5` |
+| `submission/assets/screenshots-final/08-drift.png` | 1,669,132 | `b457bab52e7647d22d914c1404c5663a35d49da7ec2337ef738fb22fc29f8f9f` |
+| `submission/assets/screenshots-final/09-timeline.png` | 1,275,164 | `a8944428d6e9606a6376b2af00045d88ece78bdc97ff7bf43ee91fde3021dbc2` |
+| `submission/assets/screenshots-final/10-ml.png` | 975,912 | `e1ecb7d06c0127b680e8f16716574bdc5059c57016eef395a4d20e505fbb87a7` |
+| `submission/assets/screenshots-final/11-reports.png` | 238,327 | `18927250b42387f43597086d868779aeda9adbabcf79d0dfce7e4dab319aec98` |
+| `submission/assets/screenshots-final/12-pdf.png` | 278,225 | `e37d9783a0a6b41d3240e6ec70f3a20fe88c91092c783fa34f1c5db5a36d0ec0` |
+| `submission/demo/captions.srt` | 2,446 | `51f6797140e8aa3136236b982573aaf87f68cf0f068781d3be56ac7cf98c8b31` |
+| `submission/demo/demo-verification.md` | 3,475 | `b0445a904b7972567044d8c3d6c7d8baeff54d189e5f024c8322632d52e6d7c4` |
+| `submission/demo/final-script.md` | 3,337 | `149a2a7858b1ab87a29528568ce0de231f0f557c54b4b9c26f5ab1cc57d50970` |
 | `submission/demo/narration.md` | 4,086 | `527e66ec8de2ce77393963c807ea11b2feed37e33007a3bfb186a88f6c75cd77` |
 | `submission/demo/recording-checklist.md` | 1,870 | `0a73692175681bb14a458f4f9a04acb2d226aee58f8b62570cabef18758c7389` |
 | `submission/demo/rehearsal.json` | 4,481 | `e31cd925512a1209171d6a10f86b0287d7282ccce04175007219908fbd997236` |
 | `submission/demo/shot-list.md` | 2,595 | `804d8c0bea5e49f6c1246221b43a5b0556fdda9aa78c49f64c97f3a12a20a005` |
 | `submission/demo/storyboard.md` | 3,378 | `146ada4fb2aa1bf9394ee0362a9a5875fbd3f4c6874069e701dab49445319e31` |
-| `submission/demo/video-description.md` | 2,370 | `5914a1e32a137a2a9193d8e8e95b1f1c6311db816a5880f28362f508c328875a` |
-| `submission/final/FINAL-QUALITY-CHECK.md` | 5,344 | `1156a71e91c9a733c32822d2b881a6596e13a903fbaf60cc74c9589175480cf6` |
-| `submission/final/MANIFEST.md` | 4,938 | `da12436f1ae6b3756652f64a85490288715c6bd1143296f9ee391af012931369` |
-| `submission/final/REQUIREMENT-COVERAGE.md` | 9,545 | `5131b69d1f5e8f0231b66dfa1b8c427f45e97375e91e409c2679673293b0ebc6` |
-| `submission/final/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,256,863 | `e509cd45c8633a835e4274e041e18b80466355a53fe6cff7d4c0f77ea8d2cf9e` |
-| `submission/final/SecureMailScope-SIH26159-Zero-Day.pptx` | 2,269,237 | `4353d6b78a057ab8d9451f48b7dc57c6dbf2614bbd2666961b987c9b4412ee9a` |
-| `submission/final/manifest.json` | 6,668 | `9c69824d36ca9dcefa1771c4b3800619d5fdcb07acd553121c92833901db2ed4` |
+| `submission/demo/video-description.md` | 2,868 | `4ccb872f446de231064298f8e432f067b83336856393c287cb579f1fd80cf5e2` |
+| `submission/final/FINAL-QUALITY-CHECK.md` | 4,729 | `e1d3f8b43f1b092d5162b6f1d1557c7c29fa683034fdfd72a8a1c5ce50afaf89` |
+| `submission/final/MANIFEST.md` | 16,975 | `6d47f8f487387cf280147b83afd1ad32c458e4aacd45c336040e949ff424f26c` |
+| `submission/final/REQUIREMENT-COVERAGE.md` | 9,994 | `cb61b9a75728125c1d46168b60249e577d9468e0926b5df70c28e5f355c9a038` |
+| `submission/final/SecureMailScope-SIH26159-Demo.mp4` | 13,325,686 | `ea0db0abfd96743b6762b5c3bbd2011e659736a6b9c1950badfcb084fba941da` |
+| `submission/final/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,482,701 | `6d5bcb625a0ade4e49f8433f9f4d6915942824fd035c49d2a722fc58ca8ae7e7` |
+| `submission/final/SecureMailScope-SIH26159-Zero-Day.pptx` | 3,497,846 | `07247a8ccb9c6129b7c3015eeb21157d7b555f89f8e390cbfbb21ce7a58a0e92` |
+| `submission/final/manifest.json` | 23,242 | `9414aa1f8502e786c16a32ab186eee4e5c605aa0b5fb6c16a9e3f60393fd8935` |
 | `submission/presentation/SecureMailScope-SIH26159.pdf` | 606,554 | `fa269b0e599d3dcb357e045fd6583b93db238cd0bb5e0037418f56a208b153ae` |
 | `submission/presentation/SecureMailScope-SIH26159.pptx` | 683,037 | `8f6fa86357adbe789845c89122463e68ea126e8644211b225a82539df443278c` |
-| `submission/presentation/build-status.json` | 397 | `4e282f8cca8e2091a338256ecea9ae45162cfa054bbaed2bf2813e1134bb0037` |
-| `submission/presentation/team.json` | 1,334 | `28260bdc6c3660be0b0017a3dacf0df99c98cf89a57379686b51c2cd28ca7b67` |
+| `submission/presentation/build-status.json` | 366 | `ffcdd896947fc9542822ffd90e165ac030088e8ac43a50446e669c521e32015e` |
+| `submission/presentation/team.json` | 1,340 | `c40fdacc8a3c4d2e6db02f18b631864351e2c75194b3ea9b9f2b473e8219d8e5` |
 | `submission/template/SIH2026-IDEA-Presentation-Format.pptx` | 924,505 | `ce3e5deebec2741f3383cb2dd21269cad8d9930f7c747c9903d7d4b27db14de6` |
 
-**88 files.**
+**124 files.**

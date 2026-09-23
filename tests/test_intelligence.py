@@ -20,6 +20,7 @@ from securemailscope.config import AnalysisConfig
 from securemailscope.errors import SecureMailScopeError
 from securemailscope.intelligence import analyze_batch
 from securemailscope.intelligence.blast_radius import SCOPE_STATEMENT
+from securemailscope.intelligence.drift import _KINDS as _DRIFT_FIELDS
 from securemailscope.intelligence.fingerprints import (
     COMPONENT_NAMES,
     FINGERPRINT_ALGORITHM_VERSION,
@@ -600,6 +601,56 @@ def test_every_drift_event_explains_and_qualifies_itself(
             if event.status is DriftStatus.OBSERVED_CHANGE:
                 assert event.before.observed and event.after.observed
                 assert event.limitations
+
+
+def test_a_drift_id_identifies_exactly_one_comparison() -> None:
+    """Two comparisons must never share an id.
+
+    The id was once derived from the entity, the property and the two values
+    alone. Three or more captures of an endpoint whose configuration never
+    changed therefore produced several events -- one per consecutive pair --
+    that all carried the same id, so that id could not be used to refer to any
+    one of them. A report that cross-references evidence by identifier needs
+    the identifier to be unique. Three unchanged captures is the smallest case
+    that reproduces it; the fixture groups are pairs, which cannot.
+    """
+    from securemailscope.intelligence.drift import SessionSnapshot, drift_for_entity
+    from securemailscope.models.intelligence import ServerEntity
+
+    def snapshot(index: int) -> SessionSnapshot:
+        return SessionSnapshot(
+            capture_id=f"capture-{index}",
+            session_id=f"sess-{index}",
+            timestamp=None,
+            timestamp_ns=index,
+            # Identical on every capture: nothing drifted, which is exactly
+            # the case that used to collide.
+            values={field: "unchanged" for _, field, _ in _DRIFT_FIELDS},
+            evidence={},
+            client_offer_signature="offer",
+            client_offer_summary="offer",
+            policy_fingerprint="policy",
+            posture_score=80,
+            coverage_ratio=0.9,
+        )
+
+    entity = ServerEntity.model_construct(entity_id="entity-1")
+    events = drift_for_entity(entity, [snapshot(i) for i in range(1, 4)])
+
+    assert len(events) > len({(e.entity_id, e.kind, e.before.value, e.after.value)
+                              for e in events}), (
+        "the fixture must contain repeated value pairs, or it proves nothing"
+    )
+    ids = [event.drift_id for event in events]
+    assert len(ids) == len(set(ids)), "two comparisons shared a drift id"
+
+
+def test_no_investigation_reuses_a_drift_id(
+    investigations: dict[str, Investigation],
+) -> None:
+    for name, investigation in investigations.items():
+        ids = [event.drift_id for event in investigation.drift_events]
+        assert len(ids) == len(set(ids)), f"{name} reused a drift id"
 
 
 def test_a_withheld_score_is_reported_as_incomparable(

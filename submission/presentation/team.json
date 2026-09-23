@@ -8,17 +8,17 @@
   "problem_statement_id": "SIH26159",
   "problem_statement_title": "SecureMailScope: AI-Assisted Cryptographic Security Posture Assessment for Secure Email Communications",
   "organization": "National Technical Research Organisation (NTRO)",
-  "theme": null,
+  "theme": "Blockchain & Cybersecurity",
   "ps_category": "Software",
-  "team_id": null,
+  "team_id": "146876",
   "team_name": "Zero-Day",
   "_sources": {
     "problem_statement_id": "Stated in the project directives throughout.",
     "problem_statement_title": "Given by the user in the final master directive, verbatim, with a colon.",
     "organization": "Given by the user in the final directive.",
     "ps_category": "Software: the deliverable is software only, no hardware.",
-    "team_name": "Given by the user in the final directive. EXACTLY 'Zero-Day' \u2014 not 'Team Zero-Day', not 'Zero Day'.",
-    "theme": "NOT KNOWN. Must come from the official SIH26159 listing. Deliberately NOT inferred from another problem statement, even one from the same organisation.",
-    "team_id": "NOT KNOWN. Issued by the SIH portal at team registration."
+    "team_name": "Given by the user in the final directive. EXACTLY 'Zero-Day' — not 'Team Zero-Day', not 'Zero Day'.",
+    "theme": "Given by the user in the final execution directive: 'Blockchain & Cybersecurity'.",
+    "team_id": "Given by the user in the final execution directive: '146876'. Issued by the SIH portal at team registration."
   }
 }

@@ -712,9 +712,17 @@ def create_app(
             row = query.first()
             if row is None:
                 raise HTTPException(status_code=404, detail="session not found")
+            # Scope the findings to the investigation the session row came
+            # from. A session id is a digest of the session, so the same
+            # capture analysed twice yields the same id in both
+            # investigations -- filtering on the session alone returned every
+            # copy, and the page showed each finding once per investigation.
             findings = (
                 db_session.query(FindingRow)
-                .filter(FindingRow.session_id == session_id)
+                .filter(
+                    FindingRow.session_id == session_id,
+                    FindingRow.investigation_id == row.investigation_id,
+                )
                 .order_by(FindingRow.rank)
                 .all()
             )

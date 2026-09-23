@@ -154,7 +154,7 @@ test('the complete acceptance walkthrough', async ({ page }) => {
   await navigate(page, 'Evidence timeline')
   const timeline = page.getByTestId('timeline-list')
   await expect(timeline).toBeVisible()
-  await expect(timeline.getByText(/^Packets /).first()).toBeVisible()
+  await expect(timeline.getByText(/^packets /i).first()).toBeVisible()
 
   // -- 17. ML analysis keeps its M6 honesty ---------------------------------
   await navigate(page, 'ML & analytics')

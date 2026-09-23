@@ -81,6 +81,7 @@ def _imported(paths: list[Path]) -> dict[str, list[Path]]:
 #: that build the submission instead.
 TOOLING_ONLY: dict[str, set[str]] = {
     "scripts/build_presentation.py": {"pptx", "PIL"},
+    "scripts/build_demo_video.py": {"PIL"},
     "scripts/generate_sbom.py": set(),
 }
 

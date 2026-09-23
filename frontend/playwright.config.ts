@@ -9,13 +9,20 @@ import { defineConfig } from '@playwright/test'
  */
 export default defineConfig({
   testDir: './e2e',
-  // Screenshot capture and the demonstration rehearsal are opt-in: both write
-  // artefacts outside the test tree and neither is part of the acceptance run.
+  // Screenshot capture, the submission screenshots, the demonstration
+  // rehearsal and the video recording are opt-in: each writes artefacts
+  // outside the test tree and none is part of the acceptance run.
   // Enable with SMS_SCREENSHOTS=1, or run one by name:
   //   npx playwright test demo-rehearsal
   testIgnore: process.env.SMS_SCREENSHOTS
     ? []
-    : ['screenshots.spec.ts', 'demo-rehearsal.spec.ts', 'demo-capture.spec.ts'],
+    : [
+        'screenshots.spec.ts',
+        'submission-shots.spec.ts',
+        'visual-qa.spec.ts',
+        'demo-rehearsal.spec.ts',
+        'demo-capture.spec.ts',
+      ],
   timeout: 90_000,
   expect: { timeout: 15_000 },
   fullyParallel: false,

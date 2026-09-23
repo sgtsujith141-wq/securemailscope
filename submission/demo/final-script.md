@@ -1,58 +1,80 @@
-# Final script — timing and shots combined
+# Final script — the finished video
 
-Read with `narration.md` (the words), `shot-list.md` (the shots) and
-`storyboard.md` (the intent). This is the single sheet to edit from.
+The video is built, not planned: `scripts/build_demo_video.py` assembles it
+from a Playwright recording of the real application and the beat log that
+recording produced. This sheet describes what was built.
 
-| Time | On screen | Narration | Notes |
-|---|---|---|---|
-| 0:00 | Dark, one line | "Your email says it uses TLS." | Two-second beat |
-| 0:04 | Cut to a real HIGH finding | "But is the cryptography actually secure?" | Answer before the question lands |
-| 0:08 | Three cuts: TLS 1.0 · 59/100 · packets 4–5 | — | ~0.8s each, no narration |
-| 0:12 | Title card | — | Restrained. Name and one line |
-| 0:18 | Architecture reveal | The problem, and why a scanner cannot answer it | Left-to-right, matched to the words |
-| 0:45 | First-run screen | Passive by design | **Slow down** |
-| 1:00 | Upload, analyse | What the pipeline does | Real duration, small trim only |
-| 1:20 | Investigation overview | "59 out of 100. Weak." | Hold on the attention hero |
-| 1:40 | Finding → evidence expands | Why it was flagged, packets 4 and 5 | **Slowest section. The argument.** |
-| 2:05 | TLS 1.3, certificate NOT AVAILABLE | What the tool refuses to guess | **Hold longer than comfortable** |
-| 2:30 | Drift, two captures | Attributable to the server | Hold on OBSERVED_CHANGE |
-| 2:55 | PDF export, PDF open | Three report formats | — |
-| 3:10 | Montage, ~1s per frame | The closing statement | — |
-| 3:22 | End card | — | SecureMailScope · SIH26159 · Zero-Day |
+**`submission/final/SecureMailScope-SIH26159-Demo.mp4` — 3 min 17 s,
+1920x1080, 30 fps, H.264, AAC.**
 
-**Total: ~3:30.**
+## Structure
 
-## Available footage
+| # | Element | Content |
+|---|---|---|
+| 1 | Title card | SecureMailScope · the problem statement title · SIH26159 · NTRO · Zero-Day |
+| 2 | Section card | *The problem* — encryption is visible; whether the cryptography is sound is not |
+| 3 | Footage | The first-run screen: passive by design |
+| 4 | Section card | *What goes in* — PCAP/PCAPNG already held; format read from the bytes |
+| 5 | Footage | Nine synthetic captures uploaded, then analysed at real speed |
+| 6 | Footage | The investigation dashboard: the attention hero, the posture arc, the four cryptographic modules, priority findings and the evidence timeline |
+| 7 | Section card | *Evidence, not assertion* |
+| 8 | Footage | The findings workspace, one finding in full, and the packets it was evaluated against |
+| 9 | Footage | A session as a negotiation chain, tinted where a finding was raised |
+| 10 | Section card | *Stated limits* — unknown is rendered as unknown |
+| 11 | Footage | A TLS 1.3 certificate reported NOT AVAILABLE, with the reason |
+| 12 | Section card | *Across captures* — fingerprints, entities, drift, correlation |
+| 13 | Footage | Drift before/after, then the evidence timeline, then the ML page with its stated limits |
+| 14 | Section card | *Verified, not asserted* — the real test counts |
+| 15 | Footage | JSON, offline HTML and PDF export from one canonical model |
+| 16 | End card | Passive · Local · Evidence-backed |
 
-`local-evidence/footage/securemailscope-raw-1080p.mp4` — 29 s, 1920×1080,
-30 fps, H.264. Genuine Playwright capture of the real application driving the
-real backend and the real forensic engine on the synthetic demo dataset,
-recorded by `frontend/e2e/demo-capture.spec.ts`.
+## Narration and captions
 
-It covers: first-run, upload, real analysis, the finding, the evidence panel,
-the TLS 1.3 session, drift, and PDF export — the substance of shots 5 through
-11. It is **B-roll**, not a finished cut: the beats are short because
-Playwright holds them only briefly, and there is no narration, no title card
-and no montage.
+Every line is **both** spoken and burned in as a caption, and the same text is
+written to `captions.srt` with the timings of the finished file. The voice is
+synthesised by the operating system's speech engine; `demo-verification.md`
+says so plainly. The video is fully usable with the sound off.
 
-Regenerate with:
+Acronyms are spelled out for the synthesiser only ("T L S"); the caption on
+screen keeps the normal spelling.
+
+## Beats, as recorded
+
+The recording timestamps each narrated moment itself, so a caption cannot
+describe something the footage is not showing. Recorded offsets, in seconds
+from the first frame of the raw capture:
+
+| Beat | At |
+|---|---|
+| `first-run` | 1.8 s |
+| `upload` | 9.0 s |
+| `analyse` | 15.6 s |
+| `dashboard` | 18.5 s |
+| `modules` | 25.9 s |
+| `rows` | 32.9 s |
+| `findings` | 40.6 s |
+| `finding-detail` | 46.9 s |
+| `evidence` | 54.2 s |
+| `session` | 61.8 s |
+| `tls13` | 71.6 s |
+| `drift` | 78.6 s |
+| `timeline` | 86.7 s |
+| `ml` | 93.7 s |
+| `reports` | 101.0 s |
+| `end` | 110.2 s |
+
+Raw footage: 112.8 s. The finished video is longer
+because of the cards and because a shot is held, never sped up, when its line
+of narration runs past it.
+
+## Rebuilding
 
 ```bash
-cd frontend && SMS_SCREENSHOTS=1 npx playwright test demo-capture
+python scripts/build_demo_dataset.py
+cd frontend && SMS_SCREENSHOTS=1 npx playwright test demo-capture && cd ..
+.venv-release/bin/python scripts/build_demo_video.py
 ```
 
-## What remains
+Add `--silent` to build the same cut with captions and no audio.
 
-1. Re-record or extend the held beats by hand, following `shot-list.md`
-2. Record the narration (a human voice — see below)
-3. Assemble with the title card, the architecture reveal and the end card
-4. Burn in `captions.srt`
-
-## Narration
-
-**No narration track has been produced.** No natural, high-quality voice is
-available in this environment, and a default text-to-speech read would make a
-serious forensic tool sound like a short-form video. The script is written to
-be read by a person at roughly 155 words per minute.
-
-Status: **VIDEO EDIT READY · HUMAN NARRATION PENDING.**
+Status: **VIDEO COMPLETE.** Nothing has been uploaded; no public URL exists.

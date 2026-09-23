@@ -14,9 +14,10 @@ Category: Software · Team **Zero-Day**
 |---|---|---|
 | 1 | The running product | `http://127.0.0.1:5173` (see `docs/deployment.md`) |
 | 2 | The six-slide submission PDF | `final/SecureMailScope-SIH26159-Zero-Day.pdf` |
-| 3 | The demonstration package | `demo/` |
-| 4 | Requirement coverage | `final/REQUIREMENT-COVERAGE.md` |
-| 5 | Final quality check | `final/FINAL-QUALITY-CHECK.md` |
+| 3 | The demonstration video | `final/SecureMailScope-SIH26159-Demo.mp4` |
+| 4 | The demonstration package | `demo/` |
+| 5 | Requirement coverage | `final/REQUIREMENT-COVERAGE.md` |
+| 6 | Final quality check | `final/FINAL-QUALITY-CHECK.md` |
 
 ## Contents
 
@@ -24,7 +25,8 @@ Category: Software · Team **Zero-Day**
 final/
   SecureMailScope-SIH26159-Zero-Day.pptx   editable working copy
   SecureMailScope-SIH26159-Zero-Day.pdf    the artifact for the portal
-  REQUIREMENT-COVERAGE.md                  all 15 requirements, with evidence
+  SecureMailScope-SIH26159-Demo.mp4        the demonstration video
+  REQUIREMENT-COVERAGE.md                  all 35 requirements, with evidence
   FINAL-QUALITY-CHECK.md                   every gate, re-run
   MANIFEST.md / manifest.json              SHA-256 of every file here
 
@@ -35,7 +37,7 @@ presentation/
   team.json                                the title-page values
   build-status.json                        what the last build verified
 
-assets/screenshots/                        15 genuine product screenshots
+assets/screenshots-final/                  12 genuine product screenshots
 
 demo/
   narration.md · storyboard.md · shot-list.md · final-script.md
@@ -47,10 +49,18 @@ demo/
 
 ```bash
 python scripts/build_demo_dataset.py            # the nine synthetic captures
-cd frontend && SMS_SCREENSHOTS=1 \
-  npx playwright test demo-rehearsal            # the screenshots
+
+cd frontend
+SMS_SCREENSHOTS=1 npx playwright test submission-shots   # the screenshots
+SMS_SCREENSHOTS=1 npx playwright test demo-capture       # the raw footage
+cd ..
+
+python scripts/render_report_page.py \
+  local-evidence/submission-report.pdf \
+  submission/assets/screenshots-final/12-pdf.png         # the PDF page image
+.venv-release/bin/python scripts/build_demo_video.py     # the video
 .venv-release/bin/python scripts/build_presentation.py   # the deck and PDF
-python scripts/write_manifest.py                # the hashes
+python scripts/write_manifest.py                         # the hashes
 ```
 
 The deck build **fails** rather than producing a deck with the wrong team name,
@@ -58,19 +68,18 @@ a seventh slide, or a missing identifier. It is not a formatting convenience.
 
 ## Status
 
-**Two values are genuinely unknown** and render as visible `[UNRESOLVED]`
-markers in red on the title slide, so the draft cannot be mistaken for final:
+Every title-page value is resolved: problem statement **SIH26159**,
+organisation **NTRO**, theme **Blockchain & Cybersecurity**, category
+**Software**, team ID **146876**, team name **Zero-Day**. The build refuses to
+produce a deck containing an `[UNRESOLVED: ...]` marker, so the absence of one
+is checked rather than assumed.
 
-- **Theme** — not recorded anywhere in this repository. Deliberately not
-  inferred from another problem statement, even one from the same
-  organisation.
-- **Team ID** — issued by the SIH portal at registration.
-
-Fill them in `presentation/team.json` and re-run the build. Nothing else
-changes.
-
-**The demonstration video is edit-ready, not finished.** Authentic 1080p B-roll
-exists; the narration needs a human voice. See `demo/demo-verification.md`.
+The **demonstration video is finished**: 1920x1080, 30 fps, H.264, built from
+a Playwright recording of the real application driving the real backend over
+the real forensic engine. Its narration voice is **synthesised by the
+operating system's speech engine** — it is not a person, and
+`demo/video-description.md` says so. The same video is also readable with the
+sound off: every line of narration is burned in as a caption.
 
 ## Not done, deliberately
 

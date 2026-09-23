@@ -104,6 +104,59 @@ def _write(
         run.font.name = "Calibri"
 
 
+#: The repository this deck describes. Private at the time of writing; the
+#: link is included because the submission form asks for it, not as a claim
+#: that a reviewer can open it today.
+REPOSITORY_URL = "https://github.com/sgtsujith141-wq/securemailscope"
+
+#: The reserved slot for the demonstration video. It stays this text until a
+#: URL genuinely exists: the video ships inside the submission package, and
+#: nothing has been uploaded anywhere.
+VIDEO_LINK_PLACEHOLDER = (
+    "included in the submission package \u2014 public URL reserved, not yet issued"
+)
+
+
+
+def _link_line(
+    frame: Any,
+    label: str,
+    text: str,
+    url: str | None,
+    *,
+    size: float = 8.0,
+) -> None:
+    """Append 'label  text' where `text` is a real, clickable hyperlink.
+
+    ``url=None`` writes the text as plain muted type. That is how the
+    demonstration-video slot renders: the element exists and is reserved, but
+    nothing is hyperlinked until a URL actually exists, so the deck can never
+    appear to link to a video that was never uploaded.
+    """
+    paragraph = frame.add_paragraph()
+    paragraph.line_spacing = 0.88
+    paragraph.space_after = Pt(2)
+
+    tag = paragraph.add_run()
+    tag.text = f"{label}  "
+    tag.font.size = Pt(size)
+    tag.font.bold = True
+    tag.font.color.rgb = INK
+    tag.font.name = "Calibri"
+
+    run = paragraph.add_run()
+    run.text = text
+    run.font.size = Pt(size)
+    run.font.name = "Calibri"
+    if url:
+        run.hyperlink.address = url
+        run.font.color.rgb = ACCENT
+        run.font.underline = True
+    else:
+        run.font.color.rgb = MUTED
+        run.font.italic = True
+
+
 def _textbox(
     slide: Any, left: float, top: float, width: float, height: float
 ) -> Any:
@@ -282,9 +335,9 @@ def slide_2(slide: Any) -> None:
             x += 0.28
 
     # --- the product, and what it answers ------------------------------------
-    _shot(slide, "02-investigation-overview.png", 0.42, 2.76, 6.55,
-          "The investigation overview, on seven synthetic captures. "
-          "Actual product output.")
+    _shot(slide, "02-overview.png", 0.42, 2.76, 6.55,
+          f"The investigation overview, on {_demo_capture_count()} synthetic "
+          "captures. Actual product output.")
 
     right = 7.22
     blocks = [
@@ -368,9 +421,9 @@ def slide_3(slide: Any) -> None:
             paragraph.alignment = PP_ALIGN.CENTER
         bx += 2.12
 
-    _shot(slide, "05-evidence-chain.png", 6.72, 2.02, 3.02,
+    _shot(slide, "06-evidence-provenance.png", 6.72, 2.02, 3.02,
           "Finding \u2192 packets")
-    _shot(slide, "07-cryptographic-intelligence.png", 9.90, 2.02, 3.02,
+    _shot(slide, "07-crypto-intelligence.png", 9.90, 2.02, 3.02,
           "Cryptographic DNA")
 
     tech = _panel(slide, 6.72, 4.02, 6.20, 1.30)
@@ -446,8 +499,9 @@ def slide_4(slide: Any, ev: dict[str, Any]) -> None:
         line_spacing=0.90,
     )
 
-    _shot(slide, "08-drift-before-after.png", 8.78, 1.56, 4.14,
-          "Cryptographic drift across two captures. Actual product output.")
+    _shot(slide, "08-drift.png", 8.78, 1.56, 4.14,
+          "Cryptographic drift between captures of one endpoint. "
+          "Actual product output.")
 
     risks = _panel(slide, 0.42, 4.32, 12.5, 2.44,
                    fill=RGBColor(0xFD, 0xF2, 0xEC), line=RGBColor(0xEE, 0xCF, 0xBE))
@@ -529,10 +583,10 @@ def slide_5(slide: Any) -> None:
         )
         x += 3.18
 
-    _shot(slide, "04-finding-evidence-detail.png", 0.42, 3.46, 4.02,
+    _shot(slide, "04-finding-evidence.png", 0.42, 3.46, 4.02,
           "A finding, with its rule, severity and remediation.")
-    _shot(slide, "08-drift-before-after.png", 4.66, 3.46, 4.02,
-          "Configuration drift between two captures.")
+    _shot(slide, "08-drift.png", 4.66, 3.46, 4.02,
+          "Configuration drift between captures of one endpoint.")
     _shot(slide, "11-reports.png", 8.90, 3.46, 4.02,
           "JSON, offline HTML and PDF export.")
 
@@ -632,12 +686,13 @@ def slide_6(slide: Any) -> None:
         line_spacing=0.90,
     )
 
-    # Sized to land above the template's footer band, which starts at 6.95in.
-    # A 16:9 crop 4.02in wide is 2.26in tall and would run into it.
-    _shot(slide, "03-findings-workspace.png", 0.42, 4.98, 3.22,
+    # Sized so the image AND its caption land above the template's footer
+    # band, which starts at 6.95in. A 3.22in-wide 16:9 crop is 1.81in tall;
+    # starting at 4.98in its caption fell across the band and was clipped.
+    _shot(slide, "03-findings.png", 0.42, 4.80, 3.00,
           "Findings triage")
-    _shot(slide, "06-session-detail.png", 3.78, 4.98, 3.22,
-          "Session inventory")
+    _shot(slide, "05-session.png", 3.56, 4.80, 3.00,
+          "Session negotiation")
 
     project = _panel(slide, 7.14, 4.98, 5.78, 1.72)
     _write(
@@ -652,6 +707,13 @@ def slide_6(slide: Any) -> None:
              "status and evidence", 8, False, BODY, 0),
         ],
         line_spacing=0.88,
+    )
+    _link_line(project.text_frame, "Repository", REPOSITORY_URL, REPOSITORY_URL)
+    _link_line(
+        project.text_frame,
+        "Demonstration video",
+        VIDEO_LINK_PLACEHOLDER,
+        None,
     )
 
 
@@ -746,7 +808,35 @@ def verify(pptx: Path, pdf: Path | None, team_name: str) -> list[str]:
     if "IMPORTANT INSTRUCTIONS" in both or "Kindly keep the maximum" in both:
         failures.append("the template's instruction slide is still present")
 
+    # Every title-page value must be resolved. An [UNRESOLVED: ...] marker is
+    # deliberate and visible while a value is genuinely unknown; it must never
+    # survive into a deck presented as final.
+    if "[UNRESOLVED" in both:
+        failures.append("an [UNRESOLVED: ...] marker survived into the deck")
+
+    # Belongs to a different problem statement and a different project. If
+    # either appears, something was copied from the wrong source.
+    for foreign in ("SIH26164", "CryptoDrishti", "Phantom HQ"):
+        if foreign in both:
+            failures.append(f"content from another project is present: {foreign!r}")
+
+    if REPOSITORY_URL not in both:
+        failures.append(f"the repository link is missing: {REPOSITORY_URL}")
+    if VIDEO_LINK_PLACEHOLDER not in both:
+        failures.append("the reserved demonstration-video element is missing")
+
     return failures
+
+
+def _demo_capture_count() -> int:
+    """How many captures the screenshots were taken on.
+
+    Read from the committed demo manifest rather than typed into the caption,
+    because the caption is a factual claim about the image beside it and the
+    dataset has grown once already.
+    """
+    manifest = ROOT / "demo" / "manifest.json"
+    return len(json.loads(manifest.read_text())["captures"])
 
 
 def _evidence() -> dict[str, Any]:
@@ -761,11 +851,11 @@ def _evidence() -> dict[str, Any]:
     # runs these come from; they are not copied forward from an earlier
     # milestone.
     return {
-        "tests": "1,354",
-        "tests_tshark": "1,364",
-        "frontend_tests": "88",
+        "tests": "1,357",
+        "tests_tshark": "1,367",
+        "frontend_tests": "89",
         "e2e_specs": "5",
-        "typed_files": "153",
+        "typed_files": "156",
         "rehearsal_steps": steps,
         "rehearsal_failed": failed,
     }

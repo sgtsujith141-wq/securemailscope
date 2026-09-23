@@ -9,7 +9,8 @@
     /* A very slow vertical wash, so the page has a top and a bottom rather
        than being one uniform field of colour. */
     background-image:
-      radial-gradient(90% 55% at 50% -10%, rgba(79, 209, 197, 0.055) 0%, rgba(79, 209, 197, 0) 60%),
+      radial-gradient(70% 45% at 15% -8%, rgba(34, 211, 238, 0.09) 0%, rgba(34, 211, 238, 0) 62%),
+      radial-gradient(60% 40% at 88% -4%, rgba(167, 139, 250, 0.075) 0%, rgba(167, 139, 250, 0) 58%),
       linear-gradient(180deg, #070b13 0%, #05080e 100%);
     background-attachment: fixed;
   }
@@ -44,6 +45,17 @@
   }
   .surface-sunken { @apply bg-ink-970 border border-ink-820 rounded-md; }
 
+  /* A dashboard module: a section whose top edge carries a solid 2px tint
+     set per instance. The rule is a positioned child rather than a border so
+     the tint can be arbitrary without generating a class per colour, and so
+     it sits above the panel sheen instead of under it. */
+  .module {
+    @apply surface relative flex flex-col overflow-hidden;
+  }
+  .module-rule {
+    @apply absolute inset-x-0 top-0 h-[2px];
+  }
+
   .section { @apply surface overflow-hidden; }
   .section-head {
     @apply flex items-center justify-between gap-2 px-3 py-2
@@ -57,7 +69,7 @@
      ground. Each composes the panel shadow rather than replacing it, which is
      what a bare box-shadow declaration would do. */
   .rule-investigate {
-    box-shadow: inset 0 2px 0 0 #4fd1c5,
+    box-shadow: inset 0 2px 0 0 #22d3ee,
                 0 1px 0 0 rgba(255,255,255,0.045) inset,
                 0 8px 24px -12px rgba(0,0,0,0.9);
   }
@@ -100,12 +112,12 @@
   }
   .btn-primary {
     @apply border-accent/50 text-accent;
-    background-image: linear-gradient(180deg, rgba(79,209,197,0.20) 0%, rgba(79,209,197,0.08) 100%);
+    background-image: linear-gradient(180deg, rgba(34,211,238,0.20) 0%, rgba(34,211,238,0.08) 100%);
   }
   .btn-primary:hover:not(:disabled) {
     @apply border-accent/70;
-    background-image: linear-gradient(180deg, rgba(79,209,197,0.30) 0%, rgba(79,209,197,0.14) 100%);
-    box-shadow: 0 0 0 1px rgba(79,209,197,0.18), 0 8px 22px -10px rgba(79,209,197,0.55);
+    background-image: linear-gradient(180deg, rgba(34,211,238,0.30) 0%, rgba(34,211,238,0.14) 100%);
+    box-shadow: 0 0 0 1px rgba(34,211,238,0.18), 0 8px 22px -10px rgba(34,211,238,0.55);
   }
   .btn-lg { @apply px-3 py-2 text-base; }
   .btn-ghost {
@@ -161,8 +173,8 @@
   }
   .nav-item-active {
     @apply text-mist-50 font-medium;
-    background-image: linear-gradient(90deg, rgba(79,209,197,0.16) 0%, rgba(79,209,197,0.03) 100%);
-    box-shadow: inset 2px 0 0 0 #4fd1c5;
+    background-image: linear-gradient(90deg, rgba(34,211,238,0.16) 0%, rgba(34,211,238,0.03) 100%);
+    box-shadow: inset 2px 0 0 0 #22d3ee;
   }
   .nav-group { @apply label px-2.5 pt-3 pb-1 block; }
 
@@ -172,13 +184,26 @@
   .hero {
     @apply rounded-xl border border-ink-740 shadow-hero overflow-hidden relative;
     background-image:
-      radial-gradient(120% 140% at 0% 0%, rgba(79,209,197,0.10) 0%, rgba(79,209,197,0) 55%),
-      linear-gradient(180deg, #121c2b 0%, #0a1019 100%);
+      radial-gradient(85% 120% at 3% 0%, rgba(34,211,238,0.14) 0%, rgba(34,211,238,0) 52%),
+      radial-gradient(70% 110% at 97% 8%, rgba(167,139,250,0.11) 0%, rgba(167,139,250,0) 55%),
+      linear-gradient(180deg, #131f2f 0%, #0a1019 100%);
+    background-size: auto, auto, auto;
+  }
+  /* A faint grid inside the hero only, so the most prominent surface reads as
+     an instrument panel without texturing the whole page. */
+  .hero-grid::after {
+    content: '';
+    @apply absolute inset-0 pointer-events-none;
+    background-image:
+      linear-gradient(rgba(148,180,220,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148,180,220,0.035) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: radial-gradient(120% 100% at 50% 0%, #000 0%, transparent 78%);
   }
   .hero::before {
     content: '';
     @apply absolute inset-x-0 top-0 h-px;
-    background: linear-gradient(90deg, rgba(79,209,197,0) 0%, rgba(79,209,197,0.55) 22%, rgba(79,209,197,0) 70%);
+    background: linear-gradient(90deg, rgba(34,211,238,0) 0%, rgba(34,211,238,0.55) 22%, rgba(34,211,238,0) 70%);
   }
 
   /* A severity distribution strip: proportional, labelled, and readable

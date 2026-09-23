@@ -272,6 +272,24 @@ export const timeline: TimelineEntry[] = [
  * a wrong shape here -- the values are taken from the running API rather than
  * invented.
  */
+/**
+ * One section of the intelligence document, as the endpoint returns it.
+ *
+ * The page always asks for a section, and the response names the section it
+ * belongs to. Tests build theirs through this so a mock cannot claim to be a
+ * section the page did not ask for.
+ */
+export const intelligenceSection = (
+  section: string,
+  items: Record<string, unknown>[] = [],
+): Record<string, unknown> => ({
+  investigation_id: investigation.investigation_id,
+  section,
+  items,
+  scope_statement: 'Covers only the captures listed.',
+  limitations: [],
+})
+
 export const intelligence: Record<string, unknown> = {
   investigation_id: investigation.investigation_id,
   schema_version: '1.0.0',

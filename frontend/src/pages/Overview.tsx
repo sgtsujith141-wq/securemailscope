@@ -12,11 +12,14 @@ import { FirstRun } from '../components/FirstRun'
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { api } from '../lib/api'
 import { useAsync } from '../lib/hooks'
-import { Empty, Failure, Loading, Metric, Note, Panel, SeverityTag, StatusTag, Value } from '../components/ui'
+import { Empty, Failure, Loading, Note, Panel, SeverityTag, StatusTag, Value } from '../components/ui'
 
 const SEVERITY_ORDER = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
 const SEVERITY_FILL: Record<string, string> = {
-  CRITICAL: '#ff6b6b', HIGH: '#ffa657', MEDIUM: '#ffd479', LOW: '#7fd1c1', INFO: '#8ab4f8',
+  CRITICAL: '#fb7185', HIGH: '#fb923c', MEDIUM: '#fbbf24', LOW: '#22d3ee', INFO: '#60a5fa',
+}
+const PROTOCOL_FILL: Record<string, string> = {
+  SMTP: '#60a5fa', IMAP: '#a78bfa', POP3: '#e879b9', UNKNOWN: '#64748b',
 }
 
 export function Overview() {
@@ -62,37 +65,64 @@ export function Overview() {
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="text-xl font-semibold">Overview</h1>
-        <p className="text-[13px] text-mist-300 mt-0.5">
-          Observed within analyzed captures only. These counts describe the captures listed
-          below and nothing beyond them.
-        </p>
-      </header>
+      <header className="hero hero-grid flex flex-wrap items-end justify-between gap-x-8 gap-y-4 px-4 py-4">
+        <div className="min-w-0">
+          <span className="label">Estate overview</span>
+          <h1 className="mt-1 text-2xl font-semibold leading-tight tracking-[-0.02em] text-mist-50">
+            {investigations.length} investigation{investigations.length === 1 ? '' : 's'},
+            {' '}{totalCaptures} capture{totalCaptures === 1 ? '' : 's'} analysed
+          </h1>
+          {/* Kept verbatim: this restates the engine's own scope statement,
+              which is spelled "analyzed". Rewording it here would let the two
+              drift apart. */}
+          <p className="hint mt-1 max-w-xl !text-sm">
+            Observed within analyzed captures only. These counts describe the captures
+            listed below and nothing beyond them.
+          </p>
+        </div>
 
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <Metric label="Captures analysed" value={totalCaptures}
-                note={failedCaptures > 0 ? `${failedCaptures} failed to analyse` : undefined} />
-        <Metric label="Sessions observed" value={totalSessions} />
-        <Metric
-          label="Security findings"
-          value={totalFindings === 0 ? <span className="text-sev-ok text-base">NO FINDINGS</span> : totalFindings}
-          note={totalFindings === 0
-            ? 'No rule failed on the available evidence'
-            : `highest severity ${worst}`}
-          tone={totalFindings === 0 ? 'unknown' : 'default'}
-        />
-        <Metric
-          label="Assessment coverage"
-          value={meanCoverage === null
-            ? <span className="text-mist-300 text-base">UNKNOWN</span>
-            : `${(meanCoverage * 100).toFixed(0)}%`}
-          note={meanCoverage === null
-            ? 'no analysed investigation reported coverage'
-            : `mean across ${coverageValues.length} investigation(s)`}
-          tone={meanCoverage === null ? 'unknown' : 'default'}
-        />
-      </div>
+        <dl className="flex flex-wrap items-end gap-x-7 gap-y-3">
+          <div>
+            <dt className="label">Sessions observed</dt>
+            <dd className="mt-0.5 text-3xl font-semibold leading-none tabular-nums">
+              {totalSessions}
+            </dd>
+          </div>
+          <div>
+            <dt className="label">Security findings</dt>
+            <dd className="mt-0.5 text-3xl font-semibold leading-none tabular-nums"
+                style={{ color: totalFindings === 0 ? '#34d399' : SEVERITY_FILL[worst ?? 'INFO'] }}>
+              {totalFindings === 0 ? <span className="text-base">NO FINDINGS</span> : totalFindings}
+            </dd>
+            <dd className="hint mt-1 !text-3xs">
+              {totalFindings === 0
+                ? 'no rule failed on the available evidence'
+                : `highest severity ${worst}`}
+            </dd>
+          </div>
+          <div>
+            <dt className="label">Assessment coverage</dt>
+            <dd className="mt-0.5 text-3xl font-semibold leading-none tabular-nums">
+              {meanCoverage === null
+                ? <span className="text-base text-mist-300">UNKNOWN</span>
+                : `${(meanCoverage * 100).toFixed(0)}%`}
+            </dd>
+            <dd className="hint mt-1 !text-3xs">
+              {meanCoverage === null
+                ? 'no analysed investigation reported coverage'
+                : `mean across ${coverageValues.length} investigation(s)`}
+            </dd>
+          </div>
+          {failedCaptures > 0 && (
+            <div>
+              <dt className="label">Failed to analyse</dt>
+              <dd className="mt-0.5 text-3xl font-semibold leading-none tabular-nums text-sev-critical">
+                {failedCaptures}
+              </dd>
+            </div>
+          )}
+        </dl>
+      </header>
 
       {totalFindings > 0 && (
         <Note tone="warn">
@@ -109,7 +139,11 @@ export function Overview() {
           ) : (
             <div style={{ height: 180 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={severityData} margin={{ top: 4, right: 8, bottom: 4, left: -18 }}>
+                {/* `maxBarSize` matters: without it Recharts stretches three
+                    categories into three slabs the width of the panel, which
+                    reads as decoration rather than as a measurement. */}
+                <BarChart data={severityData} margin={{ top: 4, right: 8, bottom: 4, left: -18 }}
+                          barCategoryGap="28%" maxBarSize={56}>
                   <XAxis dataKey="name" tick={{ fill: '#93a3bb', fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis allowDecimals={false} tick={{ fill: '#93a3bb', fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ background: '#161d2b', border: '1px solid #263449', borderRadius: 6, fontSize: 12 }} />
@@ -128,14 +162,40 @@ export function Overview() {
           {Object.keys(protocols).length === 0 ? (
             <Empty title="No email protocol was identified" detail="Sessions may have been implicit TLS, where a port is a hint rather than an identification." />
           ) : (
-            <table className="w-full">
-              <thead><tr><th className="th">Protocol</th><th className="th">Sessions</th></tr></thead>
-              <tbody>
-                {Object.entries(protocols).sort().map(([name, count]) => (
-                  <tr key={name}><td className="td">{name}</td><td className="td">{count}</td></tr>
-                ))}
-              </tbody>
-            </table>
+            (() => {
+              const rows = Object.entries(protocols).sort((a, b) => b[1] - a[1])
+              const total = rows.reduce((sum, [, n]) => sum + n, 0)
+              return (
+                <>
+                  <div className="flex h-2.5 w-full gap-px overflow-hidden rounded-full bg-ink-820"
+                       role="img"
+                       aria-label={rows.map(([k, n]) => `${n} ${k}`).join(', ')}>
+                    {rows.map(([name, count]) => (
+                      <span key={name}
+                            style={{ width: `${(count / total) * 100}%`,
+                                     background: PROTOCOL_FILL[name] ?? '#64748b' }} />
+                    ))}
+                  </div>
+                  <ul className="mt-3 space-y-1.5">
+                    {rows.map(([name, count]) => (
+                      <li key={name} className="flex items-center gap-2 text-[13px]">
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                              style={{ background: PROTOCOL_FILL[name] ?? '#64748b' }}
+                              aria-hidden="true" />
+                        <span className="flex-1 text-mist-200">{name}</span>
+                        <span className="font-semibold tabular-nums text-mist-100">{count}</span>
+                        <span className="w-10 text-right tabular-nums text-mist-400">
+                          {Math.round((count / total) * 100)}%
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="hint mt-2 !text-3xs">
+                    Identified from the dialogue, never from the port number.
+                  </p>
+                </>
+              )
+            })()
           )}
         </Panel>
       </div>

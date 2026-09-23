@@ -4,11 +4,8 @@
   "template_slides": 7,
   "submitted_slides": 6,
   "instruction_slide_deleted": true,
-  "unresolved_fields": [
-    "theme",
-    "team_id"
-  ],
-  "submission_ready": false,
+  "unresolved_fields": [],
+  "submission_ready": true,
   "pptx": "submission/final/SecureMailScope-SIH26159-Zero-Day.pptx",
   "pdf": "submission/final/SecureMailScope-SIH26159-Zero-Day.pdf"
 }

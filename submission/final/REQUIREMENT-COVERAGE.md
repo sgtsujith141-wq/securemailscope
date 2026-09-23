@@ -10,6 +10,10 @@ Audited against the release commit **before** any presentation claim was
 written. No slide asserts anything this table does not support, and no PARTIAL
 was promoted to IMPLEMENTED for presentation optics.
 
+Verified on this audit: **1,357** backend tests pass (**1,367** with the
+TShark cross-check enabled), **89** frontend tests, **5** Playwright specs
+against the real backend, and ruff and mypy are clean over **156** files.
+
 | Status | Meaning |
 |---|---|
 | **IMPLEMENTED** | Built, tested against hand-derived expectations, working |
@@ -47,11 +51,11 @@ was promoted to IMPLEMENTED for presentation optics.
 | 24 | Remediation | `assessment/catalog.py` | **IMPLEMENTED** | `test_assessment.py`; `docs/remediation-catalog.md` | 12 remediations, each with expected security effect. |
 | 25 | Evidence provenance | `models/evidence.py` | **IMPLEMENTED** | `test_intelligence.py`, `test_report_hardening.py` | Four statuses: OBSERVED, INFERRED, UNKNOWN, NOT_AVAILABLE. Packet numbers only — never payload bytes. |
 | 26 | Cryptographic DNA | `intelligence/fingerprints.py` | **IMPLEMENTED** | `test_intelligence.py` | An observed profile, not proof of machine identity — stated in the interface. |
-| 27 | Drift detection | `intelligence/drift.py` | **IMPLEMENTED** | `test_intelligence.py`; demo captures 08-1/08-2 | Attributable only when client offers match; otherwise INCONCLUSIVE. |
+| 27 | Drift detection | `intelligence/drift.py` | **IMPLEMENTED** | `test_intelligence.py::test_a_drift_id_identifies_exactly_one_comparison`; demo captures 08-1/08-2 | Attributable only when client offers match; otherwise INCONCLUSIVE. Each comparison carries a unique id, so a report can cross-reference one. |
 | 28 | Cross-session correlation | `intelligence/correlation.py` | **IMPLEMENTED** | `test_intelligence.py` | Relationship basis stated. No inferred topology. |
 | 29 | Blast-radius analysis | `intelligence/blast_radius.py` | **IMPLEMENTED** | `test_intelligence.py` | Always qualified: 'Observed within analyzed captures only.' |
 | 30 | AI/ML analysis | `ml/` (3,196 loc) | **PARTIAL** | `test_ml.py`; `docs/ml-evaluation.md`, `ml-model-card.md` | **Selected detector is a deterministic rarity baseline, not a model.** Isolation Forest trained, measured, not selected. Classifier NOT_VALIDATED; drives no finding or score. |
-| 31 | Interactive dashboard | `frontend/`, `backend/` | **IMPLEMENTED** | 88 frontend tests; 5 Playwright specs; 22-step acceptance walkthrough | Cancellation is NOT IMPLEMENTED and its absence is asserted by test. |
+| 31 | Interactive dashboard | `frontend/`, `backend/` | **IMPLEMENTED** | 89 frontend tests; 5 Playwright specs; 22-step acceptance walkthrough | Command dashboard, findings master/detail, TLS negotiation chain, drift before/after, timeline rail. Cancellation is NOT IMPLEMENTED and its absence is asserted by test. |
 | 32 | JSON export | `reporting/report_model.py` | **IMPLEMENTED** | `test_report.py` | Schema 1.4.0, additive since 1.0.0. |
 | 33 | HTML export | `reporting/html_report.py` | **IMPLEMENTED** | `test_report_hardening.py` | `render_html` raises rather than emit a report that fetches an external resource. |
 | 34 | PDF export | `reporting/pdf_report.py` | **IMPLEMENTED** | `test_report_hardening.py` | Built from the model via ReportLab, which has no URL resolver — so 'no external request' is structural. |

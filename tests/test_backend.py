@@ -353,6 +353,44 @@ def test_findings_can_be_filtered_by_severity(client: TestClient, analysed) -> N
     assert all(f["severity"] == "HIGH" for f in high["items"])
 
 
+def test_a_session_shown_twice_does_not_duplicate_its_findings(
+    client: TestClient, state: AppState
+) -> None:
+    """The same capture in two investigations must not double the findings.
+
+    A session id is a digest of the session, so analysing one capture in two
+    investigations produces the same session id in both. The detail endpoint
+    filtered its findings on that id alone, so opening the session showed
+    every finding once per investigation -- four findings rendered as eight.
+    """
+    capture = upload(client, "aa_tls10_static_rsa.pcap")["capture_id"]
+    first = analyse(client, state, [capture])["investigation"]["investigation_id"]
+    second = analyse(client, state, [capture])["investigation"]["investigation_id"]
+    assert first != second
+
+    sessions = client.get(f"/api/investigations/{first}/sessions").json()["items"]
+    assert sessions, "the capture must produce at least one session"
+    session_id = sessions[0]["session_id"]
+
+    expected = client.get(
+        f"/api/investigations/{first}/findings?session_id={session_id}"
+    ).json()["total"]
+    assert expected > 0, "this capture must fail at least one rule"
+
+    detail = client.get(
+        f"/api/sessions/{session_id}?investigation_id={first}"
+    ).json()
+    ids = [f["finding_id"] for f in detail["findings"]]
+    assert len(ids) == expected
+    assert len(ids) == len(set(ids)), "a finding was listed more than once"
+
+    # And the second investigation reports the same session independently.
+    other = client.get(
+        f"/api/sessions/{session_id}?investigation_id={second}"
+    ).json()
+    assert len(other["findings"]) == expected
+
+
 def test_session_detail_contains_no_payload_or_credential(client: TestClient, analysed) -> None:
     identifier = analysed["investigation"]["investigation_id"]
     sessions = client.get(f"/api/investigations/{identifier}/sessions").json()

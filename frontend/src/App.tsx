@@ -75,11 +75,16 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { selected } = useInvestigationContext()
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* The <nav> itself stretches to the full height of the row, so its
+          background covers a page taller than the viewport; the panel inside
+          it is what sticks. Making the <nav> `h-screen` instead left the page
+          background showing beneath it on a long dashboard. */}
       <nav
         aria-label="Main"
         className="lg:w-[228px] shrink-0 border-b lg:border-b-0 lg:border-r
-                   border-ink-800 bg-ink-950 lg:min-h-screen flex flex-col"
+                   border-ink-800 bg-ink-950 flex flex-col"
       >
+       <div className="flex flex-col lg:sticky lg:top-0 lg:h-screen">
         <div className="px-2.5 py-3 border-b border-ink-800">
           <div className="flex items-center gap-1.5">
             <span
@@ -127,6 +132,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             entries={[{ to: '/settings', label: 'Settings', icon: IconSettings }]}
           />
         </div>
+       </div>
       </nav>
 
       <main className="flex-1 min-w-0 p-2.5 lg:p-4 max-w-[1560px]">

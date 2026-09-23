@@ -20,19 +20,70 @@ import { useAsync } from '../lib/hooks'
 import { useInvestigationContext } from '../lib/context'
 import { Empty, Failure, Loading, Note, Panel, Value } from '../components/ui'
 
+/**
+ * One evaluation, drawn rather than listed.
+ *
+ * Precision, recall and F1 share the 0..1 range, so a bar of that length is a
+ * true comparison between two models; the false-positive rate is drawn on the
+ * same scale and tinted as a cost rather than a score. The confusion counts
+ * are shown as the 2x2 they are -- they are the evidence behind the ratios,
+ * and a run with eight positives should not be read as if it had eight
+ * hundred.
+ */
 function Metrics({ metrics }: { metrics: Record<string, any> | undefined }) {
   if (!metrics) return <span className="text-mist-400 text-[11px]">not reported</span>
   const format = (value: unknown) =>
-    value === null || value === undefined ? 'undefined' : typeof value === 'number' ? value.toFixed(4) : String(value)
+    value === null || value === undefined
+      ? 'undefined'
+      : typeof value === 'number' ? value.toFixed(4) : String(value)
+
+  const bars: [string, unknown, string][] = [
+    ['Precision', metrics.precision, '#22d3ee'],
+    ['Recall', metrics.recall, '#60a5fa'],
+    ['F1', metrics.f1, '#a78bfa'],
+    ['False-positive rate', metrics.false_positive_rate, '#fb7185'],
+  ]
+  const cells: [string, unknown, string][] = [
+    ['TP', metrics.true_positives, 'text-sev-ok'],
+    ['FP', metrics.false_positives, 'text-sev-critical'],
+    ['FN', metrics.false_negatives, 'text-sev-high'],
+    ['TN', metrics.true_negatives, 'text-mist-200'],
+  ]
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[12px] mt-2">
-      <div><span className="label">Precision</span><div className="mono">{format(metrics.precision)}</div></div>
-      <div><span className="label">Recall</span><div className="mono">{format(metrics.recall)}</div></div>
-      <div><span className="label">F1</span><div className="mono">{format(metrics.f1)}</div></div>
-      <div><span className="label">False-positive rate</span><div className="mono">{format(metrics.false_positive_rate)}</div></div>
-      <div className="col-span-2 sm:col-span-4 text-[11px] text-mist-400">
-        TP {metrics.true_positives} · FP {metrics.false_positives} · TN {metrics.true_negatives} ·
-        FN {metrics.false_negatives}
+    <div className="mt-2 space-y-2">
+      <ul className="space-y-1.5">
+        {bars.map(([label, value, tint]) => {
+          const numeric = typeof value === 'number' && Number.isFinite(value)
+          return (
+            <li key={label} className="flex items-center gap-2">
+              <span className="w-28 shrink-0 text-3xs uppercase tracking-[0.09em] text-mist-400">
+                {label}
+              </span>
+              <span className="sevbar flex-1">
+                {numeric && (
+                  <span style={{
+                    width: `${Math.max(0, Math.min(1, value as number)) * 100}%`,
+                    background: tint,
+                  }} />
+                )}
+              </span>
+              <span className="mono w-16 shrink-0 text-right !text-[11px] !text-mist-100 tabular-nums">
+                {format(value)}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+      <div className="grid max-w-[15rem] grid-cols-2 gap-px overflow-hidden rounded border border-ink-780 bg-ink-780">
+        {cells.map(([label, value, tone]) => (
+          <div key={label} className="bg-ink-900 px-2 py-1.5">
+            <div className="label">{label}</div>
+            <div className={`mt-0.5 text-sm font-semibold tabular-nums ${tone}`}>
+              {value === null || value === undefined ? '—' : String(value)}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )

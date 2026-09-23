@@ -1,24 +1,41 @@
 # Demo authenticity verification
 
-Checked against `local-evidence/footage/securemailscope-raw-1080p.mp4` and the
-demo dataset, on the release commit.
+Checked against the finished video,
+`submission/final/SecureMailScope-SIH26159-Demo.mp4`, and the demo dataset, on
+the release commit.
+
+| Property | Value |
+|---|---|
+| Duration | 3 min 17 s (197.9 s) |
+| Format | 1920x1080, 30 fps, H.264 (yuv420p), AAC audio |
+| Size | 13,325,686 bytes |
+| SHA-256 | `ea0db0abfd96743b6762b5c3bbd2011e659736a6b9c1950badfcb084fba941da` |
 
 | Check | Result |
 |---|---|
 | All UI shown is the genuine application | **Pass** — Playwright drove the real frontend against the real FastAPI backend over the real engine |
-| All findings shown are genuine | **Pass** — `TLS-KEX-001`, `TLS-PROTO-001`, `TLS-CIPHER-005` produced by the assessment engine at record time |
-| Packet numbers match real results | **Pass** — packets 4 and 5, matching `demo/manifest.json` and a direct pipeline run |
-| Scores match engine output | **Pass** — 59/100 WEAK, coverage 76%, 4 findings; identical to the CLI on the same capture |
+| All findings shown are genuine | **Pass** — `TLS-KEX-001`, `TLS-PROTO-001`, `TLS-CIPHER-003`, `TLS-CIPHER-005` produced by the assessment engine at record time |
+| Packet numbers match real results | **Pass** — the evidence panel shows the packet numbers the rule was evaluated against, matching `demo/manifest.json` |
+| Scores match engine output | **Pass** — 59/100 WEAK, coverage 76%, 12 findings over 9 captures; identical to the API on the same dataset |
+| Every caption describes what is on screen | **Pass** — each caption is tied to a beat the recording itself timestamped (`local-evidence/footage/beats.json`), not to a script written in advance |
 | No API token visible | **Pass** — the token is injected by the dev proxy as a header and never rendered |
-| No private paths visible | **Pass** — no terminal recorded; the Settings page, which shows a storage path, is deliberately not in the route |
+| No private paths visible | **Pass** — no terminal recorded; the Settings page, which shows a storage path, is not in the route |
 | No personal information | **Pass** — every identity is a reserved `.invalid` name (RFC 2606) |
 | No terminal or notification | **Pass** — headless browser capture only |
 | No bookmarks or personal tabs | **Pass** — clean Playwright browser context |
-| No debug overlays | **Pass** — frames inspected at 4 s, 12 s, 20 s and 26 s |
+| No debug overlays | **Pass** — frames inspected at 9 s, 30 s, 60 s, 120 s, 165 s and 195 s |
 | No fake external network operation | **Pass** — the engine opens no socket; the only traffic is the browser to 127.0.0.1 |
 | No fake progress or simulated analysis | **Pass** — real analysis, real duration, no artificial speed-up |
 | No fake cursor movement | **Pass** — no synthetic cursor is drawn |
-| Video resolution and rate | **Pass** — 1920×1080, 30 fps, H.264, 29.07 s |
+| Footage is never sped up to fit narration | **Pass** — where a line runs past its shot the final frame is held (`tpad`), so the recording's own timing is preserved |
+
+## The narration is synthesised
+
+The voice is produced by the operating system's speech engine (macOS `say`,
+voice *Samantha*). **It is not a person.** It is labelled as synthesised here,
+in `video-description.md` and in `submission/README.md`, and the video is fully
+usable with the sound off: every line is burned in as a caption and also
+written to `captions.srt` with the timings of the finished file.
 
 ## Data provenance
 
@@ -27,11 +44,16 @@ generators (`scripts/build_demo_dataset.py`). The analyzer has no demo mode and
 does not recognise these filenames; `demo/manifest.json` records what each one
 demonstrates alongside what the engine actually observed.
 
-## What this footage is not
+## Reproducing it
 
-It is **29 seconds of authentic B-roll**, not a finished 3-minute video. There
-is no narration, no title card, no architecture animation and no end card. The
-claim made anywhere in this repository is exactly that.
+```bash
+python scripts/build_demo_dataset.py
+cd frontend && SMS_SCREENSHOTS=1 npx playwright test demo-capture && cd ..
+.venv-release/bin/python scripts/build_demo_video.py
+```
 
-Status: **VIDEO EDIT READY · HUMAN NARRATION PENDING.**
-No video has been uploaded anywhere. No YouTube URL exists.
+The build refuses to run if the beat log is missing, and prints a warning if
+the finished duration falls outside the three-to-four minute target.
+
+Status: **VIDEO COMPLETE.**
+No video has been uploaded anywhere. No public URL exists.

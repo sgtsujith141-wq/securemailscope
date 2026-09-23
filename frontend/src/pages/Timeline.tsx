@@ -2,9 +2,17 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
-import { formatTime, useAsync } from '../lib/hooks'
+import { formatClock, formatDay, useAsync } from '../lib/hooks'
 import { useInvestigationContext } from '../lib/context'
 import { Empty, Failure, Loading, Note, Pagination, Panel } from '../components/ui'
+
+/** Evidence status drives the dot colour; it is never decorative. */
+const EVENT_TINT: Record<string, string> = {
+  OBSERVED: '#22d3ee',
+  INFERRED: '#a78bfa',
+  UNKNOWN: '#64748b',
+  NOT_AVAILABLE: '#64748b',
+}
 
 const EVENT_TYPES = [
   'SESSION_FIRST_PACKET', 'PROTOCOL_IDENTIFIED', 'UPGRADE_ADVERTISED', 'UPGRADE_REQUESTED',
@@ -84,39 +92,59 @@ export function Timeline() {
         )}
         {page.data && page.data.items.length > 0 && (
           <>
-            <ol className="space-y-1" data-testid="timeline-list">
-              {page.data.items.map((event) => (
-                <li key={event.event_id}
-                    className="grid grid-cols-[auto_150px_1fr] gap-3 items-start py-2 border-b border-ink-700 last:border-0">
-                  <span className="text-[11px] text-mist-400 mono pt-0.5 w-8 text-right">
-                    {event.order_index}
-                  </span>
-                  <span className="mono text-[11px] text-mist-300 pt-0.5">
-                    {event.timestamp ? formatTime(event.timestamp).slice(11, 26) : 'unknown'}
-                  </span>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[12px] font-medium">{event.event_type.replace(/_/g, ' ')}</span>
-                      <span className="text-[10px] text-mist-400 border border-ink-600 rounded px-1">
+            {/* A rail, not a table: the left border is the thread of the
+                investigation, each dot is one event, and the dot's colour is
+                the evidence status the engine assigned -- so a reader can see
+                at a glance which entries were observed in a packet and which
+                were inferred. */}
+            <ol className="relative ml-1 border-l border-ink-740" data-testid="timeline-list">
+              {page.data.items.map((event, index) => {
+                const previous = index > 0 ? page.data!.items[index - 1] : null
+                const newDay = formatDay(event.timestamp) !== formatDay(previous?.timestamp)
+                const tint = EVENT_TINT[event.evidence_status] ?? '#64748b'
+                return (
+                  <li key={event.event_id} className="relative pb-3 pl-5">
+                    {newDay && (
+                      <div className="mb-2 -ml-5 flex items-center gap-2">
+                        <span className="label !text-mist-300">{formatDay(event.timestamp)}</span>
+                        <span className="h-px flex-1 bg-ink-820" aria-hidden="true" />
+                      </div>
+                    )}
+                    <span
+                      className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-ink-900"
+                      style={{ background: tint, boxShadow: `0 0 0 3px ${tint}22` }}
+                      aria-hidden="true"
+                    />
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                      <span className="mono !text-[11px] !text-mist-400 tabular-nums">
+                        {formatClock(event.timestamp)}
+                      </span>
+                      <span className="text-[12px] font-semibold text-mist-100">
+                        {event.event_type.replace(/_/g, ' ').toLowerCase()}
+                      </span>
+                      <span className="text-3xs font-semibold" style={{ color: tint }}>
                         {event.evidence_status}
                       </span>
                       {event.session_id && (
-                        <Link className="mono text-[11px] text-sev-info hover:underline"
+                        <Link className="mono !text-[11px] text-sev-info hover:underline"
                               to={`/sessions/${event.session_id}`}>
                           {event.session_id}
                         </Link>
                       )}
+                      <span className="ml-auto text-3xs text-mist-500 tabular-nums">
+                        #{event.order_index}
+                      </span>
                     </div>
-                    <p className="text-[12px] text-mist-300 mt-0.5">{event.description}</p>
+                    <p className="mt-0.5 text-[12px] text-mist-300">{event.description}</p>
                     {event.packet_numbers.length > 0 && (
-                      <p className="text-[11px] text-mist-400 mt-0.5">
-                        Packets {event.packet_numbers.join(', ')} · capture{' '}
-                        <span className="mono">{event.capture_id.slice(0, 24)}…</span>
+                      <p className="hint mt-0.5 !text-3xs">
+                        packets {event.packet_numbers.join(', ')} · capture{' '}
+                        <span className="mono !text-3xs">{event.capture_id.slice(0, 24)}…</span>
                       </p>
                     )}
-                  </div>
-                </li>
-              ))}
+                  </li>
+                )
+              })}
             </ol>
             <Pagination page={page.data} onOffset={setOffset} />
             <Note>

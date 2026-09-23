@@ -1,12 +1,34 @@
-/** The investigation detail page (§10). */
+/**
+ * The investigation dashboard.
+ *
+ * Composed as a command surface rather than a grid of equal cards:
+ *
+ *   1. a hero that states the conclusion beside the posture visualisation,
+ *   2. four cryptographic modules of different shape,
+ *   3. priority findings beside the evidence timeline rail,
+ *   4. cryptographic intelligence beside the report hand-off,
+ *
+ * and only then the inventories a reader consults rather than reads. Every
+ * value is one the engine produced; this page performs no analysis.
+ */
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
+
 import { api } from '../lib/api'
 import { formatBytes, formatTime, useAsync } from '../lib/hooks'
 import { useInvestigationContext } from '../lib/context'
-import { NeedsAttention } from '../components/NeedsAttention'
+import { CryptoModules } from '../components/CryptoModules'
+import {
+  IntelligencePreview, ReportHandoff, TimelinePreview,
+} from '../components/DashboardRows'
+import { AttentionHeadline, PriorityFindings } from '../components/NeedsAttention'
 import { PostureHero } from '../components/PostureHero'
 import { Empty, Failure, Loading, Note, Panel, StatusTag, Value } from '../components/ui'
+
+/** How many sessions the dashboard modules aggregate over. The API caps a
+ *  page at 500; where an investigation holds more, each module says which
+ *  subset it describes rather than implying full coverage. */
+const SESSION_WINDOW = 500
 
 export function InvestigationWorkspace({ investigationId }: { investigationId: string }) {
   const { select } = useInvestigationContext()
@@ -14,7 +36,15 @@ export function InvestigationWorkspace({ investigationId }: { investigationId: s
   // The highest-ranked findings, for the attention hero. Ranked by the
   // engine's own priority matrix -- this page does no ordering of its own.
   const topFindings = useAsync(
-    () => api.listFindings(investigationId, { offset: 0, limit: 6 }),
+    () => api.listFindings(investigationId, { offset: 0, limit: 8 }),
+    [investigationId],
+  )
+  const sessions = useAsync(
+    () => api.listSessions(investigationId, { offset: 0, limit: SESSION_WINDOW }),
+    [investigationId],
+  )
+  const timeline = useAsync(
+    () => api.getTimeline(investigationId, { offset: 0, limit: 6 }),
     [investigationId],
   )
 
@@ -28,60 +58,91 @@ export function InvestigationWorkspace({ investigationId }: { investigationId: s
 
   const { investigation: inv, captures, jobs, ml } = detail.data
   const failed = captures.filter((c) => c.status === 'FAILED' || c.failure_reason)
+  const sessionItems = sessions.data?.items ?? []
 
   return (
-    <div className="space-y-5">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">{inv.name}</h1>
-          <p className="mono text-[12px] text-mist-400 mt-0.5">{inv.investigation_id}</p>
+    <div className="space-y-3">
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <div className="min-w-0">
+          <h1 className="truncate text-base font-semibold text-mist-100">{inv.name}</h1>
+          <p className="mono mt-0.5 !text-3xs !text-mist-500">{inv.investigation_id}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <StatusTag status={inv.status} />
+          <Link className="btn" to="/sessions">Sessions</Link>
           <Link className="btn" to="/reports">Reports</Link>
         </div>
       </header>
 
-      <p className="text-sm text-mist-300">{detail.data.scope_statement}</p>
-
-      {/* What needs attention comes before the summary numbers. A score
-          summarises; a finding is the substance. */}
-      <NeedsAttention
-        findings={topFindings.data?.items ?? []}
-        total={inv.finding_count}
-        loading={topFindings.loading}
-      />
-
-      <PostureHero inv={inv} />
+      {/* ---- row 1: what needs attention, and the posture beside it ------- */}
+      <div className="grid gap-3 xl:grid-cols-[1.65fr_1fr]">
+        <AttentionHeadline inv={inv} sessions={sessionItems} loading={sessions.loading} />
+        <PostureHero inv={inv} />
+      </div>
 
       {inv.finding_count > 0 && (
         <Note tone="warn">
           The score summarises weighted control coverage. It does not supersede an
-          individual finding — open <Link className="underline" to="/findings">security findings</Link> to
+          individual finding — open <Link className="underline" to="/findings">findings</Link> to
           see each one with its evidence.
         </Note>
       )}
 
-      {failed.length > 0 && (
-        <Panel title="Partial batch failures">
-          <table className="w-full">
-            <thead><tr><th className="th">Capture</th><th className="th">Status</th><th className="th">Reason</th></tr></thead>
-            <tbody>
-              {failed.map((c) => (
-                <tr key={c.capture_id}>
-                  <td className="td">{c.original_name}</td>
-                  <td className="td"><StatusTag status={c.status} /></td>
-                  <td className="td text-[12px] text-mist-300">{c.failure_reason ?? 'not stated'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Note tone="warn">
-            Results elsewhere on this page do not cover these captures.
-          </Note>
-        </Panel>
+      {/* ---- row 2: four cryptographic modules --------------------------- */}
+      {sessions.loading ? <Loading what="sessions" /> : (
+        <CryptoModules
+          inv={inv}
+          sessions={sessionItems}
+          sessionsShown={sessionItems.length}
+          sessionsTotal={sessions.data?.total ?? sessionItems.length}
+        />
       )}
 
+      {/* ---- row 3: the findings themselves, beside the evidence rail ---- */}
+      <div className="grid gap-3 xl:grid-cols-[1.65fr_1fr]">
+        <div className="space-y-3">
+          <PriorityFindings
+            findings={topFindings.data?.items ?? []}
+            total={inv.finding_count}
+            loading={topFindings.loading}
+          />
+          {failed.length > 0 && (
+            <Panel title="Partial batch failures">
+              <table className="w-full">
+                <thead><tr><th className="th">Capture</th><th className="th">Status</th><th className="th">Reason</th></tr></thead>
+                <tbody>
+                  {failed.map((c) => (
+                    <tr key={c.capture_id}>
+                      <td className="td">{c.original_name}</td>
+                      <td className="td"><StatusTag status={c.status} /></td>
+                      <td className="td text-[12px] text-mist-300">{c.failure_reason ?? 'not stated'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <Note tone="warn">
+                Results elsewhere on this page do not cover these captures.
+              </Note>
+            </Panel>
+          )}
+        </div>
+        <TimelinePreview
+          entries={timeline.data?.items ?? []}
+          total={detail.data.timeline_event_count}
+          loading={timeline.loading}
+        />
+      </div>
+
+      {/* ---- row 4: intelligence, and the hand-off out of the tool -------- */}
+      <div className="grid gap-3 xl:grid-cols-2">
+        <IntelligencePreview detail={detail.data} />
+        <ReportHandoff
+          investigationId={inv.investigation_id}
+          schemaNote={detail.data.scope_statement}
+        />
+      </div>
+
+      {/* ---- the inventories a reader consults rather than reads ---------- */}
       <Panel area="investigate" title="Capture inventory">
         <table className="w-full">
           <thead>
@@ -107,57 +168,38 @@ export function InvestigationWorkspace({ investigationId }: { investigationId: s
         </table>
       </Panel>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Panel area="findings" title="Assessment">
+      <div className="grid gap-3 lg:grid-cols-2">
+        <Panel area="findings" title="Assessment policy">
           <dl className="grid grid-cols-2 gap-3 text-[13px]">
             <div><dt className="label">Policy</dt><dd className="mt-1"><Value value={detail.data.policy_id} /></dd></div>
             <div><dt className="label">Policy version</dt><dd className="mt-1 mono"><Value value={detail.data.policy_version} /></dd></div>
-            <div><dt className="label">Policy fingerprint</dt><dd className="mt-1 mono"><Value value={detail.data.policy_fingerprint} /></dd></div>
-            <div><dt className="label">Coverage</dt>
-              <dd className="mt-1"><Value value={inv.coverage_ratio === null ? null : `${(inv.coverage_ratio * 100).toFixed(0)}%`} /></dd></div>
+            <div className="col-span-2"><dt className="label">Policy fingerprint</dt><dd className="mt-1 mono"><Value value={detail.data.policy_fingerprint} /></dd></div>
           </dl>
-          <div className="flex gap-2 mt-4">
-            <Link className="btn" to="/sessions">Sessions</Link>
-            <Link className="btn" to="/findings">Findings</Link>
-          </div>
         </Panel>
 
-        <Panel area="intelligence" title="Cryptographic intelligence">
-          <dl className="grid grid-cols-2 gap-3 text-[13px]">
-            <div><dt className="label">Fingerprints</dt><dd className="mt-1">{detail.data.fingerprint_count}</dd></div>
-            <div><dt className="label">Server entities</dt><dd className="mt-1">{detail.data.entity_count}</dd></div>
-            <div><dt className="label">Drift observations</dt><dd className="mt-1">{detail.data.drift_count}</dd></div>
-            <div><dt className="label">Correlations</dt><dd className="mt-1">{detail.data.correlation_count}</dd></div>
-          </dl>
-          <div className="flex gap-2 mt-4">
-            <Link className="btn" to="/intelligence">Intelligence</Link>
-            <Link className="btn" to="/timeline">Timeline ({detail.data.timeline_event_count})</Link>
-          </div>
+        <Panel area="intelligence" title="Machine-learning analysis">
+          {!ml ? (
+            <Empty title="No ML results" detail="The analysis completed without a machine-learning model. Every forensic and assessment result above is complete." />
+          ) : (
+            <>
+              <dl className="grid gap-3 sm:grid-cols-3 text-[13px]">
+                <div><dt className="label">Status</dt><dd className="mt-1">{ml.ml_status}</dd></div>
+                <div><dt className="label">Anomaly detector</dt>
+                  <dd className="mt-1 mono">{ml.anomaly_algorithm ?? 'none'}</dd></div>
+                <div><dt className="label">Classifier</dt>
+                  <dd className="mt-1">{ml.classification_validation_status}</dd></div>
+              </dl>
+              {!ml.anomaly_detector_is_ml && ml.anomaly_algorithm && (
+                <Note>
+                  The selected detector is a deterministic frequency table, not a
+                  machine-learning model.
+                </Note>
+              )}
+              <Link className="btn mt-3 inline-flex" to="/ml">ML &amp; analytics</Link>
+            </>
+          )}
         </Panel>
       </div>
-
-      <Panel area="intelligence" title="Machine-learning analysis">
-        {!ml ? (
-          <Empty title="No ML results" detail="The analysis completed without a machine-learning model. Every forensic and assessment result above is complete." />
-        ) : (
-          <>
-            <dl className="grid gap-3 sm:grid-cols-3 text-[13px]">
-              <div><dt className="label">Status</dt><dd className="mt-1">{ml.ml_status}</dd></div>
-              <div><dt className="label">Anomaly detector</dt>
-                <dd className="mt-1 mono">{ml.anomaly_algorithm ?? 'none'}</dd></div>
-              <div><dt className="label">Classifier</dt>
-                <dd className="mt-1">{ml.classification_validation_status}</dd></div>
-            </dl>
-            {!ml.anomaly_detector_is_ml && ml.anomaly_algorithm && (
-              <Note>
-                The selected detector is a deterministic frequency table, not a
-                machine-learning model.
-              </Note>
-            )}
-            <Link className="btn mt-3 inline-flex" to="/ml">ML analysis</Link>
-          </>
-        )}
-      </Panel>
 
       <Panel area="investigate" title="Analysis jobs">
         {jobs.length === 0 ? <Empty title="No jobs recorded" /> : (

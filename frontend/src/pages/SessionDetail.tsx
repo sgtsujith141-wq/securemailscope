@@ -5,7 +5,15 @@ import { useInvestigationContext } from '../lib/context'
 import { api } from '../lib/api'
 import { formatTime, useAsync } from '../lib/hooks'
 import { EvidenceLink } from '../components/EvidenceLink'
+import { NegotiationChain } from '../components/NegotiationChain'
 import { Empty, Failure, Loading, Note, Panel, SeverityTag, Value } from '../components/ui'
+
+const BAND_COLOUR: Record<string, string> = {
+  STRONG: '#34d399', ADEQUATE: '#22d3ee', WEAK: '#fb923c', POOR: '#fb7185',
+}
+function bandOf(score: number): string {
+  return score >= 90 ? 'STRONG' : score >= 75 ? 'ADEQUATE' : score >= 50 ? 'WEAK' : 'POOR'
+}
 
 function Field({ label, value, kind = 'unknown', mono = false }: {
   label: string; value: unknown; kind?: 'unknown' | 'not-available' | 'not-applicable'; mono?: boolean
@@ -42,13 +50,88 @@ export function SessionDetailPage() {
 
   return (
     <div className="space-y-4">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">Session detail</h1>
-          <p className="mono text-[12px] text-mist-400 mt-0.5">{session.session_id}</p>
+      <header className="hero hero-grid flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-3">
+        <div className="min-w-0">
+          {/* The heading names the page; the identifier is displayed larger
+              beneath it. A page whose <h1> is a bare digest tells a reader
+              -- or a screen reader -- nothing about where they are. */}
+          <h1 className="label">Session detail</h1>
+          <p className="mono mt-0.5 !text-base !text-mist-50">{session.session_id}</p>
+          <p className="hint mt-1 !text-xs">
+            <span className="mono !text-xs">{session.client}</span>
+            {' \u2192 '}
+            <span className="mono !text-xs">{session.server}</span>
+            {session.protocol && <> &middot; {session.protocol}</>}
+            {session.tls_version && <> &middot; {session.tls_version}</>}
+          </p>
         </div>
-        <Link className="btn" to="/sessions">Back to sessions</Link>
+
+        <div className="flex items-center gap-5">
+          <div>
+            <span className="label">Posture</span>
+            <div className="mt-0.5 flex items-baseline gap-1.5">
+              {session.posture_score === null ? (
+                <span className="text-sm text-mist-300">
+                  {session.score_status === 'SCORE_UNAVAILABLE'
+                    ? 'INSUFFICIENT EVIDENCE' : 'UNKNOWN'}
+                </span>
+              ) : (
+                <>
+                  <span className="text-3xl font-semibold leading-none tabular-nums"
+                        style={{ color: BAND_COLOUR[bandOf(session.posture_score)] }}>
+                    {session.posture_score}
+                  </span>
+                  <span className="text-sm text-mist-400">/100</span>
+                </>
+              )}
+            </div>
+          </div>
+          <div>
+            <span className="label">Findings</span>
+            <div className="mt-0.5 text-3xl font-semibold leading-none tabular-nums">
+              {findings.length}
+            </div>
+          </div>
+          <Link className="btn" to="/sessions">Back to sessions</Link>
+        </div>
       </header>
+
+      <Panel title="TLS negotiation">
+        {!tls ? (
+          <Empty title="This session carried no TLS" />
+        ) : (
+          <>
+            {/* The chain first: which link of the handshake is weak is the
+                question this panel exists to answer. The fields below it stay,
+                because the chain deliberately shows five of them. */}
+            <NegotiationChain
+              entryPoint={tls.entry_point}
+              version={session.tls_version}
+              cipherSuite={session.cipher_suite}
+              keyExchange={tls.key_exchange?.method}
+              certificate={session.certificate_visibility}
+              findings={findings}
+            />
+            <dl className="mt-3 grid gap-3 border-t border-ink-820 pt-3 sm:grid-cols-3 lg:grid-cols-4">
+              <Field label="Entry point" value={tls.entry_point} />
+              <Field label="Handshake state" value={tls.handshake_state} />
+              <Field label="Negotiated version" value={session.tls_version} />
+              <Field label="Cipher suite" value={session.cipher_suite} mono />
+              <Field label="Key exchange" value={tls.key_exchange?.method} />
+              <Field label="Named group" value={tls.key_exchange?.selected_group?.name} kind="not-applicable" />
+              <Field label="Forward secrecy" value={tls.forward_secrecy?.status} />
+              <Field label="SNI" value={tls.server_name_indication} kind="not-applicable" />
+            </dl>
+            {Array.isArray(tls.limitations) && tls.limitations.length > 0 && (
+              <div className="mt-3 space-y-1">
+                {tls.limitations.map((l: string) => (
+                  <p key={l} className="text-[11px] text-mist-400">{l}</p>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </Panel>
 
       <Panel title="Connection">
         <dl className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -124,32 +207,6 @@ export function SessionDetailPage() {
           )}
         </Panel>
       )}
-
-      <Panel title="TLS negotiation">
-        {!tls ? (
-          <Empty title="This session carried no TLS" />
-        ) : (
-          <>
-            <dl className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              <Field label="Entry point" value={tls.entry_point} />
-              <Field label="Handshake state" value={tls.handshake_state} />
-              <Field label="Negotiated version" value={session.tls_version} />
-              <Field label="Cipher suite" value={session.cipher_suite} mono />
-              <Field label="Key exchange" value={tls.key_exchange?.method} />
-              <Field label="Named group" value={tls.key_exchange?.selected_group?.name} kind="not-applicable" />
-              <Field label="Forward secrecy" value={tls.forward_secrecy?.status} />
-              <Field label="SNI" value={tls.server_name_indication} kind="not-applicable" />
-            </dl>
-            {Array.isArray(tls.limitations) && tls.limitations.length > 0 && (
-              <div className="mt-3 space-y-1">
-                {tls.limitations.map((l: string) => (
-                  <p key={l} className="text-[11px] text-mist-400">{l}</p>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </Panel>
 
       <Panel title="Certificate intelligence">
         {isTls13 && session.certificate_visibility !== 'OBSERVED' ? (

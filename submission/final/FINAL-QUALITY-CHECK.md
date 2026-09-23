@@ -1,43 +1,67 @@
 # Final quality check
 
-Every result re-run against this working tree on 2026-09-23. Nothing carried
-forward from an earlier milestone.
+Every result below was re-run against this working tree on 2026-09-23. Nothing is
+carried forward from an earlier milestone, and no number here is an estimate.
 
-- **Commit at time of running:** `784b8737826974cf208bbbc9a0b38d8756077465`
 - **Branch:** `main` · **Repository:** private, unchanged
+- **Nothing submitted, nothing uploaded, no licence added, visibility unchanged**
 
 ## Automated gates
 
 | Gate | Command | Result |
 |---|---|---|
-| Backend tests | `pytest -q` | **1,354 passed**, 25 skipped |
-| TShark cross-check | `SECUREMAILSCOPE_TSHARK=1 pytest -q` | **1,364 passed**, 15 skipped |
+| Backend tests | `pytest -q` | **1,357 passed**, 25 skipped |
+| TShark cross-check | `SECUREMAILSCOPE_TSHARK=1 pytest -q` | **1,367 passed**, 15 skipped |
 | Lint | `ruff check .` | **clean** |
-| Type check | `mypy` | **clean, 154 files** (`src/`, `tests/`, `scripts/`) |
+| Type check | `mypy` | **clean, 156 files** (`src/`, `tests/`, `scripts/`) |
 | Frontend types | `npx tsc --noEmit` | **clean** |
 | Frontend lint | `npm run lint` (`--max-warnings 0`) | **clean** |
-| Frontend tests | `npm run test` | **88 passed** |
+| Frontend tests | `npx vitest run` | **89 passed** |
 | Production build | `npm run build` | **clean** |
 | Browser end-to-end | `npx playwright test` | **5 passed**, real backend |
-| Python dependency audit | `pip-audit` | **0 known vulnerabilities** |
-| Frontend audit | `npm audit` | **0 vulnerabilities** |
+| Visual QA sweep | `npx playwright test visual-qa` | **passed**, 40 page loads |
+| Python dependency audit | `pip-audit -r requirements-lock.txt` | **no known vulnerabilities** |
+| Frontend audit | `npm audit --omit=dev` | **0 vulnerabilities** |
+| History secret scan | `python scripts/audit_history.py` | **clean**, 796 blobs across every ref |
+| Staged-file check | `scripts/check_staged.sh` | **clean** |
 
 ## Visual QA
 
-Real application, investigation workspace loaded:
+Measured in a real browser against the real backend, on an analysed
+investigation, by `frontend/e2e/visual-qa.spec.ts`. Every page of the
+application at every supported size; the transcript is
+`local-evidence/visual-qa.json`.
 
-| Viewport | Horizontal overflow | Failed requests | Console errors |
-|---|---|---|---|
-| 1920 × 1080 | none | 0 | none |
-| 1600 × 1000 | none | 0 | none |
-| 1440 × 900 | none | 0 | none |
-| 1280 × 720 | none | 0 | none |
-| 1024 × 768 | none | 0 | none |
+| Viewport | Pages checked | Horizontal overflow | Failed requests | Console errors |
+|---|---|---|---|---|
+| 1920 × 1080 | 10 | none | 0 | none |
+| 1600 × 1000 | 10 | none | 0 | none |
+| 1440 × 900 | 10 | none | 0 | none |
+| 1280 × 720 | 10 | none | 0 | none |
 
-Screenshots were inspected individually, not merely produced. Three defects
-were found that way and fixed: the posture band label clipped the score arc,
-the severity strip stretched a full column for one value, and section accent
-rules were being overridden by the panel shadow.
+Screenshots were also inspected individually rather than merely produced.
+Defects found and fixed that way, in this sprint:
+
+- the sidebar stopped at one viewport height, so the page background showed
+  beneath it on any page taller than the screen;
+- the evidence timeline printed `00:00:00.000 UT` — the unit clipped mid-word
+  by an offset counted against a different format;
+- the headline said "6 high-priority issues" beside severity chips reading
+  "7 HIGH", because the headline counted only the page of findings the
+  dashboard had fetched;
+- two deck captions named a capture count the image contradicted, and two more
+  were clipped by the template's footer band.
+
+## Defects found and fixed in the product
+
+Three were real engine or API faults, each now covered by a test that fails
+without the fix:
+
+| Defect | Where | Regression test |
+|---|---|---|
+| A drift id identified several comparisons at once, so a report could not cross-reference any one of them | `intelligence/drift.py` | `test_intelligence.py::test_a_drift_id_identifies_exactly_one_comparison` |
+| A session opened in one investigation listed its findings once per investigation that contained the same capture — four findings rendered as eight | `backend/app.py` | `test_backend.py::test_a_session_shown_twice_does_not_duplicate_its_findings` |
+| One intelligence tab rendered the previous tab's rows under its own schema while loading | `frontend/src/pages/Intelligence.tsx` | `app.test.tsx` — "does not render one section's rows under another section's tab" |
 
 ## SIH26159 requirement coverage
 
@@ -49,80 +73,19 @@ encrypting the Certificate message, and the ML requirement, where the selected
 anomaly method is a deterministic baseline and the supervised classifier is
 `NOT_VALIDATED`.
 
-## Presentation
+## Submission artefacts
 
-| Check | Result |
+| Artefact | State |
 |---|---|
-| Page count | **exactly 6** |
-| Official template retained | **yes** |
-| Instruction slide removed | **yes**, asserted absent from PPTX XML and PDF text |
-| `Zero-Day` present | **yes**, in PPTX XML and PDF text |
-| `Your Team Name` | **absent** |
-| `Team Zero Day` / `Team Zero-Day` / `Team zero day` | **absent** |
-| `Zero Day` / `ZERO DAY` | **absent** |
-| `SecureMailScope`, `SIH26159`, `Software`, NTRO | **all present** |
-| Stale `SIH26164` / `CryptoDrishti` / `Phantom HQ` | **absent** |
-| Visual share | **~45%** — 7 product screenshots plus diagrams across 6 slides |
-| Every page rendered at 2× and inspected | **yes** |
-| Clipped or overflowing text | **none** |
-| Stretched screenshots | **none** — cropped to ratio, never scaled non-uniformly |
+| Six-slide deck | Built on the official template. Every title-page field resolved; the build fails on an `[UNRESOLVED]` marker, a seventh page, a wrong team name, a missing repository link or a missing video element. |
+| Demonstration video | **Complete.** 3 min 17 s, 1920×1080, 30 fps, H.264, built from a Playwright recording of the real stack. Narration is synthesised and labelled as such. |
+| Screenshots | 12, all regenerated from this build against the real backend. |
+| Manifest | `MANIFEST.md` / `manifest.json` — SHA-256 of every file in the package. |
 
-Enforced by `scripts/build_presentation.py`, which reads the PPTX XML and the
-extracted PDF text and **exits non-zero** on any failure.
+## Deliberately not done
 
-## Video
-
-| Check | Result |
-|---|---|
-| Footage authentic | **yes** — Playwright against the real stack |
-| Resolution / rate | 1920 × 1080, 30 fps, H.264 |
-| Duration | 29.07 s of B-roll |
-| Tokens, paths, personal data | **none** — frames inspected at 4, 12, 20, 26 s |
-| Fake progress or cursor | **none** |
-| Narration | **not recorded** |
-
-Status: **VIDEO EDIT READY · HUMAN NARRATION PENDING.** No upload, no URL.
-
-## Privacy audit
-
-| Check | Result |
-|---|---|
-| Staged-file audit | `make secrets-check` clean before every commit |
-| Full history audit | `scripts/audit_history.py` — 787 blobs across every ref |
-| Captures / keys / tokens / databases in history | **none** |
-
-The audit reported one finding during this sweep and it was a real defect in
-the scanner: it matched the PEM banner inside its own pattern table. The
-banner is now assembled at run time so current versions cannot self-match, and
-the historical blobs are allowed by path with that reason recorded — silencing
-the pattern would have blinded the scanner to a genuine key.
-
-## Rollback
-
-Verified: the archived deck PDF was extracted from history with `git show`
-into a temporary directory and its SHA-256 matched the working copy byte for
-byte, with the working tree untouched. See `docs/ROLLBACK.md`.
-
-## Contribution attribution
-
-| Field | Value |
-|---|---|
-| Authenticated GitHub user | `sgtsujith141-wq` |
-| Repo-local author name | `sgtsujith141-wq` |
-| Email attribution | **NOT VERIFIED** |
-| Default branch | `main` |
-
-`gh api user/emails` requires the `user` OAuth scope, which is not granted
-here, so the configured commit email could not be confirmed against the
-account. The existing author identity was preserved unchanged rather than
-guessed at, and no historical commit was rewritten.
-
-## Remaining blockers
-
-| Item | Status | Why |
-|---|---|---|
-| Official SIH26159 theme | **BLOCKED** | Not recorded in this repository; deliberately not inferred from another problem statement |
-| Registered Team ID | **BLOCKED** | Issued by the SIH portal at registration |
-| Finished demo video | **PARTIAL** | Authentic B-roll captured; narration needs a human voice |
-| Benchmarks on 4-core / 8 GB | **NOT VERIFIED** | No such hardware available |
-| Publication / upload / submission | **AWAITING APPROVAL** | Each needs the team's decision |
+- Nothing submitted to the SIH portal.
+- No video uploaded anywhere; no public URL exists.
+- Repository visibility unchanged (**private**).
+- No licence added.
+- No history rewritten, no branch force-pushed, no tag moved or deleted.

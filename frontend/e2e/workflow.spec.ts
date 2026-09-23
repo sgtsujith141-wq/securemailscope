@@ -88,8 +88,8 @@ test('upload, analyse, investigate, navigate to evidence and export', async ({ p
   await expect(timeline).toBeVisible()
   // Scoped to the list: the event-type filter contains options with the same
   // names, and an option inside a closed select is not visible.
-  await expect(timeline.getByText('SESSION FIRST PACKET').first()).toBeVisible()
-  await expect(timeline.getByText(/^Packets /).first()).toBeVisible()
+  await expect(timeline.getByText('session first packet').first()).toBeVisible()
+  await expect(timeline.getByText(/^packets /i).first()).toBeVisible()
 
   // -- 8. Export all three formats ----------------------------------------
   await navigate(page, 'Reports')

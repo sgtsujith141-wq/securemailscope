@@ -74,7 +74,8 @@ function resolveEverything() {
   mocked.getSession.mockResolvedValue(fixtures.sessionDetail)
   mocked.listFindings.mockResolvedValue(fixtures.page([fixtures.finding]))
   mocked.getFinding.mockResolvedValue(fixtures.findingDetail)
-  mocked.getIntelligence.mockResolvedValue(fixtures.intelligence)
+  mocked.getIntelligence.mockImplementation(async (_id: string, section?: string) =>
+    fixtures.intelligenceSection(section ?? 'fingerprints'))
   mocked.getTimeline.mockResolvedValue(fixtures.page(fixtures.timeline))
   mocked.getML.mockResolvedValue(fixtures.ml)
   mocked.getSettings.mockResolvedValue(fixtures.settings)
