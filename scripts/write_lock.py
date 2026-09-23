@@ -20,11 +20,9 @@ plain lock file does not.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import platform
 import subprocess
 import sys
-import tempfile
 from datetime import date
 from pathlib import Path
 
@@ -89,45 +87,56 @@ def write_plain(path: Path) -> int:
 
 
 def write_hashes(path: Path) -> int:
-    """Download every pinned artefact and record its SHA-256."""
+    """Record the SHA-256 of **every** artefact PyPI serves for each pin.
+
+    Downloading the pins on this machine and hashing what arrives records only
+    the wheels for *this* platform. A Linux CI runner then needs a manylinux
+    wheel whose hash is absent, and ``--require-hashes`` correctly refuses the
+    install -- which is exactly what happened: ``cffi`` resolved to a macOS
+    wheel here and a manylinux wheel there.
+
+    So the hashes come from the package index itself, which lists every
+    distribution for a version, rather than from whatever this machine
+    happened to need.
+    """
+    import json
+    import urllib.error
+    import urllib.request
+
     pins = _frozen()
     entries: list[str] = []
     skipped: list[str] = []
 
-    with tempfile.TemporaryDirectory() as directory:
-        for name, version in pins:
-            target = Path(directory) / f"{name}-{version}"
-            target.mkdir(parents=True, exist_ok=True)
-            # The name and version come from pip's own freeze output, not
-            # from user input, and are passed as separate argv entries.
-            result = subprocess.run(  # noqa: S603 - fixed argv, no shell
-                [
-                    sys.executable, "-m", "pip", "download",
-                    f"{name}=={version}",
-                    "--no-deps", "--dest", str(target),
-                ],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            artefacts = sorted(p for p in target.iterdir() if p.is_file())
-            if result.returncode != 0 or not artefacts:
-                skipped.append(f"{name}=={version}")
-                continue
-            digests = [
-                hashlib.sha256(artefact.read_bytes()).hexdigest()
-                for artefact in artefacts
-            ]
-            joined = " \\\n".join(f"    --hash=sha256:{d}" for d in digests)
-            entries.append(f"{name}=={version} \\\n{joined}")
-            print(f"  {name}=={version}  ({len(digests)} artefact(s))", flush=True)
+    for name, version in pins:
+        url = f"https://pypi.org/pypi/{name}/{version}/json"
+        try:
+            with urllib.request.urlopen(url, timeout=30) as response:  # noqa: S310
+                payload = json.load(response)
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            skipped.append(f"{name}=={version} ({type(exc).__name__})")
+            continue
+
+        digests = sorted(
+            {
+                item["digests"]["sha256"]
+                for item in payload.get("urls", [])
+                if item.get("digests", {}).get("sha256")
+            }
+        )
+        if not digests:
+            skipped.append(f"{name}=={version} (no sha256 published)")
+            continue
+
+        joined = " \\\n".join(f"    --hash=sha256:{digest}" for digest in digests)
+        entries.append(f"{name}=={version} \\\n{joined}")
+        print(f"  {name}=={version}  ({len(digests)} artefact(s))", flush=True)
 
     note = ""
     if skipped:
         note = (
-            "# NOT HASHED -- no artefact could be downloaded for these, so they\n"
-            "# are absent from this file and `--require-hashes` would reject an\n"
-            "# install that needs them:\n"
+            "# NOT HASHED -- the index published no usable digest for these, so\n"
+            "# they are absent and `--require-hashes` would refuse an install\n"
+            "# that needs them:\n"
             + "".join(f"#   {item}\n" for item in skipped)
             + "#\n"
         )
@@ -140,8 +149,10 @@ def write_hashes(path: Path) -> int:
             "# Install with:\n"
             "#   pip install --require-hashes -r requirements-lock-hashes.txt\n"
             "#\n"
-            "# Every artefact PyPI serves for a pin is listed. An index serving\n"
-            "# different bytes under the same version is refused, not installed."
+            "# Every artefact the index publishes for a pin is listed, across\n"
+            "# all platforms and interpreters -- not only the ones this machine\n"
+            "# happens to need. An index serving different bytes under the same\n"
+            "# version is refused, not installed."
         )
         + "\n"
         + note
