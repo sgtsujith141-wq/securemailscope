@@ -25,7 +25,8 @@ working tree.
 | `archive/final-ui-v2` | The redesigned investigation interface |
 | `archive/final-ppt-v2` | The deck with every title-page field resolved |
 | `archive/final-demo-v1` | The finished demonstration video |
-| `archive/final-candidate-v2` | The current submission candidate |
+| `archive/final-candidate-v2` | The submission candidate, before the documentation follow-ups |
+| `archive/final-submission` | The submission candidate with CI green on all six jobs |
 
 List them, newest first:
 
