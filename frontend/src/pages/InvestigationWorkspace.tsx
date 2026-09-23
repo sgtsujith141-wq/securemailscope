@@ -4,11 +4,18 @@ import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatBytes, formatTime, useAsync } from '../lib/hooks'
 import { useInvestigationContext } from '../lib/context'
+import { NeedsAttention } from '../components/NeedsAttention'
 import { Empty, Failure, Loading, Metric, Note, Panel, StatusTag, Value } from '../components/ui'
 
 export function InvestigationWorkspace({ investigationId }: { investigationId: string }) {
   const { select } = useInvestigationContext()
   const detail = useAsync(() => api.getInvestigation(investigationId), [investigationId])
+  // The highest-ranked findings, for the attention hero. Ranked by the
+  // engine's own priority matrix -- this page does no ordering of its own.
+  const topFindings = useAsync(
+    () => api.listFindings(investigationId, { offset: 0, limit: 6 }),
+    [investigationId],
+  )
 
   useEffect(() => { select(investigationId) }, [investigationId, select])
 
@@ -34,9 +41,17 @@ export function InvestigationWorkspace({ investigationId }: { investigationId: s
         </div>
       </header>
 
-      <p className="text-[13px] text-mist-300">{detail.data.scope_statement}</p>
+      <p className="text-sm text-mist-300">{detail.data.scope_statement}</p>
 
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+      {/* What needs attention comes before the summary numbers. A score
+          summarises; a finding is the substance. */}
+      <NeedsAttention
+        findings={topFindings.data?.items ?? []}
+        total={inv.finding_count}
+        loading={topFindings.loading}
+      />
+
+      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
         <Metric label="Captures analysed" value={inv.analysed_capture_count}
                 note={inv.failed_capture_count > 0 ? `${inv.failed_capture_count} failed` : undefined} />
         <Metric label="Sessions" value={inv.session_count} testId="session-count" />

@@ -74,6 +74,17 @@ def _imported(paths: list[Path]) -> dict[str, list[Path]]:
     return found
 
 
+#: Scripts that run under the separate ``.venv-release`` tooling environment
+#: rather than the product's own. Their imports are deliberately absent from
+#: pyproject.toml: the SBOM and the lock file describe the product, and adding
+#: presentation or audit tooling to them would make both describe the tools
+#: that build the submission instead.
+TOOLING_ONLY: dict[str, set[str]] = {
+    "scripts/build_presentation.py": {"pptx"},
+    "scripts/generate_sbom.py": set(),
+}
+
+
 def test_every_third_party_import_is_declared() -> None:
     """Nothing may rely on a package that merely happens to be installed."""
     declared = set().union(*_declared().values())
@@ -87,11 +98,17 @@ def test_every_third_party_import_is_declared() -> None:
     sources += sorted((ROOT / "scripts").glob("*.py"))
     imported = _imported(sources)
 
-    undeclared = {
-        name: sorted(str(p.relative_to(ROOT)) for p in paths)
-        for name, paths in imported.items()
-        if name not in declared
-    }
+    undeclared = {}
+    for name, paths in imported.items():
+        if name in declared:
+            continue
+        offenders = [
+            str(path.relative_to(ROOT))
+            for path in paths
+            if name not in TOOLING_ONLY.get(str(path.relative_to(ROOT)), set())
+        ]
+        if offenders:
+            undeclared[name] = sorted(set(offenders))
     assert not undeclared, (
         "these modules are imported but not declared in pyproject.toml:\n"
         + "\n".join(f"  {name}: {', '.join(files)}" for name, files in undeclared.items())

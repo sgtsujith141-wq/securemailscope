@@ -3,24 +3,124 @@
 @tailwind utilities;
 
 @layer base {
-  body { @apply bg-ink-950 text-mist-100 antialiased; }
-  :focus-visible { @apply outline-none ring-2 ring-sev-info ring-offset-2 ring-offset-ink-950; }
+  body {
+    @apply bg-ink-990 text-mist-100 antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'tnum';
+  }
+
+  /* One visible focus treatment everywhere. Keyboard users must always be
+     able to see where they are; colour alone is never the signal. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent/70 ring-offset-2 ring-offset-ink-990;
+  }
+
+  ::selection { @apply bg-accent/25 text-mist-50; }
+
+  /* Scrollbars inside scroll regions, so a dense table does not put a bright
+     native bar through a dark surface. */
+  * { scrollbar-width: thin; scrollbar-color: #293a52 transparent; }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-thumb {
+    background: #293a52; border-radius: 6px; border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover { background: #334560; background-clip: content-box; }
 }
 
 @layer components {
-  .panel { @apply bg-ink-800 border border-ink-600 rounded-lg; }
-  .label { @apply text-[11px] uppercase tracking-wider text-mist-300 font-medium; }
-  .mono { @apply font-mono text-[12px] break-all; }
+  /* ---- surfaces -------------------------------------------------------- */
+  .surface { @apply bg-ink-900 border border-ink-750 rounded-lg; }
+  /* Retained so every page that predates the redesign keeps its surface
+     while it is migrated. Spelled out rather than @apply-ing .surface, which
+     would make it depend on declaration order within the layer. */
+  .panel { @apply bg-ink-900 border border-ink-750 rounded-lg; }
+  .surface-raised { @apply bg-ink-850 border border-ink-700 rounded-lg; }
+  .surface-sunken { @apply bg-ink-950 border border-ink-800 rounded-md; }
+
+  /* A section is the main organising unit: a titled region, not a card in a
+     sea of cards. Cards are not nested inside cards. */
+  .section { @apply bg-ink-900 border border-ink-750 rounded-lg overflow-hidden; }
+  .section-head {
+    @apply flex items-center justify-between gap-2 px-3 py-2
+           border-b border-ink-750 bg-ink-850/60;
+  }
+  .section-title { @apply text-sm font-semibold text-mist-100; }
+  .section-body { @apply p-3; }
+
+  /* ---- type ------------------------------------------------------------ */
+  .label {
+    @apply text-2xs uppercase tracking-[0.09em] text-mist-400 font-semibold;
+  }
+  .mono { @apply font-mono text-xs break-all text-mist-200; }
+  .muted { @apply text-mist-300; }
+  .hint { @apply text-xs text-mist-400 leading-relaxed; }
+
+  /* ---- controls -------------------------------------------------------- */
   .btn {
-    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium
-           border border-ink-600 bg-ink-700 text-mist-100 transition-colors
-           hover:bg-ink-600 disabled:opacity-40 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md
+           text-sm font-medium border border-ink-650 bg-ink-800 text-mist-100
+           transition-colors duration-[180ms]
+           hover:bg-ink-750 hover:border-ink-600
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-ink-800;
   }
-  .btn-primary { @apply bg-sev-info/15 border-sev-info/40 text-sev-info hover:bg-sev-info/25; }
+  .btn-primary {
+    @apply bg-accent/15 border-accent/45 text-accent
+           hover:bg-accent/25 hover:border-accent/60;
+  }
+  .btn-lg { @apply px-3 py-2 text-base; }
+  .btn-ghost { @apply border-transparent bg-transparent hover:bg-ink-800; }
+
   .input {
-    @apply bg-ink-900 border border-ink-600 rounded-md px-2.5 py-1.5 text-sm text-mist-100
-           placeholder:text-mist-400 focus:border-sev-info/60;
+    @apply bg-ink-950 border border-ink-700 rounded-md px-2.5 py-1.5 text-sm
+           text-mist-100 placeholder:text-mist-500
+           transition-colors duration-[180ms]
+           focus:border-accent/60 focus:bg-ink-900;
   }
-  .th { @apply label text-left px-3 py-2 border-b border-ink-600 whitespace-nowrap; }
-  .td { @apply px-3 py-2 border-b border-ink-700 text-sm align-top; }
+
+  /* ---- tables ---------------------------------------------------------- */
+  .th {
+    @apply label text-left px-2.5 py-2 border-b border-ink-750
+           whitespace-nowrap bg-ink-850/50;
+  }
+  .td { @apply px-2.5 py-2 border-b border-ink-800 text-sm align-top; }
+  .row-link { @apply transition-colors duration-[180ms] hover:bg-ink-850/70; }
+
+  /* ---- severity -------------------------------------------------------- */
+  /* Severity always carries a text label beside the colour, so the meaning
+     survives for a colour-blind reader and in a greyscale print. */
+  .tag {
+    @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded
+           text-2xs font-bold uppercase tracking-[0.07em] border;
+  }
+  .tag-CRITICAL { @apply text-sev-critical border-sev-critical/45 bg-sev-critical/[0.12]; }
+  .tag-HIGH     { @apply text-sev-high     border-sev-high/45     bg-sev-high/[0.12]; }
+  .tag-MEDIUM   { @apply text-sev-medium   border-sev-medium/45   bg-sev-medium/[0.12]; }
+  .tag-LOW      { @apply text-sev-low      border-sev-low/45      bg-sev-low/[0.12]; }
+  .tag-INFO     { @apply text-sev-info     border-sev-info/45     bg-sev-info/[0.12]; }
+  .tag-OK       { @apply text-sev-ok       border-sev-ok/45       bg-sev-ok/[0.12]; }
+  .tag-UNKNOWN  { @apply text-sev-unknown  border-sev-unknown/45  bg-sev-unknown/[0.12]; }
+
+  /* A quiet chip for a technical value: a cipher suite, a TLS version, a
+     protocol. Not a severity, so it carries no severity colour. */
+  .chip {
+    @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded
+           text-2xs font-medium border border-ink-650 bg-ink-800 text-mist-200;
+  }
+  .chip-mono {
+    @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded border
+           border-ink-650 bg-ink-800 text-mist-200
+           font-mono text-2xs tracking-normal normal-case;
+  }
+
+  /* ---- navigation ------------------------------------------------------ */
+  .nav-item {
+    @apply flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm
+           text-mist-300 transition-colors duration-[180ms]
+           hover:bg-ink-850 hover:text-mist-100;
+  }
+  .nav-item-active {
+    @apply bg-accent/[0.12] text-mist-50 font-medium;
+    box-shadow: inset 2px 0 0 0 #4fd1c5;
+  }
+  .nav-group { @apply label px-2.5 pt-3 pb-1 block; }
 }

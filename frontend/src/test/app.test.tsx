@@ -80,13 +80,25 @@ beforeEach(() => {
     report_schema_version: '1.4.0', database_schema_version: 1,
     ml_available: true, ml_status: 'COMPLETED', analyzer_works_without_ml: true,
   })
+  // The workspace loads its top findings for the attention hero. Tests that
+  // are not about findings still render it, so give the call a default rather
+  // than leaving each of them to stub a request they do not care about.
+  mocked.listFindings.mockResolvedValue(fixtures.page([]))
 })
 
 describe('Overview', () => {
   it('shows an empty state before anything is analysed', async () => {
     mocked.listInvestigations.mockResolvedValue(fixtures.page([]))
     withRouter(<Overview />)
-    expect(await screen.findByText(/No captures have been analysed yet/i)).toBeInTheDocument()
+    // With nothing analysed the product explains itself rather than the
+    // database: what it does, what it accepts, and the four steps.
+    expect(await screen.findByTestId('first-run')).toBeInTheDocument()
+    expect(
+      screen.getByText(/Investigate cryptographic security directly from captured email traffic/i),
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('start-investigation')).toBeInTheDocument()
+    // No invented counts while the database is empty.
+    expect(screen.queryByText(/^0$/)).not.toBeInTheDocument()
   })
 
   it('reports a failure rather than pretending there is no data', async () => {
@@ -162,6 +174,39 @@ describe('Upload workflow', () => {
 })
 
 describe('Investigation workspace', () => {
+  it('leads with what needs attention, not with the score', async () => {
+    // The workspace used to open with four equal-weight metric cards, the
+    // largest of which was the score. A reader had to work out for themselves
+    // which findings were HIGH. The hero now says it.
+    mocked.getInvestigation.mockResolvedValue(fixtures.investigationDetail)
+    mocked.listFindings.mockResolvedValue(
+      fixtures.page([
+        { ...fixtures.finding, finding_id: 'find-a', severity: 'HIGH', priority: 'P1' },
+        { ...fixtures.finding, finding_id: 'find-b', severity: 'HIGH', priority: 'P1' },
+        { ...fixtures.finding, finding_id: 'find-c', severity: 'INFO', priority: 'P4' },
+      ]),
+    )
+    withRouter(<InvestigationWorkspace investigationId={fixtures.investigation.investigation_id} />)
+
+    const headline = await screen.findByTestId('attention-headline')
+    expect(headline).toHaveTextContent(/2 high-priority issues require attention/i)
+    // Only the urgent ones are promoted; the INFO finding is not.
+    expect(screen.getAllByTestId('attention-item')).toHaveLength(2)
+  })
+
+  it('states that no rule failed rather than claiming the systems are secure', async () => {
+    mocked.getInvestigation.mockResolvedValue({
+      ...fixtures.investigationDetail,
+      investigation: { ...fixtures.investigation, finding_count: 0, severity_counts: {} },
+    })
+    mocked.listFindings.mockResolvedValue(fixtures.page([]))
+    withRouter(<InvestigationWorkspace investigationId={fixtures.investigation.investigation_id} />)
+
+    const panel = await screen.findByTestId('needs-attention')
+    expect(panel).toHaveTextContent(/No findings were raised/i)
+    expect(panel).toHaveTextContent(/not a conclusion that the analysed systems are secure/i)
+  })
+
   it('shows partial batch failures rather than hiding them', async () => {
     mocked.getInvestigation.mockResolvedValue({
       ...fixtures.investigationDetail,
@@ -427,12 +472,30 @@ describe('Navigation', () => {
   it('renders every primary area in the navigation', async () => {
     mocked.listInvestigations.mockResolvedValue(fixtures.page([]))
     withRouter(<App />)
+    // The primary workflow, plus Settings held visually secondary. The
+    // per-investigation group is asserted separately, because it is
+    // deliberately absent until an investigation is selected.
     for (const label of [
-      'Overview', 'Investigations', 'Sessions', 'Security findings',
-      'Cryptographic intelligence', 'Evidence timeline', 'ML analysis', 'Reports', 'Settings',
+      'Investigations', 'Findings', 'Intelligence', 'Reports', 'Settings',
     ]) {
       expect(await screen.findByRole('link', { name: label })).toBeInTheDocument()
     }
+    expect(screen.queryByRole('link', { name: 'Sessions' })).toBeNull()
+  })
+
+  it('reveals the per-investigation group only once one is selected', async () => {
+    // The redesign hides Sessions, Evidence timeline and ML behind a selected
+    // investigation. Showing them with nothing selected was a first-time-user
+    // trap: every one of them was an empty page with no explanation.
+    mocked.listInvestigations.mockResolvedValue(fixtures.page([fixtures.investigation]))
+    mocked.getInvestigation.mockResolvedValue(fixtures.investigationDetail)
+    withSelection(<App />)
+    for (const label of ['Overview', 'Sessions', 'Evidence timeline', 'ML & analytics']) {
+      expect(await screen.findByRole('link', { name: label })).toBeInTheDocument()
+    }
+    expect(screen.getByTestId('selected-investigation')).toHaveTextContent(
+      fixtures.investigation.investigation_id,
+    )
   })
 
   it('handles an unknown route without crashing', async () => {

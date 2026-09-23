@@ -112,7 +112,10 @@ describe('document structure', () => {
     withRouter(<App />)
     const nav = await screen.findByRole('navigation')
     const links = within(nav).getAllByRole('link')
-    expect(links.length).toBeGreaterThan(5)
+    // Primary workflow (4) plus Settings. The per-investigation group appears
+    // only once an investigation is selected, which is the point: an empty
+    // "Sessions" page tells a first-time user nothing.
+    expect(links.length).toBeGreaterThanOrEqual(5)
     for (const link of links) {
       expect(link).toHaveAccessibleName()
       expect(link.getAttribute('href')).toBeTruthy()
@@ -283,7 +286,7 @@ describe('narrow viewports', () => {
 
     const nav = await screen.findByRole('navigation')
     expect(nav).toBeInTheDocument()
-    expect(within(nav).getAllByRole('link').length).toBeGreaterThan(5)
+    expect(within(nav).getAllByRole('link').length).toBeGreaterThanOrEqual(5)
   })
 })
 

@@ -19,14 +19,14 @@ export function Panel({ title, children, actions, className = '' }: {
   className?: string
 }) {
   return (
-    <section className={`panel ${className}`}>
+    <section className={`section ${className}`}>
       {(title || actions) && (
-        <header className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-ink-600">
-          {title && <h2 className="text-sm font-semibold text-mist-100">{title}</h2>}
+        <header className="section-head">
+          {title && <h2 className="section-title">{title}</h2>}
           {actions}
         </header>
       )}
-      <div className="p-4">{children}</div>
+      <div className="section-body">{children}</div>
     </section>
   )
 }
@@ -132,20 +132,20 @@ export function Loading({ what }: { what: string }) {
 
 export function Empty({ title, detail, action }: { title: string; detail?: string; action?: ReactNode }) {
   return (
-    <div className="text-center py-10 px-4">
+    <div className="text-center py-8 px-3">
       <p className="text-sm text-mist-200 font-medium">{title}</p>
-      {detail && <p className="text-[13px] text-mist-300 mt-1 max-w-lg mx-auto">{detail}</p>}
-      {action && <div className="mt-4">{action}</div>}
+      {detail && <p className="hint mt-1 max-w-lg mx-auto">{detail}</p>}
+      {action && <div className="mt-3">{action}</div>}
     </div>
   )
 }
 
 export function Failure({ title, detail, onRetry }: { title: string; detail?: string; onRetry?: () => void }) {
   return (
-    <div className="panel border-sev-critical/40 bg-sev-critical/5 p-4" role="alert">
-      <p className="text-sm font-medium text-sev-critical">{title}</p>
-      {detail && <p className="text-[13px] text-mist-200 mt-1">{detail}</p>}
-      {onRetry && <button className="btn mt-3" onClick={onRetry}>Try again</button>}
+    <div className="surface border-sev-critical/40 bg-sev-critical/[0.06] p-3" role="alert">
+      <p className="text-sm font-semibold text-sev-critical">{title}</p>
+      {detail && <p className="text-sm text-mist-200 mt-1">{detail}</p>}
+      {onRetry && <button className="btn mt-2" onClick={onRetry}>Try again</button>}
     </div>
   )
 }

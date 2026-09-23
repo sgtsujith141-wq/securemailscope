@@ -23,7 +23,6 @@ LibreOffice is available, the PDF beside it.
 from __future__ import annotations
 
 import argparse
-
 import json
 import shutil
 import subprocess
@@ -35,7 +34,7 @@ from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
-from pptx.util import Emu, Inches, Pt
+from pptx.util import Inches, Pt
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "submission" / "presentation"
@@ -57,12 +56,12 @@ BOX_LINE = RGBColor(0xC2, 0xD4, 0xE6)
 # ---------------------------------------------------------------------------
 def _delete_slide(prs: Presentation, index: int) -> None:
     """Remove a slide. python-pptx has no public API for this."""
-    slide_id = prs.slides._sldIdLst[index]  # noqa: SLF001
+    slide_id = prs.slides._sldIdLst[index]
     rid = slide_id.get(
         "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
     )
     prs.part.drop_rel(rid)
-    prs.slides._sldIdLst.remove(slide_id)  # noqa: SLF001
+    prs.slides._sldIdLst.remove(slide_id)
 
 
 def _shape(slide: Any, name: str) -> Any | None:
@@ -76,12 +75,12 @@ def _clear(frame: Any) -> None:
     frame.clear()
     paragraph = frame.paragraphs[0]
     for run in list(paragraph.runs):
-        run._r.getparent().remove(run._r)  # noqa: SLF001
+        run._r.getparent().remove(run._r)
 
 
 def _write(
     frame: Any,
-    lines: list[tuple[str, int, bool, RGBColor, int]],
+    lines: list[tuple[str, float, bool, RGBColor, int]],
     *,
     line_spacing: float = 1.0,
 ) -> None:
@@ -176,13 +175,16 @@ def slide_1(slide: Any, config: dict[str, Any]) -> list[str]:
         ("Team ID", "team_id"),
         ("Team Name (Registered on portal)", "team_name"),
     ]
-    lines: list[tuple[str, int, bool, RGBColor, int]] = []
+    lines: list[tuple[str, float, bool, RGBColor, int]] = []
     for label, key in fields:
         text, resolved = _value(config, key)
         if not resolved:
             unresolved.append(key)
-        lines.append((f"{label} – ", 15, True, INK, 0))
-        lines[-1] = (f"{label} – {text}", 15, False, INK if resolved else UNRESOLVED, 0)
+        # The en dash is the separator the official template uses.
+        lines.append(
+            (f"{label} \u2013 {text}", 15, False,
+             INK if resolved else UNRESOLVED, 0)
+        )
     _write(box.text_frame, lines, line_spacing=1.35)
     return unresolved
 

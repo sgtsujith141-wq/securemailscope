@@ -1,66 +1,135 @@
 import { NavLink, Navigate, Route, Routes, useParams } from 'react-router-dom'
-import { Overview } from './pages/Overview'
-import { Investigations } from './pages/Investigations'
-import { InvestigationWorkspace } from './pages/InvestigationWorkspace'
-import { Sessions } from './pages/Sessions'
-import { SessionDetailPage } from './pages/SessionDetail'
+
+import { ErrorBoundary } from './components/ErrorBoundary'
+import {
+  IconAlert, IconChart, IconClock, IconFingerprint, IconFolder, IconGrid,
+  IconReport, IconSessions, IconSettings,
+} from './components/icons'
+import { InvestigationProvider, useInvestigationContext } from './lib/context'
 import { Findings } from './pages/Findings'
 import { Intelligence } from './pages/Intelligence'
-import { Timeline } from './pages/Timeline'
+import { InvestigationWorkspace } from './pages/InvestigationWorkspace'
+import { Investigations } from './pages/Investigations'
 import { MLAnalysis } from './pages/MLAnalysis'
+import { Overview } from './pages/Overview'
 import { Reports } from './pages/Reports'
+import { SessionDetailPage } from './pages/SessionDetail'
+import { Sessions } from './pages/Sessions'
 import { SettingsPage } from './pages/Settings'
-import { useInvestigationContext, InvestigationProvider } from './lib/context'
-import { ErrorBoundary } from './components/ErrorBoundary'
+import { Timeline } from './pages/Timeline'
 
-const NAV = [
-  { to: '/', label: 'Overview', end: true },
-  { to: '/investigations', label: 'Investigations' },
-  { to: '/sessions', label: 'Sessions' },
-  { to: '/findings', label: 'Security findings' },
-  { to: '/intelligence', label: 'Cryptographic intelligence' },
-  { to: '/timeline', label: 'Evidence timeline' },
-  { to: '/ml', label: 'ML analysis' },
-  { to: '/reports', label: 'Reports' },
-  { to: '/settings', label: 'Settings' },
+type NavEntry = {
+  to: string
+  label: string
+  icon: typeof IconFolder
+  end?: boolean
+}
+
+/**
+ * Navigation follows the investigation workflow, not the module structure.
+ *
+ * The first group is what you do: manage investigations, triage findings,
+ * compare captures, produce a report. The second group is where you look
+ * inside the investigation you have selected, and it only appears once there
+ * is one -- an empty "Sessions" page tells a first-time user nothing.
+ *
+ * Every route the application has ever served is preserved, so existing links
+ * and bookmarks keep working. Only the grouping and presentation changed.
+ */
+const PRIMARY: NavEntry[] = [
+  { to: '/investigations', label: 'Investigations', icon: IconFolder },
+  { to: '/findings', label: 'Findings', icon: IconAlert },
+  { to: '/intelligence', label: 'Intelligence', icon: IconFingerprint },
+  { to: '/reports', label: 'Reports', icon: IconReport },
 ]
+
+const WITHIN: NavEntry[] = [
+  { to: '/', label: 'Overview', icon: IconGrid, end: true },
+  { to: '/sessions', label: 'Sessions', icon: IconSessions },
+  { to: '/timeline', label: 'Evidence timeline', icon: IconClock },
+  { to: '/ml', label: 'ML & analytics', icon: IconChart },
+]
+
+function NavLinks({ entries }: { entries: NavEntry[] }) {
+  return (
+    <ul className="space-y-0.5">
+      {entries.map((entry) => (
+        <li key={entry.to}>
+          <NavLink
+            to={entry.to}
+            end={entry.end}
+            className={({ isActive }) =>
+              `nav-item ${isActive ? 'nav-item-active' : ''}`
+            }
+          >
+            <entry.icon className="shrink-0 opacity-80" />
+            <span className="truncate">{entry.label}</span>
+          </NavLink>
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 function Shell({ children }: { children: React.ReactNode }) {
   const { selected } = useInvestigationContext()
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
-      <nav className="lg:w-60 shrink-0 border-b lg:border-b-0 lg:border-r border-ink-600 bg-ink-900">
-        <div className="px-4 py-4 border-b border-ink-600">
-          <p className="font-semibold tracking-tight">SecureMailScope</p>
-          <p className="text-[11px] text-mist-300 mt-0.5">
-            Passive cryptographic posture assessment
-          </p>
-        </div>
-        <ul className="p-2 flex lg:block gap-1 overflow-x-auto">
-          {NAV.map((item) => (
-            <li key={item.to}>
-              <NavLink
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `block px-3 py-2 rounded-md text-[13px] whitespace-nowrap transition-colors ${
-                    isActive ? 'bg-ink-700 text-mist-100 font-medium' : 'text-mist-300 hover:bg-ink-800'
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-        {selected && (
-          <div className="px-4 py-3 border-t border-ink-600 text-[11px] text-mist-300">
-            <div className="label mb-1">Selected investigation</div>
-            <div className="mono text-mist-200">{selected}</div>
+      <nav
+        aria-label="Main"
+        className="lg:w-[228px] shrink-0 border-b lg:border-b-0 lg:border-r
+                   border-ink-800 bg-ink-950 lg:min-h-screen flex flex-col"
+      >
+        <div className="px-2.5 py-3 border-b border-ink-800">
+          <div className="flex items-center gap-1.5">
+            <span
+              className="inline-flex h-6 w-6 items-center justify-center rounded
+                         bg-accent/15 text-accent"
+              aria-hidden="true"
+            >
+              <IconFingerprint size={15} />
+            </span>
+            <div className="min-w-0">
+              <p className="font-semibold tracking-tight text-sm leading-tight">
+                SecureMailScope
+              </p>
+              <p className="text-2xs text-mist-400 leading-tight mt-px">
+                Cryptographic investigation
+              </p>
+            </div>
           </div>
-        )}
+        </div>
+
+        <div className="p-1.5 flex-1 overflow-y-auto">
+          <NavLinks entries={PRIMARY} />
+
+          {selected ? (
+            <>
+              <span className="nav-group">Selected investigation</span>
+              <NavLinks entries={WITHIN} />
+              <p
+                className="mono text-2xs text-mist-500 px-2.5 pt-1.5 leading-tight"
+                data-testid="selected-investigation"
+              >
+                {selected}
+              </p>
+            </>
+          ) : (
+            <p className="hint px-2.5 pt-3">
+              Select an investigation to inspect its sessions, timeline and
+              analytics.
+            </p>
+          )}
+        </div>
+
+        <div className="p-1.5 border-t border-ink-800">
+          <NavLinks
+            entries={[{ to: '/settings', label: 'Settings', icon: IconSettings }]}
+          />
+        </div>
       </nav>
-      <main className="flex-1 min-w-0 p-4 lg:p-6 max-w-[1500px]">
+
+      <main className="flex-1 min-w-0 p-2.5 lg:p-4 max-w-[1560px]">
         <ErrorBoundary>{children}</ErrorBoundary>
       </main>
     </div>
@@ -69,12 +138,14 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 function NotFound() {
   return (
-    <div className="panel p-8 text-center">
-      <p className="text-sm font-medium">This page does not exist.</p>
-      <p className="text-[13px] text-mist-300 mt-1">
+    <div className="surface p-6 text-center max-w-md mx-auto mt-8">
+      <p className="text-base font-semibold">This page does not exist.</p>
+      <p className="hint mt-1">
         The address may be mistyped, or the investigation may have been removed.
       </p>
-      <NavLink className="btn mt-4 inline-flex" to="/">Back to overview</NavLink>
+      <NavLink className="btn mt-3 inline-flex" to="/investigations">
+        Back to investigations
+      </NavLink>
     </div>
   )
 }

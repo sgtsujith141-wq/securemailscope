@@ -7,6 +7,8 @@
  * (analysed, but the evidence could not support a score).
  */
 import { Link } from 'react-router-dom'
+
+import { FirstRun } from '../components/FirstRun'
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { api } from '../lib/api'
 import { useAsync } from '../lib/hooks'
@@ -27,15 +29,8 @@ export function Overview() {
   const investigations = list.data?.items ?? []
   const analysed = investigations.filter((item) => item.status === 'COMPLETED')
 
-  if (investigations.length === 0) {
-    return (
-      <Empty
-        title="No captures have been analysed yet"
-        detail="Upload a PCAP or PCAPNG file to create an investigation. Counts on this page describe analysed captures only."
-        action={<Link className="btn btn-primary" to="/investigations">Upload a capture</Link>}
-      />
-    )
-  }
+  // Nothing analysed yet: explain the product rather than the database.
+  if (investigations.length === 0) return <FirstRun />
 
   const totalCaptures = investigations.reduce((sum, i) => sum + i.analysed_capture_count, 0)
   const failedCaptures = investigations.reduce((sum, i) => sum + i.failed_capture_count, 0)
