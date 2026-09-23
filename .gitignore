@@ -128,3 +128,4 @@ benchmarks/captures/
 .venv-release/
 .venv-hashes/
 .venv-engine/
+submission/assets/crops/

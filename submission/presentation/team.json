@@ -1,25 +1,24 @@
 {
   "_comment": [
-    "The four values the official SIH title slide requires that cannot be",
-    "derived from this repository. Fill them and re-run:",
-    "    python scripts/build_presentation.py",
-    "",
-    "A value left as null is rendered as a visible [UNRESOLVED: ...] marker and",
-    "the build refuses to label the PDF submission-ready. That is deliberate:",
-    "a deck with an invisible placeholder is worse than one that says so."
+    "Values for the official SIH title slide. Anything null renders as a",
+    "visible [UNRESOLVED: ...] marker and the build refuses to call the PDF",
+    "submission-ready. Fill and re-run:",
+    "    .venv-release/bin/python scripts/build_presentation.py"
   ],
   "problem_statement_id": "SIH26159",
-  "problem_statement_title": null,
+  "problem_statement_title": "SecureMailScope — AI-Assisted Cryptographic Security Posture Assessment for Secure Email Communications",
+  "organization": "National Technical Research Organisation (NTRO)",
   "theme": null,
   "ps_category": "Software",
   "team_id": null,
-  "team_name": "Team Zero-Day",
+  "team_name": "Zero-Day",
   "_sources": {
-    "problem_statement_id": "Stated in the project directives and throughout the repository.",
+    "problem_statement_id": "Stated in the project directives throughout.",
+    "problem_statement_title": "Given by the user in the final directive, verbatim.",
+    "organization": "Given by the user in the final directive.",
     "ps_category": "Software: the deliverable is software only, no hardware.",
-    "team_name": "Confirmed by the user on 2026-09-22.",
-    "problem_statement_title": "NOT KNOWN. The canonical SIH26159 title is not recorded anywhere in this repository and must be copied from the SIH portal verbatim.",
-    "theme": "NOT KNOWN. The user's deck for a different NTRO problem statement (SIH26164) used 'Blockchain & Cybersecurity', but that has not been confirmed for SIH26159.",
-    "team_id": "NOT KNOWN. Issued by the SIH portal at registration."
+    "team_name": "Given by the user in the final directive. EXACTLY 'Zero-Day' — not 'Team Zero-Day', not 'Zero Day'.",
+    "theme": "NOT KNOWN. Must come from the official SIH26159 listing. Deliberately NOT inferred from another problem statement, even one from the same organisation.",
+    "team_id": "NOT KNOWN. Issued by the SIH portal at team registration."
   }
 }
