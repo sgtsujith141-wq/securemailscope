@@ -4,25 +4,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        // A forensic workstation palette: very dark blue-black ground, a few
-        // quiet elevations above it, and severity colour reserved for places
-        // where severity actually means something.
+        // A deep blue-black ground with genuine separation between levels.
+        // v1 put every surface within a few points of the background, which
+        // read as flat however good the spacing was.
         ink: {
-          990: '#070b12', 950: '#0a0f18', 900: '#0d1420',
-          850: '#111926', 800: '#15202f', 750: '#1a2636',
-          700: '#213044', 650: '#293a52', 600: '#334560',
+          990: '#05080e', 970: '#070b13', 950: '#0a1019',
+          900: '#0e1622', 860: '#121c2b', 820: '#172333',
+          780: '#1d2b3e', 740: '#24344a', 700: '#2c3e57',
+          650: '#375070', 600: '#42608a',
         },
         mist: {
-          50: '#f4f7fc', 100: '#e3ebf6', 200: '#c3d0e3',
-          300: '#94a5bf', 400: '#6c7f9c', 500: '#4f6076',
+          50: '#f6f9fd', 100: '#e7effa', 200: '#c8d7ea',
+          300: '#9aadc8', 400: '#7087a6', 500: '#52657f',
         },
         sev: {
-          critical: '#f4726b', high: '#f59f5a', medium: '#e8c66a',
-          low: '#6fc5bb', info: '#7cabf5', ok: '#5fc48a', unknown: '#7f8da3',
+          critical: '#ff6b63', high: '#ff9f4a', medium: '#f0c94b',
+          low: '#5ccfc2', info: '#6ba6f7', ok: '#4ecd8a', unknown: '#7d8da3',
         },
-        // One restrained accent. Used for the product mark, primary actions
-        // and the selected navigation state -- nothing else.
-        accent: { DEFAULT: '#4fd1c5', dim: '#2f8c85', wash: '#0f2b2c' },
+        // Each primary area carries its own accent, used on the section rule,
+        // the icon and the active nav state -- never as background fill.
+        area: {
+          investigate: '#4fd1c5',
+          findings: '#ff9f4a',
+          intelligence: '#a78bfa',
+          reports: '#6ba6f7',
+        },
+        accent: { DEFAULT: '#4fd1c5', dim: '#2b8a83', deep: '#0d3b39' },
       },
       fontFamily: {
         sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Inter',
@@ -31,23 +38,35 @@ export default {
                'Consolas', 'monospace'],
       },
       fontSize: {
-        '2xs': ['10px', { lineHeight: '14px', letterSpacing: '0.06em' }],
+        '3xs': ['9.5px', { lineHeight: '13px', letterSpacing: '0.08em' }],
+        '2xs': ['10.5px', { lineHeight: '14px', letterSpacing: '0.06em' }],
         xs: ['11.5px', { lineHeight: '16px' }],
         sm: ['13px', { lineHeight: '19px' }],
         base: ['14px', { lineHeight: '21px' }],
-        lg: ['16px', { lineHeight: '23px' }],
-        xl: ['19px', { lineHeight: '26px' }],
-        '2xl': ['24px', { lineHeight: '31px' }],
-        '3xl': ['31px', { lineHeight: '38px' }],
-        '4xl': ['40px', { lineHeight: '46px' }],
+        lg: ['16.5px', { lineHeight: '24px' }],
+        xl: ['20px', { lineHeight: '27px' }],
+        '2xl': ['25px', { lineHeight: '32px' }],
+        '3xl': ['33px', { lineHeight: '39px' }],
+        '4xl': ['44px', { lineHeight: '48px', letterSpacing: '-0.02em' }],
+        '5xl': ['58px', { lineHeight: '58px', letterSpacing: '-0.03em' }],
       },
       spacing: {
-        // An 8px rhythm, with 4px half-steps where density demands it.
         '0.5': '4px', '1': '8px', '1.5': '12px', '2': '16px', '2.5': '20px',
         '3': '24px', '4': '32px', '5': '40px', '6': '48px', '8': '64px',
       },
-      borderRadius: { md: '6px', lg: '9px', xl: '13px' },
+      borderRadius: { md: '6px', lg: '10px', xl: '14px', '2xl': '18px' },
       transitionDuration: { DEFAULT: '180ms' },
+      boxShadow: {
+        // Depth comes from a dark outer shadow plus a 1px light top edge,
+        // which is what makes a surface read as lifted rather than painted.
+        panel: '0 1px 0 0 rgba(255,255,255,0.045) inset, 0 8px 24px -12px rgba(0,0,0,0.9)',
+        raised: '0 1px 0 0 rgba(255,255,255,0.06) inset, 0 14px 34px -14px rgba(0,0,0,0.95)',
+        hero: '0 1px 0 0 rgba(255,255,255,0.07) inset, 0 24px 60px -24px rgba(0,0,0,1)',
+      },
+      backgroundImage: {
+        'panel-sheen': 'linear-gradient(180deg, rgba(255,255,255,0.028) 0%, rgba(255,255,255,0) 42%)',
+        'hero-wash': 'radial-gradient(120% 140% at 0% 0%, rgba(79,209,197,0.10) 0%, rgba(79,209,197,0) 55%)',
+      },
     },
   },
   plugins: [],

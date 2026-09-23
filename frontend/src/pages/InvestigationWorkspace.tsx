@@ -5,7 +5,8 @@ import { api } from '../lib/api'
 import { formatBytes, formatTime, useAsync } from '../lib/hooks'
 import { useInvestigationContext } from '../lib/context'
 import { NeedsAttention } from '../components/NeedsAttention'
-import { Empty, Failure, Loading, Metric, Note, Panel, StatusTag, Value } from '../components/ui'
+import { PostureHero } from '../components/PostureHero'
+import { Empty, Failure, Loading, Note, Panel, StatusTag, Value } from '../components/ui'
 
 export function InvestigationWorkspace({ investigationId }: { investigationId: string }) {
   const { select } = useInvestigationContext()
@@ -51,28 +52,7 @@ export function InvestigationWorkspace({ investigationId }: { investigationId: s
         loading={topFindings.loading}
       />
 
-      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
-        <Metric label="Captures analysed" value={inv.analysed_capture_count}
-                note={inv.failed_capture_count > 0 ? `${inv.failed_capture_count} failed` : undefined} />
-        <Metric label="Sessions" value={inv.session_count} testId="session-count" />
-        <Metric
-          label="Findings"
-          testId="finding-count"
-          value={inv.finding_count === 0 ? <span className="text-sev-ok text-base">NO FINDINGS</span> : inv.finding_count}
-          tone={inv.finding_count === 0 ? 'unknown' : 'default'} />
-        <Metric
-          label="Posture score"
-          testId="posture-score"
-          value={inv.posture_score === null
-            ? <span className="text-mist-300 text-base">{inv.status === 'COMPLETED' ? 'INSUFFICIENT EVIDENCE' : 'NOT ANALYSED'}</span>
-            : <>{inv.posture_score}<span className="text-mist-400 text-sm">/100</span></>}
-          note={inv.posture_score === null ? inv.score_status ?? undefined
-            : `${inv.score_band} · coverage ${inv.coverage_ratio !== null ? (inv.coverage_ratio * 100).toFixed(0) + '%' : 'unknown'}`}
-          detail={inv.posture_score !== null && inv.capture_count > 1
-            ? inv.score_scope ?? undefined
-            : undefined}
-          tone={inv.posture_score === null ? 'unknown' : 'default'} />
-      </div>
+      <PostureHero inv={inv} />
 
       {inv.finding_count > 0 && (
         <Note tone="warn">
@@ -102,7 +82,7 @@ export function InvestigationWorkspace({ investigationId }: { investigationId: s
         </Panel>
       )}
 
-      <Panel title="Capture inventory">
+      <Panel area="investigate" title="Capture inventory">
         <table className="w-full">
           <thead>
             <tr>
@@ -128,7 +108,7 @@ export function InvestigationWorkspace({ investigationId }: { investigationId: s
       </Panel>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Assessment">
+        <Panel area="findings" title="Assessment">
           <dl className="grid grid-cols-2 gap-3 text-[13px]">
             <div><dt className="label">Policy</dt><dd className="mt-1"><Value value={detail.data.policy_id} /></dd></div>
             <div><dt className="label">Policy version</dt><dd className="mt-1 mono"><Value value={detail.data.policy_version} /></dd></div>
@@ -142,7 +122,7 @@ export function InvestigationWorkspace({ investigationId }: { investigationId: s
           </div>
         </Panel>
 
-        <Panel title="Cryptographic intelligence">
+        <Panel area="intelligence" title="Cryptographic intelligence">
           <dl className="grid grid-cols-2 gap-3 text-[13px]">
             <div><dt className="label">Fingerprints</dt><dd className="mt-1">{detail.data.fingerprint_count}</dd></div>
             <div><dt className="label">Server entities</dt><dd className="mt-1">{detail.data.entity_count}</dd></div>
@@ -156,7 +136,7 @@ export function InvestigationWorkspace({ investigationId }: { investigationId: s
         </Panel>
       </div>
 
-      <Panel title="Machine-learning analysis">
+      <Panel area="intelligence" title="Machine-learning analysis">
         {!ml ? (
           <Empty title="No ML results" detail="The analysis completed without a machine-learning model. Every forensic and assessment result above is complete." />
         ) : (
@@ -179,7 +159,7 @@ export function InvestigationWorkspace({ investigationId }: { investigationId: s
         )}
       </Panel>
 
-      <Panel title="Analysis jobs">
+      <Panel area="investigate" title="Analysis jobs">
         {jobs.length === 0 ? <Empty title="No jobs recorded" /> : (
           <table className="w-full">
             <thead>

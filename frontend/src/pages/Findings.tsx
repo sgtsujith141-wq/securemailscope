@@ -60,7 +60,7 @@ export function Findings() {
       </header>
 
       {inv && (
-        <Panel title="Posture score and coverage">
+        <Panel area="findings" title="Posture score and coverage">
           <div className="flex flex-wrap gap-8 items-start">
             <div>
               <div className="label">Score</div>

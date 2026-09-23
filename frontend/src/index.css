@@ -6,121 +6,182 @@
   body {
     @apply bg-ink-990 text-mist-100 antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'tnum';
+    /* A very slow vertical wash, so the page has a top and a bottom rather
+       than being one uniform field of colour. */
+    background-image:
+      radial-gradient(90% 55% at 50% -10%, rgba(79, 209, 197, 0.055) 0%, rgba(79, 209, 197, 0) 60%),
+      linear-gradient(180deg, #070b13 0%, #05080e 100%);
+    background-attachment: fixed;
   }
 
-  /* One visible focus treatment everywhere. Keyboard users must always be
-     able to see where they are; colour alone is never the signal. */
   :focus-visible {
     @apply outline-none ring-2 ring-accent/70 ring-offset-2 ring-offset-ink-990;
   }
-
   ::selection { @apply bg-accent/25 text-mist-50; }
 
-  /* Scrollbars inside scroll regions, so a dense table does not put a bright
-     native bar through a dark surface. */
-  * { scrollbar-width: thin; scrollbar-color: #293a52 transparent; }
+  * { scrollbar-width: thin; scrollbar-color: #2c3e57 transparent; }
   *::-webkit-scrollbar { width: 10px; height: 10px; }
   *::-webkit-scrollbar-thumb {
-    background: #293a52; border-radius: 6px; border: 2px solid transparent;
+    background: #2c3e57; border-radius: 6px; border: 2px solid transparent;
     background-clip: content-box;
   }
-  *::-webkit-scrollbar-thumb:hover { background: #334560; background-clip: content-box; }
+  *::-webkit-scrollbar-thumb:hover { background: #375070; background-clip: content-box; }
 }
 
 @layer components {
-  /* ---- surfaces -------------------------------------------------------- */
-  .surface { @apply bg-ink-900 border border-ink-750 rounded-lg; }
-  /* Retained so every page that predates the redesign keeps its surface
-     while it is migrated. Spelled out rather than @apply-ing .surface, which
-     would make it depend on declaration order within the layer. */
-  .panel { @apply bg-ink-900 border border-ink-750 rounded-lg; }
-  .surface-raised { @apply bg-ink-850 border border-ink-700 rounded-lg; }
-  .surface-sunken { @apply bg-ink-950 border border-ink-800 rounded-md; }
+  /* ---- surfaces --------------------------------------------------------
+     Depth is a 1px light top edge plus an outer shadow, not a colour change
+     alone. v1 kept every surface within a few points of the background and
+     read as flat however careful the spacing was. */
+  .surface {
+    @apply bg-ink-900 border border-ink-780 rounded-lg shadow-panel
+           bg-panel-sheen;
+  }
+  .panel { @apply surface; }
+  .surface-raised {
+    @apply bg-ink-860 border border-ink-740 rounded-lg shadow-raised
+           bg-panel-sheen;
+  }
+  .surface-sunken { @apply bg-ink-970 border border-ink-820 rounded-md; }
 
-  /* A section is the main organising unit: a titled region, not a card in a
-     sea of cards. Cards are not nested inside cards. */
-  .section { @apply bg-ink-900 border border-ink-750 rounded-lg overflow-hidden; }
+  .section { @apply surface overflow-hidden; }
   .section-head {
     @apply flex items-center justify-between gap-2 px-3 py-2
-           border-b border-ink-750 bg-ink-850/60;
+           border-b border-ink-780 bg-ink-860/70;
   }
-  .section-title { @apply text-sm font-semibold text-mist-100; }
+  .section-title { @apply text-sm font-semibold text-mist-100 tracking-[-0.01em]; }
   .section-body { @apply p-3; }
 
-  /* ---- type ------------------------------------------------------------ */
-  .label {
-    @apply text-2xs uppercase tracking-[0.09em] text-mist-400 font-semibold;
+  /* An accent rule at the top of a section, tinted per product area. The
+     colour appears on the rule only -- never as a fill, so the page keeps one
+     ground. Each composes the panel shadow rather than replacing it, which is
+     what a bare box-shadow declaration would do. */
+  .rule-investigate {
+    box-shadow: inset 0 2px 0 0 #4fd1c5,
+                0 1px 0 0 rgba(255,255,255,0.045) inset,
+                0 8px 24px -12px rgba(0,0,0,0.9);
   }
+  .rule-findings {
+    box-shadow: inset 0 2px 0 0 #ff9f4a,
+                0 1px 0 0 rgba(255,255,255,0.045) inset,
+                0 8px 24px -12px rgba(0,0,0,0.9);
+  }
+  .rule-intelligence {
+    box-shadow: inset 0 2px 0 0 #a78bfa,
+                0 1px 0 0 rgba(255,255,255,0.045) inset,
+                0 8px 24px -12px rgba(0,0,0,0.9);
+  }
+  .rule-reports {
+    box-shadow: inset 0 2px 0 0 #6ba6f7,
+                0 1px 0 0 rgba(255,255,255,0.045) inset,
+                0 8px 24px -12px rgba(0,0,0,0.9);
+  }
+
+  /* ---- type ------------------------------------------------------------ */
+  .label { @apply text-3xs uppercase tracking-[0.11em] text-mist-400 font-semibold; }
   .mono { @apply font-mono text-xs break-all text-mist-200; }
-  .muted { @apply text-mist-300; }
   .hint { @apply text-xs text-mist-400 leading-relaxed; }
+  .hero-number {
+    @apply text-5xl font-semibold tracking-[-0.03em] tabular-nums leading-none;
+  }
 
   /* ---- controls -------------------------------------------------------- */
   .btn {
     @apply inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md
-           text-sm font-medium border border-ink-650 bg-ink-800 text-mist-100
-           transition-colors duration-[180ms]
-           hover:bg-ink-750 hover:border-ink-600
-           disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-ink-800;
+           text-sm font-medium border border-ink-700 text-mist-100
+           transition-all duration-[180ms]
+           hover:border-ink-650 hover:-translate-y-px
+           disabled:opacity-40 disabled:cursor-not-allowed
+           disabled:hover:translate-y-0 disabled:hover:border-ink-700;
+    background-image: linear-gradient(180deg, #1d2b3e 0%, #172333 100%);
+  }
+  .btn:hover:not(:disabled) {
+    background-image: linear-gradient(180deg, #24344a 0%, #1d2b3e 100%);
   }
   .btn-primary {
-    @apply bg-accent/15 border-accent/45 text-accent
-           hover:bg-accent/25 hover:border-accent/60;
+    @apply border-accent/50 text-accent;
+    background-image: linear-gradient(180deg, rgba(79,209,197,0.20) 0%, rgba(79,209,197,0.08) 100%);
+  }
+  .btn-primary:hover:not(:disabled) {
+    @apply border-accent/70;
+    background-image: linear-gradient(180deg, rgba(79,209,197,0.30) 0%, rgba(79,209,197,0.14) 100%);
+    box-shadow: 0 0 0 1px rgba(79,209,197,0.18), 0 8px 22px -10px rgba(79,209,197,0.55);
   }
   .btn-lg { @apply px-3 py-2 text-base; }
-  .btn-ghost { @apply border-transparent bg-transparent hover:bg-ink-800; }
+  .btn-ghost {
+    @apply border-transparent hover:bg-ink-820 hover:border-ink-740;
+    background-image: none;
+  }
 
   .input {
-    @apply bg-ink-950 border border-ink-700 rounded-md px-2.5 py-1.5 text-sm
+    @apply bg-ink-970 border border-ink-740 rounded-md px-2.5 py-1.5 text-sm
            text-mist-100 placeholder:text-mist-500
            transition-colors duration-[180ms]
-           focus:border-accent/60 focus:bg-ink-900;
+           focus:border-accent/60 focus:bg-ink-950;
   }
 
   /* ---- tables ---------------------------------------------------------- */
   .th {
-    @apply label text-left px-2.5 py-2 border-b border-ink-750
-           whitespace-nowrap bg-ink-850/50;
+    @apply label text-left px-2.5 py-2 border-b border-ink-780
+           whitespace-nowrap bg-ink-860/60;
   }
-  .td { @apply px-2.5 py-2 border-b border-ink-800 text-sm align-top; }
-  .row-link { @apply transition-colors duration-[180ms] hover:bg-ink-850/70; }
+  .td { @apply px-2.5 py-2 border-b border-ink-820 text-sm align-top; }
+  .row-link { @apply transition-colors duration-[180ms] hover:bg-ink-820/80; }
 
-  /* ---- severity -------------------------------------------------------- */
-  /* Severity always carries a text label beside the colour, so the meaning
-     survives for a colour-blind reader and in a greyscale print. */
+  /* ---- severity --------------------------------------------------------
+     Colour always travels with a text label, so meaning survives for a
+     colour-blind reader and in a greyscale print. */
   .tag {
     @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded
-           text-2xs font-bold uppercase tracking-[0.07em] border;
+           text-3xs font-bold uppercase tracking-[0.08em] border;
   }
-  .tag-CRITICAL { @apply text-sev-critical border-sev-critical/45 bg-sev-critical/[0.12]; }
-  .tag-HIGH     { @apply text-sev-high     border-sev-high/45     bg-sev-high/[0.12]; }
-  .tag-MEDIUM   { @apply text-sev-medium   border-sev-medium/45   bg-sev-medium/[0.12]; }
-  .tag-LOW      { @apply text-sev-low      border-sev-low/45      bg-sev-low/[0.12]; }
-  .tag-INFO     { @apply text-sev-info     border-sev-info/45     bg-sev-info/[0.12]; }
-  .tag-OK       { @apply text-sev-ok       border-sev-ok/45       bg-sev-ok/[0.12]; }
-  .tag-UNKNOWN  { @apply text-sev-unknown  border-sev-unknown/45  bg-sev-unknown/[0.12]; }
+  .tag-CRITICAL { @apply text-sev-critical border-sev-critical/50 bg-sev-critical/[0.14]; }
+  .tag-HIGH     { @apply text-sev-high     border-sev-high/50     bg-sev-high/[0.14]; }
+  .tag-MEDIUM   { @apply text-sev-medium   border-sev-medium/50   bg-sev-medium/[0.14]; }
+  .tag-LOW      { @apply text-sev-low      border-sev-low/50      bg-sev-low/[0.14]; }
+  .tag-INFO     { @apply text-sev-info     border-sev-info/50     bg-sev-info/[0.14]; }
+  .tag-OK       { @apply text-sev-ok       border-sev-ok/50       bg-sev-ok/[0.14]; }
+  .tag-UNKNOWN  { @apply text-sev-unknown  border-sev-unknown/50  bg-sev-unknown/[0.14]; }
 
-  /* A quiet chip for a technical value: a cipher suite, a TLS version, a
-     protocol. Not a severity, so it carries no severity colour. */
   .chip {
     @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded
-           text-2xs font-medium border border-ink-650 bg-ink-800 text-mist-200;
+           text-2xs font-medium border border-ink-700 bg-ink-820 text-mist-200;
   }
   .chip-mono {
     @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded border
-           border-ink-650 bg-ink-800 text-mist-200
+           border-ink-700 bg-ink-820 text-mist-200
            font-mono text-2xs tracking-normal normal-case;
   }
 
   /* ---- navigation ------------------------------------------------------ */
   .nav-item {
     @apply flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm
-           text-mist-300 transition-colors duration-[180ms]
-           hover:bg-ink-850 hover:text-mist-100;
+           text-mist-300 transition-all duration-[180ms]
+           hover:bg-ink-860 hover:text-mist-100;
   }
   .nav-item-active {
-    @apply bg-accent/[0.12] text-mist-50 font-medium;
+    @apply text-mist-50 font-medium;
+    background-image: linear-gradient(90deg, rgba(79,209,197,0.16) 0%, rgba(79,209,197,0.03) 100%);
     box-shadow: inset 2px 0 0 0 #4fd1c5;
   }
   .nav-group { @apply label px-2.5 pt-3 pb-1 block; }
+
+  /* ---- the hero region -------------------------------------------------
+     One genuinely prominent surface at the top of an investigation, rather
+     than a row of identical metric boxes. */
+  .hero {
+    @apply rounded-xl border border-ink-740 shadow-hero overflow-hidden relative;
+    background-image:
+      radial-gradient(120% 140% at 0% 0%, rgba(79,209,197,0.10) 0%, rgba(79,209,197,0) 55%),
+      linear-gradient(180deg, #121c2b 0%, #0a1019 100%);
+  }
+  .hero::before {
+    content: '';
+    @apply absolute inset-x-0 top-0 h-px;
+    background: linear-gradient(90deg, rgba(79,209,197,0) 0%, rgba(79,209,197,0.55) 22%, rgba(79,209,197,0) 70%);
+  }
+
+  /* A severity distribution strip: proportional, labelled, and readable
+     without relying on colour. */
+  .sevbar { @apply flex h-1.5 w-full overflow-hidden rounded-full bg-ink-820; }
 }

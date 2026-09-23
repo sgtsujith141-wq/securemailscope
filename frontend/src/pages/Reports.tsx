@@ -74,7 +74,7 @@ export function Reports() {
         </Note>
       )}
 
-      <Panel title="Export">
+      <Panel area="reports" title="Export">
         <div className="grid gap-3 sm:grid-cols-3">
           {FORMATS.map((format) => (
             <div key={format.key} className="panel bg-ink-900/50 p-3 flex flex-col">

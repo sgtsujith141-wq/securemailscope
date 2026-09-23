@@ -44,10 +44,14 @@ test('upload, analyse, investigate, navigate to evidence and export', async ({ p
 
   // -- 3. The investigation shows real engine output -----------------------
   await expect(page.getByText('Observed within analyzed captures only.').first()).toBeVisible()
-  await expect(page.getByText('Captures analysed').first()).toBeVisible()
-  // The engine's own numbers for this fixture: 59/100, band WEAK.
-  await expect(page.getByText('59/100').first()).toBeVisible()
-  await expect(page.getByText(/WEAK/).first()).toBeVisible()
+  // The hero carries the investigation's headline figures.
+  await expect(page.getByTestId('posture-hero')).toBeVisible()
+  await expect(page.getByText('Assessment coverage').first()).toBeVisible()
+  // The engine's own numbers for this fixture: 59/100, band WEAK. The score
+  // is drawn as an arc, so the digits and the scale are separate text nodes.
+  const posture = page.getByTestId('posture-score')
+  await expect(posture).toContainText('59')
+  await expect(posture).toContainText('WEAK')
 
   const url = page.url()
   const investigationId = url.split('/investigations/')[1]

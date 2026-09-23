@@ -88,11 +88,13 @@ test('the complete acceptance walkthrough', async ({ page }) => {
   observed.investigationId = investigationId
 
   // -- 7. The workspace shows the engine's own result ----------------------
-  await expect(page.getByText('Captures analysed').first()).toBeVisible()
+  // The hero carries the investigation's headline figures.
+  await expect(page.getByTestId('posture-hero')).toBeVisible()
+  await expect(page.getByText('Assessment coverage').first()).toBeVisible()
   const score = page.getByTestId('posture-score')
   await expect(score).toBeVisible()
   observed.score = ((await score.textContent()) ?? '').trim()
-  expect(observed.score).toMatch(/Posture score(\d+\/100|INSUFFICIENT EVIDENCE|NOT ANALYSED)/)
+  expect(observed.score).toMatch(/\d+\s*\/\s*100|INSUFFICIENT EVIDENCE|NOT ANALYSED/)
 
   // -- 8. Scope is stated, not implied -------------------------------------
   await expect(page.getByText('Observed within analyzed captures only.').first()).toBeVisible()

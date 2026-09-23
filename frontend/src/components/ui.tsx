@@ -12,14 +12,20 @@
  */
 import type { ReactNode } from 'react'
 
-export function Panel({ title, children, actions, className = '' }: {
+export function Panel({ title, children, actions, className = '', area }: {
   title?: string
   children: ReactNode
   actions?: ReactNode
   className?: string
+  /**
+   * Gives the section a 2px accent rule in its product area's colour.
+   * Applied to the rule and nothing else -- never as a background fill, so
+   * the page keeps one ground and does not become a colour chart.
+   */
+  area?: 'investigate' | 'findings' | 'intelligence' | 'reports'
 }) {
   return (
-    <section className={`section ${className}`}>
+    <section className={`section ${area ? `rule-${area}` : ''} ${className}`}>
       {(title || actions) && (
         <header className="section-head">
           {title && <h2 className="section-title">{title}</h2>}
