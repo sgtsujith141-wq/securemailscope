@@ -396,7 +396,8 @@ Read this section before trusting a result.
 
 ## Team and acknowledgments
 
-**Team Zero-Day** — Smart India Hackathon 2026, problem statement SIH26159.
+Team **Zero-Day** — Smart India Hackathon 2026, problem statement SIH26159,
+theme *Blockchain & Cybersecurity*, category *Software*, team ID 146876.
 
 Problem statement provided by the **National Technical Research Organisation**.
 
