@@ -4,7 +4,7 @@ SHA-256 of every file in `submission/`. Regenerate with:
 
     python scripts/write_manifest.py
 
-Generated 2026-09-23T17:25:11+00:00
+Generated 2026-09-23T17:30:13+00:00
 
 | File | Bytes | SHA-256 |
 |---|---:|---|
@@ -114,19 +114,19 @@ Generated 2026-09-23T17:25:11+00:00
 | `submission/demo/captions.srt` | 2,446 | `51f6797140e8aa3136236b982573aaf87f68cf0f068781d3be56ac7cf98c8b31` |
 | `submission/demo/demo-verification.md` | 3,475 | `b0445a904b7972567044d8c3d6c7d8baeff54d189e5f024c8322632d52e6d7c4` |
 | `submission/demo/final-script.md` | 3,337 | `149a2a7858b1ab87a29528568ce0de231f0f557c54b4b9c26f5ab1cc57d50970` |
-| `submission/demo/narration.md` | 4,086 | `527e66ec8de2ce77393963c807ea11b2feed37e33007a3bfb186a88f6c75cd77` |
-| `submission/demo/recording-checklist.md` | 1,870 | `0a73692175681bb14a458f4f9a04acb2d226aee58f8b62570cabef18758c7389` |
+| `submission/demo/narration.md` | 4,461 | `32f70c51620bd72bf260fc89da3e6f4476721699d2acc653179e9e69ac70c5fc` |
+| `submission/demo/recording-checklist.md` | 2,245 | `bad31070f84f769350ca0421450af7eaa22d9ae25e52b29b4064b9cdeac36947` |
 | `submission/demo/rehearsal.json` | 4,481 | `e31cd925512a1209171d6a10f86b0287d7282ccce04175007219908fbd997236` |
-| `submission/demo/shot-list.md` | 2,595 | `804d8c0bea5e49f6c1246221b43a5b0556fdda9aa78c49f64c97f3a12a20a005` |
-| `submission/demo/storyboard.md` | 3,378 | `146ada4fb2aa1bf9394ee0362a9a5875fbd3f4c6874069e701dab49445319e31` |
+| `submission/demo/shot-list.md` | 2,970 | `ebca4b633f6b7ea54fcd423cda598505c57b138db76c26c0f8cf310cd4a370f6` |
+| `submission/demo/storyboard.md` | 3,753 | `06edbd8ca3681013731d3c9106902f65d9ffe0fcca4453a55b8aa2e49cf926d1` |
 | `submission/demo/video-description.md` | 2,868 | `4ccb872f446de231064298f8e432f067b83336856393c287cb579f1fd80cf5e2` |
 | `submission/final/FINAL-QUALITY-CHECK.md` | 4,729 | `e1d3f8b43f1b092d5162b6f1d1557c7c29fa683034fdfd72a8a1c5ce50afaf89` |
-| `submission/final/MANIFEST.md` | 16,975 | `6d47f8f487387cf280147b83afd1ad32c458e4aacd45c336040e949ff424f26c` |
+| `submission/final/MANIFEST.md` | 16,758 | `e7050be534fede744d417730ccc49440ec58ab7c898c5030ffc507dbafe628cc` |
 | `submission/final/REQUIREMENT-COVERAGE.md` | 9,994 | `cb61b9a75728125c1d46168b60249e577d9468e0926b5df70c28e5f355c9a038` |
 | `submission/final/SecureMailScope-SIH26159-Demo.mp4` | 13,325,686 | `ea0db0abfd96743b6762b5c3bbd2011e659736a6b9c1950badfcb084fba941da` |
 | `submission/final/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,482,701 | `6d5bcb625a0ade4e49f8433f9f4d6915942824fd035c49d2a722fc58ca8ae7e7` |
 | `submission/final/SecureMailScope-SIH26159-Zero-Day.pptx` | 3,497,846 | `07247a8ccb9c6129b7c3015eeb21157d7b555f89f8e390cbfbb21ce7a58a0e92` |
-| `submission/final/manifest.json` | 23,242 | `9414aa1f8502e786c16a32ab186eee4e5c605aa0b5fb6c16a9e3f60393fd8935` |
+| `submission/final/manifest.json` | 22,923 | `20de1c8efb755d810c3b59835012c5fd56437128858b6303bc709ee3cbfee1b9` |
 | `submission/presentation/SecureMailScope-SIH26159.pdf` | 606,554 | `fa269b0e599d3dcb357e045fd6583b93db238cd0bb5e0037418f56a208b153ae` |
 | `submission/presentation/SecureMailScope-SIH26159.pptx` | 683,037 | `8f6fa86357adbe789845c89122463e68ea126e8644211b225a82539df443278c` |
 | `submission/presentation/build-status.json` | 366 | `ffcdd896947fc9542822ffd90e165ac030088e8ac43a50446e669c521e32015e` |

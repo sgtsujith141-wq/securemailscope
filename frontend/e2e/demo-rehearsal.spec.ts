@@ -5,8 +5,8 @@
  * drives the exact sequence the demonstration follows, using only the
  * synthetic demo dataset, and records two things:
  *
- *  - genuine screenshots, written to `docs/screenshots/`, which are committed
- *    and used in the README and the submission deck;
+ *  - genuine screenshots, written to `local-evidence/rehearsal-shots/`, which
+ *    record what each rehearsal step actually showed;
  *  - a rehearsal record, written to `submission/demo/rehearsal.json`, holding
  *    the real timings and the engine's real output for each step.
  *
@@ -20,7 +20,11 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const ROOT = join(process.cwd(), '..')
-const SHOTS = join(ROOT, 'submission', 'assets', 'screenshots-final')
+// The rehearsal's own images, kept out of the submission package: since the
+// final screenshots got the names section 21 specifies, two specs writing to
+// one directory under two naming schemes would leave a stale mixture there.
+// `submission-shots.spec.ts` owns `submission/assets/screenshots-final/`.
+const SHOTS = join(ROOT, 'local-evidence', 'rehearsal-shots')
 const DEMO = join(ROOT, 'demo', 'captures')
 const RECORD = join(ROOT, 'submission', 'demo', 'rehearsal.json')
 
@@ -71,7 +75,7 @@ async function record<T>(
 async function shot(page: Page, file: string): Promise<void> {
   await page.screenshot({ path: join(SHOTS, file), fullPage: true })
   const last = steps[steps.length - 1]
-  if (last) last.screenshot = `submission/assets/screenshots-final/${file}`
+  if (last) last.screenshot = `local-evidence/rehearsal-shots/${file}`
 }
 
 test('demonstration rehearsal on the synthetic demo dataset', async ({ page }) => {

@@ -1,5 +1,12 @@
 # Storyboard
 
+> **Superseded.** This is the plan the demonstration was designed from.
+> The video itself is built and finished — see `final-script.md`, which
+> describes what was actually assembled, and
+> `submission/final/SecureMailScope-SIH26159-Demo.mp4`. This file is kept
+> because the reasoning behind the shots is still worth reading, not
+> because anything here is outstanding.
+
 Frame-by-frame intent. Read alongside `shot-list.md` and `narration.md`.
 
 ```

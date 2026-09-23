@@ -1,5 +1,12 @@
 # Narration script
 
+> **Superseded.** This is the plan the demonstration was designed from.
+> The video itself is built and finished — see `final-script.md`, which
+> describes what was actually assembled, and
+> `submission/final/SecureMailScope-SIH26159-Demo.mp4`. This file is kept
+> because the reasoning behind the shots is still worth reading, not
+> because anything here is outstanding.
+
 Target: **3:00–3:30**. Roughly 155 words per minute, which is a normal
 speaking pace — not a voiceover sprint.
 

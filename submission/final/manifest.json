@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-23T17:25:11+00:00",
+  "generated_at": "2026-09-23T17:30:13+00:00",
   "files": [
     {
       "path": "submission/README.md",
@@ -533,13 +533,13 @@
     },
     {
       "path": "submission/demo/narration.md",
-      "bytes": 4086,
-      "sha256": "527e66ec8de2ce77393963c807ea11b2feed37e33007a3bfb186a88f6c75cd77"
+      "bytes": 4461,
+      "sha256": "32f70c51620bd72bf260fc89da3e6f4476721699d2acc653179e9e69ac70c5fc"
     },
     {
       "path": "submission/demo/recording-checklist.md",
-      "bytes": 1870,
-      "sha256": "0a73692175681bb14a458f4f9a04acb2d226aee58f8b62570cabef18758c7389"
+      "bytes": 2245,
+      "sha256": "bad31070f84f769350ca0421450af7eaa22d9ae25e52b29b4064b9cdeac36947"
     },
     {
       "path": "submission/demo/rehearsal.json",
@@ -548,13 +548,13 @@
     },
     {
       "path": "submission/demo/shot-list.md",
-      "bytes": 2595,
-      "sha256": "804d8c0bea5e49f6c1246221b43a5b0556fdda9aa78c49f64c97f3a12a20a005"
+      "bytes": 2970,
+      "sha256": "ebca4b633f6b7ea54fcd423cda598505c57b138db76c26c0f8cf310cd4a370f6"
     },
     {
       "path": "submission/demo/storyboard.md",
-      "bytes": 3378,
-      "sha256": "146ada4fb2aa1bf9394ee0362a9a5875fbd3f4c6874069e701dab49445319e31"
+      "bytes": 3753,
+      "sha256": "06edbd8ca3681013731d3c9106902f65d9ffe0fcca4453a55b8aa2e49cf926d1"
     },
     {
       "path": "submission/demo/video-description.md",
@@ -568,8 +568,8 @@
     },
     {
       "path": "submission/final/MANIFEST.md",
-      "bytes": 16975,
-      "sha256": "6d47f8f487387cf280147b83afd1ad32c458e4aacd45c336040e949ff424f26c"
+      "bytes": 16758,
+      "sha256": "e7050be534fede744d417730ccc49440ec58ab7c898c5030ffc507dbafe628cc"
     },
     {
       "path": "submission/final/REQUIREMENT-COVERAGE.md",
@@ -593,8 +593,8 @@
     },
     {
       "path": "submission/final/manifest.json",
-      "bytes": 23242,
-      "sha256": "9414aa1f8502e786c16a32ab186eee4e5c605aa0b5fb6c16a9e3f60393fd8935"
+      "bytes": 22923,
+      "sha256": "20de1c8efb755d810c3b59835012c5fd56437128858b6303bc709ee3cbfee1b9"
     },
     {
       "path": "submission/presentation/SecureMailScope-SIH26159.pdf",
