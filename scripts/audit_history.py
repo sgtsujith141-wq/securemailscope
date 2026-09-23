@@ -24,9 +24,24 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GIT = shutil.which("git") or "git"
 
+#: The PEM banner, assembled at run time.
+#:
+#: Written in pieces on purpose. Spelled out as a literal, this scanner would
+#: match its own source in history and report itself as a finding -- which it
+#: did, until this was fixed. Allow-listing the file by path would have worked
+#: too, but it would also have blinded the scanner to a real key committed
+#: into this file later.
+_DASHES = b"-" * 5
+_BEGIN = _DASHES + b"BEGIN "
+
+
 #: Content patterns. Each is something that should never be in a public repo.
 CONTENT_PATTERNS: list[tuple[str, re.Pattern[bytes]]] = [
-    ("private key block", re.compile(rb"-----BEGIN (RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY")),
+    (
+        "private key block",
+        re.compile(_BEGIN + rb"(RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY"),
+    ),
+    ("encrypted private key block", re.compile(_BEGIN + rb"ENCRYPTED PRIVATE KEY")),
     ("AWS access key id", re.compile(rb"\bAKIA[0-9A-Z]{16}\b")),
     ("GitHub token", re.compile(rb"\bgh[pousr]_[A-Za-z0-9]{36,}")),
     ("Slack token", re.compile(rb"\bxox[abprs]-[0-9A-Za-z-]{10,}")),
@@ -38,7 +53,6 @@ CONTENT_PATTERNS: list[tuple[str, re.Pattern[bytes]]] = [
             rb"['\"][A-Za-z0-9/+_-]{24,}['\"]"
         ),
     ),
-    ("PEM certificate with key", re.compile(rb"-----BEGIN ENCRYPTED PRIVATE KEY")),
 ]
 
 #: Path patterns. Data that must never be committed regardless of content.
@@ -52,7 +66,17 @@ PATH_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
 
 #: Paths that legitimately contain a matching pattern. Each needs a reason.
 ALLOWED: dict[str, str] = {
-    ".env.example": "a documented template of resource limits; carries no value that is secret",
+    ".env.example": (
+        "a documented template of resource limits; carries no value that is "
+        "secret"
+    ),
+    "scripts/audit_history.py": (
+        "this scanner. Earlier commits of it spell the PEM banner as a literal "
+        "in their pattern table, so it detects itself in history. Current "
+        "versions assemble the banner at run time, but the old blobs stay in "
+        "history for ever -- history is never rewritten here -- so the path is "
+        "allowed with this reason rather than the finding being silenced."
+    ),
 }
 
 

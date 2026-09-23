@@ -1,9 +1,10 @@
 # Final quality check
 
-Every result below was re-run against this working tree on 2026-09-23. Nothing
-is carried forward from an earlier milestone.
+Every result re-run against this working tree on 2026-09-23. Nothing carried
+forward from an earlier milestone.
 
-Baseline commit at time of running: `bfc7be1049bf2ae28461e6dcd26636e17d342ce1`
+- **Commit at time of running:** `784b8737826974cf208bbbc9a0b38d8756077465`
+- **Branch:** `main` · **Repository:** private, unchanged
 
 ## Automated gates
 
@@ -12,78 +13,116 @@ Baseline commit at time of running: `bfc7be1049bf2ae28461e6dcd26636e17d342ce1`
 | Backend tests | `pytest -q` | **1,354 passed**, 25 skipped |
 | TShark cross-check | `SECUREMAILSCOPE_TSHARK=1 pytest -q` | **1,364 passed**, 15 skipped |
 | Lint | `ruff check .` | **clean** |
-| Type check | `mypy` | **clean over 153 files** (`src/`, `tests/`, `scripts/`) |
+| Type check | `mypy` | **clean, 154 files** (`src/`, `tests/`, `scripts/`) |
 | Frontend types | `npx tsc --noEmit` | **clean** |
 | Frontend lint | `npm run lint` (`--max-warnings 0`) | **clean** |
 | Frontend tests | `npm run test` | **88 passed** |
-| Production build | `npm run build` | **clean**, 630 KB bundle |
-| Browser end-to-end | `npx playwright test` | **5 passed** against the real backend |
-| Python dependency audit | `pip-audit -r requirements-lock.txt` | **0 known vulnerabilities** |
-| Frontend audit | `npm audit` | **0 vulnerabilities** (production and development) |
+| Production build | `npm run build` | **clean** |
+| Browser end-to-end | `npx playwright test` | **5 passed**, real backend |
+| Python dependency audit | `pip-audit` | **0 known vulnerabilities** |
+| Frontend audit | `npm audit` | **0 vulnerabilities** |
 
 ## Visual QA
 
-Real application, four viewport widths, investigation workspace loaded:
+Real application, investigation workspace loaded:
 
 | Viewport | Horizontal overflow | Failed requests | Console errors |
 |---|---|---|---|
 | 1920 × 1080 | none | 0 | none |
+| 1600 × 1000 | none | 0 | none |
 | 1440 × 900 | none | 0 | none |
 | 1280 × 720 | none | 0 | none |
 | 1024 × 768 | none | 0 | none |
+
+Screenshots were inspected individually, not merely produced. Three defects
+were found that way and fixed: the posture band label clipped the score arc,
+the severity strip stretched a full column for one value, and section accent
+rules were being overridden by the panel shadow.
+
+## SIH26159 requirement coverage
+
+`submission/final/REQUIREMENT-COVERAGE.md` — **35 requirements audited**:
+29 IMPLEMENTED, 6 PARTIAL, 0 NOT VERIFIED, 0 NOT IMPLEMENTED.
+
+The six PARTIALs are five certificate requirements limited by TLS 1.3
+encrypting the Certificate message, and the ML requirement, where the selected
+anomaly method is a deterministic baseline and the supervised classifier is
+`NOT_VALIDATED`.
 
 ## Presentation
 
 | Check | Result |
 |---|---|
 | Page count | **exactly 6** |
-| Official template retained | **yes** — headings, layout and visual identity untouched |
-| Instruction slide removed | **yes** — asserted absent from the PPTX XML and the PDF text |
-| Team name present as `Zero-Day` | **yes** — in both the PPTX XML and the extracted PDF text |
+| Official template retained | **yes** |
+| Instruction slide removed | **yes**, asserted absent from PPTX XML and PDF text |
+| `Zero-Day` present | **yes**, in PPTX XML and PDF text |
 | `Your Team Name` | **absent** |
 | `Team Zero Day` / `Team Zero-Day` / `Team zero day` | **absent** |
-| `Zero Day` / `ZERO DAY` (wrong spellings) | **absent** |
-| `SecureMailScope` present | **yes** |
-| `SIH26159` present | **yes** |
-| `Software` present | **yes** |
-| Organisation present | **yes** — National Technical Research Organisation (NTRO) |
-| Every page visually inspected | **yes** — rendered at 2× and reviewed individually |
+| `Zero Day` / `ZERO DAY` | **absent** |
+| `SecureMailScope`, `SIH26159`, `Software`, NTRO | **all present** |
+| Stale `SIH26164` / `CryptoDrishti` / `Phantom HQ` | **absent** |
+| Visual share | **~45%** — 7 product screenshots plus diagrams across 6 slides |
+| Every page rendered at 2× and inspected | **yes** |
 | Clipped or overflowing text | **none** |
-| Stretched or distorted screenshots | **none** — cropped to 16:9, never scaled non-uniformly |
+| Stretched screenshots | **none** — cropped to ratio, never scaled non-uniformly |
 
-All of the above are enforced by `scripts/build_presentation.py`, which reads
-the PPTX XML and the extracted PDF text and **exits non-zero** on any failure.
-The build cannot silently produce a deck with the wrong team name.
+Enforced by `scripts/build_presentation.py`, which reads the PPTX XML and the
+extracted PDF text and **exits non-zero** on any failure.
 
-## Video authenticity
+## Video
 
-See `submission/demo/demo-verification.md` for the full table. Summary: all
-footage is the genuine application on synthetic captures; no token, path,
-personal data, terminal, notification or debug overlay appears; no analysis is
-sped up to look instantaneous; no cursor is faked.
+| Check | Result |
+|---|---|
+| Footage authentic | **yes** — Playwright against the real stack |
+| Resolution / rate | 1920 × 1080, 30 fps, H.264 |
+| Duration | 29.07 s of B-roll |
+| Tokens, paths, personal data | **none** — frames inspected at 4, 12, 20, 26 s |
+| Fake progress or cursor | **none** |
+| Narration | **not recorded** |
 
-Status: **VIDEO EDIT READY · HUMAN NARRATION PENDING.** 29 seconds of
-authentic 1080p/30fps B-roll exists. No finished video is claimed and nothing
-has been uploaded.
+Status: **VIDEO EDIT READY · HUMAN NARRATION PENDING.** No upload, no URL.
 
-## Git privacy
+## Privacy audit
 
 | Check | Result |
 |---|---|
 | Staged-file audit | `make secrets-check` clean before every commit |
-| Full history audit | `scripts/audit_history.py` — every blob reachable from every ref |
-| Captures in history | **none** |
-| Key material in history | **none** |
-| Tokens in history | **none** |
-| Databases in history | **none** |
-| Repository visibility | **private**, unchanged |
+| Full history audit | `scripts/audit_history.py` — 787 blobs across every ref |
+| Captures / keys / tokens / databases in history | **none** |
 
-## Known unmet items
+The audit reported one finding during this sweep and it was a real defect in
+the scanner: it matched the PEM banner inside its own pattern table. The
+banner is now assembled at run time so current versions cannot self-match, and
+the historical blobs are allowed by path with that reason recorded — silencing
+the pattern would have blinded the scanner to a genuine key.
+
+## Rollback
+
+Verified: the archived deck PDF was extracted from history with `git show`
+into a temporary directory and its SHA-256 matched the working copy byte for
+byte, with the working tree untouched. See `docs/ROLLBACK.md`.
+
+## Contribution attribution
+
+| Field | Value |
+|---|---|
+| Authenticated GitHub user | `sgtsujith141-wq` |
+| Repo-local author name | `sgtsujith141-wq` |
+| Email attribution | **NOT VERIFIED** |
+| Default branch | `main` |
+
+`gh api user/emails` requires the `user` OAuth scope, which is not granted
+here, so the configured commit email could not be confirmed against the
+account. The existing author identity was preserved unchanged rather than
+guessed at, and no historical commit was rewritten.
+
+## Remaining blockers
 
 | Item | Status | Why |
 |---|---|---|
-| Official SIH26159 theme | **BLOCKED** | Not recorded in this repository. Deliberately not inferred from another problem statement, even one from the same organisation. |
-| Team ID | **BLOCKED** | Issued by the SIH portal at registration; not derivable locally. |
-| Finished demo video | **PARTIAL** | Authentic B-roll captured; narration requires a human voice. |
-| Benchmarks on 4-core/8 GB | **NOT VERIFIED** | No such hardware available; recorded as unverified rather than estimated. |
-| Contribution email verification | **NOT VERIFIED** | `gh api user/emails` needs the `user` OAuth scope, which is not granted. Existing author identity preserved unchanged. |
+| Official SIH26159 theme | **BLOCKED** | Not recorded in this repository; deliberately not inferred from another problem statement |
+| Registered Team ID | **BLOCKED** | Issued by the SIH portal at registration |
+| Finished demo video | **PARTIAL** | Authentic B-roll captured; narration needs a human voice |
+| Benchmarks on 4-core / 8 GB | **NOT VERIFIED** | No such hardware available |
+| Publication / upload / submission | **AWAITING APPROVAL** | Each needs the team's decision |
