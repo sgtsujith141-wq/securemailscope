@@ -4,7 +4,7 @@ SHA-256 of every file in `submission/`. Regenerate with:
 
     python scripts/write_manifest.py
 
-Generated 2026-09-24T10:49:41+00:00
+Generated 2026-09-24T12:39:33+00:00
 
 | File | Bytes | SHA-256 |
 |---|---:|---|
@@ -31,6 +31,8 @@ Generated 2026-09-24T10:49:41+00:00
 | `submission/archive/demo-v2/shot-list.md` | 2,595 | `804d8c0bea5e49f6c1246221b43a5b0556fdda9aa78c49f64c97f3a12a20a005` |
 | `submission/archive/demo-v2/storyboard.md` | 3,378 | `146ada4fb2aa1bf9394ee0362a9a5875fbd3f4c6874069e701dab49445319e31` |
 | `submission/archive/demo-v2/video-description.md` | 2,370 | `5914a1e32a137a2a9193d8e8e95b1f1c6311db816a5880f28362f508c328875a` |
+| `submission/archive/ppt-pre-ai-story/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,319,786 | `c9d68d1a7071ff2e94c641b5dad041ffaea02559d916461ac0e4d048e9c185fe` |
+| `submission/archive/ppt-pre-ai-story/SecureMailScope-SIH26159-Zero-Day.pptx` | 1,535,810 | `3315ed0136b3f93a2a5dc9d1aebe9f279b5b9c4affee20e1a3a0476af7791ddd` |
 | `submission/archive/ppt-pre-national-final/CHANGELOG.md` | 1,318 | `59c1ddaecf4779963fb0f6b433ec2973053cec38f346c6ba9e39b1b1a840cd9d` |
 | `submission/archive/ppt-pre-national-final/SOURCE_COMMIT` | 41 | `e1cf796ce4e31f145cf97e4257e27e181635595e32fffe571f8c64debd5c6c59` |
 | `submission/archive/ppt-pre-national-final/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,513,027 | `06855d31d0e61d346dc38e52d14d069c78a9c19aa119baceadf33fa71ff34c4a` |
@@ -123,16 +125,16 @@ Generated 2026-09-24T10:49:41+00:00
 | `submission/demo/storyboard.md` | 3,753 | `06edbd8ca3681013731d3c9106902f65d9ffe0fcca4453a55b8aa2e49cf926d1` |
 | `submission/demo/video-description.md` | 2,518 | `7229cf555d5b82036b02432b825c159b5c38439461ece3bb46364d420435112c` |
 | `submission/final/FINAL-QUALITY-CHECK.md` | 5,177 | `ab89ad68d8ec83a508bd2388443d2f761b4110cd724d658941c93539937a5170` |
-| `submission/final/MANIFEST.md` | 17,214 | `9ee1062fae76ce579b5ffad100b9709991215322965ce008e6526edf6b63809e` |
+| `submission/final/MANIFEST.md` | 17,214 | `ee21b5c9321a3296af668e869bf267b9351b00c4285cd7d8e49b7fce93934753` |
 | `submission/final/REQUIREMENT-COVERAGE.md` | 9,994 | `cb61b9a75728125c1d46168b60249e577d9468e0926b5df70c28e5f355c9a038` |
 | `submission/final/SecureMailScope-SIH26159-Demo.mp4` | 22,153,052 | `0360d9b5e7cd12d4b59aa9d84effb4c3c7b5bc6ec61633b4a82b3cf63f293bce` |
-| `submission/final/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,319,786 | `c9d68d1a7071ff2e94c641b5dad041ffaea02559d916461ac0e4d048e9c185fe` |
-| `submission/final/SecureMailScope-SIH26159-Zero-Day.pptx` | 1,535,810 | `3315ed0136b3f93a2a5dc9d1aebe9f279b5b9c4affee20e1a3a0476af7791ddd` |
-| `submission/final/manifest.json` | 23,476 | `4251c3d11fa88a3bf33e4884daad724f51783ac51504788cb962935da0efb1ef` |
+| `submission/final/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,169,651 | `c752012b6122010b96f1486c7688485bf419e66740bc5a55cce7b3cf08caebd7` |
+| `submission/final/SecureMailScope-SIH26159-Zero-Day.pptx` | 1,256,974 | `dd66caa4b3016040728cadefd8f3b861d2ecf0d7b7b07a1eec5070a5a4a8021c` |
+| `submission/final/manifest.json` | 23,476 | `ca8c3978d1edde783c46a2473dd47c9ee1a55034e1a82528c7c2de7a81e9a2fd` |
 | `submission/presentation/SecureMailScope-SIH26159.pdf` | 606,554 | `fa269b0e599d3dcb357e045fd6583b93db238cd0bb5e0037418f56a208b153ae` |
 | `submission/presentation/SecureMailScope-SIH26159.pptx` | 683,037 | `8f6fa86357adbe789845c89122463e68ea126e8644211b225a82539df443278c` |
 | `submission/presentation/build-status.json` | 366 | `ffcdd896947fc9542822ffd90e165ac030088e8ac43a50446e669c521e32015e` |
 | `submission/presentation/team.json` | 1,340 | `c40fdacc8a3c4d2e6db02f18b631864351e2c75194b3ea9b9f2b473e8219d8e5` |
 | `submission/template/SIH2026-IDEA-Presentation-Format.pptx` | 924,505 | `ce3e5deebec2741f3383cb2dd21269cad8d9930f7c747c9903d7d4b27db14de6` |
 
-**126 files.**
+**128 files.**

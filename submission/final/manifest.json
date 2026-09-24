@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-24T10:49:41+00:00",
+  "generated_at": "2026-09-24T12:39:33+00:00",
   "files": [
     {
       "path": "submission/README.md",
@@ -115,6 +115,16 @@
       "path": "submission/archive/demo-v2/video-description.md",
       "bytes": 2370,
       "sha256": "5914a1e32a137a2a9193d8e8e95b1f1c6311db816a5880f28362f508c328875a"
+    },
+    {
+      "path": "submission/archive/ppt-pre-ai-story/SecureMailScope-SIH26159-Zero-Day.pdf",
+      "bytes": 1319786,
+      "sha256": "c9d68d1a7071ff2e94c641b5dad041ffaea02559d916461ac0e4d048e9c185fe"
+    },
+    {
+      "path": "submission/archive/ppt-pre-ai-story/SecureMailScope-SIH26159-Zero-Day.pptx",
+      "bytes": 1535810,
+      "sha256": "3315ed0136b3f93a2a5dc9d1aebe9f279b5b9c4affee20e1a3a0476af7791ddd"
     },
     {
       "path": "submission/archive/ppt-pre-national-final/CHANGELOG.md",
@@ -579,7 +589,7 @@
     {
       "path": "submission/final/MANIFEST.md",
       "bytes": 17214,
-      "sha256": "9ee1062fae76ce579b5ffad100b9709991215322965ce008e6526edf6b63809e"
+      "sha256": "ee21b5c9321a3296af668e869bf267b9351b00c4285cd7d8e49b7fce93934753"
     },
     {
       "path": "submission/final/REQUIREMENT-COVERAGE.md",
@@ -593,18 +603,18 @@
     },
     {
       "path": "submission/final/SecureMailScope-SIH26159-Zero-Day.pdf",
-      "bytes": 1319786,
-      "sha256": "c9d68d1a7071ff2e94c641b5dad041ffaea02559d916461ac0e4d048e9c185fe"
+      "bytes": 1169651,
+      "sha256": "c752012b6122010b96f1486c7688485bf419e66740bc5a55cce7b3cf08caebd7"
     },
     {
       "path": "submission/final/SecureMailScope-SIH26159-Zero-Day.pptx",
-      "bytes": 1535810,
-      "sha256": "3315ed0136b3f93a2a5dc9d1aebe9f279b5b9c4affee20e1a3a0476af7791ddd"
+      "bytes": 1256974,
+      "sha256": "dd66caa4b3016040728cadefd8f3b861d2ecf0d7b7b07a1eec5070a5a4a8021c"
     },
     {
       "path": "submission/final/manifest.json",
       "bytes": 23476,
-      "sha256": "4251c3d11fa88a3bf33e4884daad724f51783ac51504788cb962935da0efb1ef"
+      "sha256": "ca8c3978d1edde783c46a2473dd47c9ee1a55034e1a82528c7c2de7a81e9a2fd"
     },
     {
       "path": "submission/presentation/SecureMailScope-SIH26159.pdf",

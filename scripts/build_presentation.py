@@ -55,6 +55,95 @@ BOX_FILL = RGBColor(0xEE, 0xF3, 0xF9)
 BOX_LINE = RGBColor(0xC2, 0xD4, 0xE6)
 
 
+
+# ---------------------------------------------------------------------------
+# the content grid
+# ---------------------------------------------------------------------------
+#: Every slide places its editable content inside one grid. Repeated
+#: components -- pipeline stages, metric tiles, reference cards -- are
+#: positioned by computing the row once and reading coordinates out of it,
+#: never by adding a hand-tuned offset per item. That is what keeps cards in a
+#: row exactly the same width and arrows exactly between the boxes they join.
+CONTENT_LEFT = 0.42
+CONTENT_RIGHT = 12.91
+CONTENT_BOTTOM = 6.84          # the official footer band begins below this
+GUTTER = 0.16
+ARROW_W = 0.22
+ARROW_H = 0.18
+
+
+def columns(
+    count: int,
+    *,
+    left: float = CONTENT_LEFT,
+    right: float = CONTENT_RIGHT,
+    gutter: float = GUTTER,
+) -> list[tuple[float, float]]:
+    """`count` equal columns as (x, width), exactly filling left..right."""
+    width = (right - left - gutter * (count - 1)) / count
+    return [(left + index * (width + gutter), width) for index in range(count)]
+
+
+def weighted(
+    weights: list[float],
+    *,
+    left: float = CONTENT_LEFT,
+    right: float = CONTENT_RIGHT,
+    gutter: float = GUTTER,
+) -> list[tuple[float, float]]:
+    """Columns in the given proportions, exactly filling left..right."""
+    span = right - left - gutter * (len(weights) - 1)
+    total = sum(weights)
+    out: list[tuple[float, float]] = []
+    x = left
+    for weight in weights:
+        width = span * weight / total
+        out.append((x, width))
+        x += width + gutter
+    return out
+
+
+def rows(
+    count: int, top: float, bottom: float, *, gutter: float = GUTTER,
+) -> list[tuple[float, float]]:
+    """`count` equal rows as (y, height), exactly filling top..bottom."""
+    height = (bottom - top - gutter * (count - 1)) / count
+    return [(top + index * (height + gutter), height) for index in range(count)]
+
+
+def chain(
+    count: int,
+    *,
+    left: float = CONTENT_LEFT,
+    right: float = CONTENT_RIGHT,
+    arrow: float = ARROW_W,
+    gap: float = 0.06,
+) -> tuple[list[tuple[float, float]], list[float]]:
+    """A row of equal cards joined by arrows.
+
+    Returns the card boxes and the arrow x-positions. The arrows are derived
+    from the same arithmetic as the cards, so one can never sit off-centre
+    between two of them.
+    """
+    slot = arrow + 2 * gap
+    width = (right - left - slot * (count - 1)) / count
+    cards: list[tuple[float, float]] = []
+    arrows: list[float] = []
+    x = left
+    for index in range(count):
+        cards.append((x, width))
+        x += width
+        if index < count - 1:
+            arrows.append(x + gap)
+            x += slot
+    return cards, arrows
+
+
+def middle(top: float, height: float, of: float) -> float:
+    """The y that vertically centres an object of size `of` in a row."""
+    return top + (height - of) / 2
+
+
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
@@ -111,7 +200,7 @@ REPOSITORY_URL = "https://github.com/sgtsujith141-wq/securemailscope"
 #: What the deck says about the demonstration video. No URL exists because
 #: nothing has been uploaded anywhere, so the line states where the video is
 #: rather than promising a link.
-VIDEO_LINK_PLACEHOLDER = "Included in the submission package."
+VIDEO_LINK_PLACEHOLDER = "Demo video included in submission package."
 
 
 
@@ -203,6 +292,19 @@ def _arrow(slide: Any, left: float, top: float, width: float = 0.26) -> None:
     arrow.fill.fore_color.rgb = MUTED
     arrow.line.fill.background()
     arrow.shadow.inherit = False
+
+
+def _hanging(paragraph: Any, inches: float) -> None:
+    """Indent a paragraph's wrapped lines under its value, not its label.
+
+    The problem-statement title is longer than one line at any size a title
+    page should use. Left alone, its continuation starts exactly where the
+    next field starts and reads as a separate row; a small indent marks it as
+    the same sentence without pushing it under the template artwork.
+    """
+    pPr = paragraph._p.get_or_add_pPr()
+    pPr.set("marL", str(int(inches * 914400)))
+    pPr.set("indent", str(int(-inches * 914400)))
 
 
 def _no_bullets(frame: Any) -> None:
@@ -395,11 +497,15 @@ def slide_1(slide: Any, config: dict[str, Any]) -> list[str]:
             unresolved.append(key)
         # The en dash is the separator the official template uses.
         lines.append(
-            (f"{label} \u2013 {text}", 15, False,
+            (f"{label} \u2013 {text}", 14, False,
              INK if resolved else UNRESOLVED, 0)
         )
     _write(box.text_frame, lines, line_spacing=1.30)
     _no_bullets(box.text_frame)
+    # Only the title is long enough to wrap; hang it under its value.
+    for index, (label, _key) in enumerate(fields):
+        if label == "Problem Statement Title":
+            _hanging(box.text_frame.paragraphs[index], 0.24)
 
     # The project's own name, above the template's field list. The title page
     # otherwise opens on "Problem Statement ID", which tells a judge what the
@@ -422,27 +528,51 @@ def slide_1(slide: Any, config: dict[str, Any]) -> list[str]:
     rule.shadow.inherit = False
 
     box.left, box.top = Inches(0.62), Inches(3.46)
-    box.width, box.height = Inches(7.40), Inches(3.10)
+    box.width, box.height = Inches(7.60), Inches(3.10)
     return unresolved
 
 
 # ---------------------------------------------------------------------------
 # slide 2 -- idea title / proposed solution
 # ---------------------------------------------------------------------------
-def slide_2(slide: Any) -> None:
+def _subtitle(slide: Any, text: str, *, size: float = 13,
+              bold: bool = False, colour: RGBColor = MUTED,
+              height: float = 0.38, top: float = 1.02) -> None:
+    """The one line under the template title. Same box on every slide."""
     box = _shape(slide, "TextBox 8")
     assert box is not None
-    box.left, box.top = Inches(0.42), Inches(1.06)
-    box.width, box.height = Inches(12.5), Inches(0.62)
-    _write(
-        box.text_frame,
-        [("SecureMailScope turns passive email packet captures into "
-          "evidence-backed cryptographic investigations.", 20, True, ACCENT, 0)],
-        line_spacing=1.0,
-    )
+    box.left, box.top = Inches(CONTENT_LEFT), Inches(top)
+    box.width = Inches(CONTENT_RIGHT - CONTENT_LEFT)
+    box.height = Inches(height)
+    _write(box.text_frame, [(text, size, bold, colour, 0)], line_spacing=1.0)
     _no_bullets(box.text_frame)
 
-    # --- the pipeline, as six readable stages --------------------------------
+
+def _card(slide: Any, box: tuple[float, float], top: float, height: float,
+          title: str, body: list[str], *, title_size: float = 12,
+          body_size: float = 10.5, title_colour: RGBColor = ACCENT,
+          fill: RGBColor = BOX_FILL, line: RGBColor = BOX_LINE) -> Any:
+    """A titled card. Every card in a row is built from the same row maths."""
+    panel = _panel(slide, box[0], top, box[1], height, fill=fill, line=line)
+    _write(
+        panel.text_frame,
+        [(title, title_size, True, title_colour, 0)]
+        + [(item, body_size, False, BODY, 0) for item in body],
+        line_spacing=0.98,
+    )
+    _no_bullets(panel.text_frame)
+    return panel
+
+
+def slide_2(slide: Any) -> None:
+    _subtitle(
+        slide,
+        "SecureMailScope turns passive email packet captures into "
+        "evidence-backed cryptographic investigations.",
+        size=18, bold=True, colour=ACCENT, height=0.52, top=1.20,
+    )
+
+    # --- the pipeline: six equal stages, arrows derived from the same maths --
     stages = [
         ("PCAP / PCAPNG", "authorised capture"),
         ("TCP RECONSTRUCTION", "sessions rebuilt"),
@@ -451,222 +581,291 @@ def slide_2(slide: Any) -> None:
         ("CRYPTOGRAPHIC EVIDENCE", "versions, suites, certificates"),
         ("RISK + REMEDIATION", "ranked, with the fix"),
     ]
-    x, w = 0.42, 1.86
-    for index, (title, detail) in enumerate(stages):
-        _node(slide, x, 1.82, w, 0.78,
-              [(title, 11, True, INK), (detail, 8.5, False, MUTED)])
-        x += w
-        if index < len(stages) - 1:
-            _arrow(slide, x + 0.02, 2.12, 0.20)
-            x += 0.25
+    row_top, row_h = 1.86, 0.78
+    cards, arrows = chain(len(stages))
+    for (x, w), (title, detail) in zip(cards, stages, strict=True):
+        _node(slide, x, row_top, w, row_h,
+              [(title, 10.5, True, INK), (detail, 8.5, False, MUTED)])
+    for x in arrows:
+        _arrow(slide, x, middle(row_top, row_h, ARROW_H), ARROW_W)
 
-    # --- the product, large enough to read -----------------------------------
-    _shot(slide, "02-overview.png", 0.42, 2.86, 8.16,
-          "The investigation opens on its conclusion. Actual product output.",
-          crop=(0.11, 0.022, 1.0, 0.200))
+    # --- the product on the left, what makes it different on the right ------
+    body_top = 2.82
+    left_col, right_col = weighted([8.0, 4.33])
 
-    # --- three differentiators, not paragraphs -------------------------------
+    shot_h = _shot(
+        slide, "02-overview.png", left_col[0], body_top, left_col[1],
+        "The investigation opens on its conclusion. Actual product output.",
+        crop=(0.11, 0.022, 1.0, 0.243),
+    )
+    # The three panels finish level with the screenshot, so the two columns
+    # share a baseline instead of one running on past the other.
+    body_bottom = min(CONTENT_BOTTOM, body_top + shot_h) if shot_h else CONTENT_BOTTOM
+
     blocks = [
         ("PASSIVE BY DESIGN",
          "Existing captures only. No live probe, no connection back to the "
          "mail server, nothing leaves the machine."),
         ("EVIDENCE-FIRST",
-         "Every finding traces back to the packets that establish it \u2014 "
-         "number, timestamp and stream offset."),
-        ("CROSS-CAPTURE INTELLIGENCE",
-         "Cryptographic fingerprints, configuration drift and correlation "
-         "across captures of the same service."),
+         "Every finding traces back to the packet-level observations that "
+         "establish it \u2014 number, timestamp and stream offset."),
+        ("AI + CROSS-CAPTURE INTELLIGENCE",
+         "ML-assisted risk triage alongside cryptographic fingerprints, "
+         "configuration drift and correlation."),
     ]
-    y = 2.86
-    for title, detail in blocks:
-        panel = _panel(slide, 8.82, y, 4.10, 1.02)
-        _write(
-            panel.text_frame,
-            [(title, 12.5, True, ACCENT, 0), (detail, 11, False, BODY, 0)],
-            line_spacing=0.98,
-        )
-        _no_bullets(panel.text_frame)
-        y += 1.12
+    for (y, h), (title, detail) in zip(
+        rows(3, body_top, body_bottom), blocks, strict=True
+    ):
+        _card(slide, right_col, y, h, title, [detail],
+              title_size=12, body_size=10.5)
 
 
 # ---------------------------------------------------------------------------
 # slide 3 -- technical approach
 # ---------------------------------------------------------------------------
 def slide_3(slide: Any) -> None:
-    box = _shape(slide, "TextBox 8")
-    assert box is not None
-    box.left, box.top = Inches(0.42), Inches(1.04)
-    box.width, box.height = Inches(12.5), Inches(0.36)
-    _write(
-        box.text_frame,
-        [("Each stage consumes the previous stage\u2019s evidence and preserves "
-          "packet-level provenance.", 13, False, MUTED, 0)],
+    _subtitle(
+        slide,
+        "Each stage consumes the previous stage\u2019s evidence and preserves "
+        "packet-level provenance.",
     )
-    _no_bullets(box.text_frame)
 
-    top, band_h = 1.46, 3.02
-    node_top = top + 0.34
-    detail_pt = 8.5
+    # The vertical budget is computed once and every band reads from it, so
+    # no stack can grow past its own label or into the row below.
+    arch_top, arch_bottom = 1.46, 4.46
+    band_h = arch_bottom - arch_top
+    LABEL = 0.24                      # the band label strip inside each band
+    # Five stages. The fourth is split, because deterministic intelligence and
+    # AI-assisted triage are different kinds of claim and a judge has to be
+    # able to see at a glance which is which.
+    stage_cols = weighted([0.98, 1.20, 1.24, 1.36, 1.14])
 
-    _band(slide, 0.42, top, 2.30, band_h, "INPUT")
-    _band(slide, 2.94, top, 3.60, band_h, "RECONSTRUCTION")
-    _band(slide, 6.76, top, 3.26, band_h, "CRYPTOGRAPHIC ASSESSMENT")
-    _band(slide, 10.24, top, 2.68, band_h, "OUTPUT")
+    def stack(box: tuple[float, float], top: float, height: float,
+              items: list[tuple[str, str]], *, node_h: float, gap: float = 0.14,
+              fill: RGBColor = BOX_FILL, line: RGBColor = BOX_LINE) -> None:
+        """Nodes centred in `height`, joined by arrows exactly between them."""
+        total = len(items) * node_h + (len(items) - 1) * gap
+        y = top + (height - total) / 2
+        inner_x, inner_w = box[0] + 0.10, box[1] - 0.20
+        for index, (title, detail) in enumerate(items):
+            lines: list[tuple[str, float, bool, RGBColor]] = [
+                (title, 9.5, True, INK)
+            ]
+            if detail:
+                lines.append((detail, 7.5, False, MUTED))
+            _node(slide, inner_x, y, inner_w, node_h, lines,
+                  fill=fill, line=line)
+            y += node_h
+            if index < len(items) - 1:
+                arrow_h = min(0.14, gap - 0.02)
+                _arrow_down(slide, inner_x + inner_w / 2 - 0.09,
+                            middle(y, gap, arrow_h), arrow_h)
+                y += gap
 
-    def column(left: float, width: float, rows: list[tuple[str, str]]) -> None:
-        y = node_top
-        for index, (title, detail) in enumerate(rows):
-            height = 0.50 if detail else 0.40
-            _node(slide, left, y, width, height,
-                  [(title, 10.5, True, INK)]
-                  + ([(detail, detail_pt, False, MUTED)] if detail else []))
-            y += height
-            if index < len(rows) - 1:
-                _arrow_down(slide, left + width / 2 - 0.09, y + 0.02, 0.16)
-                y += 0.22
-
-    column(0.58, 1.98, [
+    _band(slide, stage_cols[0][0], arch_top, stage_cols[0][1], band_h, "INPUT")
+    stack(stage_cols[0], arch_top + LABEL, band_h - LABEL - 0.08, [
         ("PCAP / PCAPNG", "authorised capture"),
         ("Safe ingestion", "format from the bytes, 8 limits"),
-    ])
-    column(3.10, 3.28, [
+    ], node_h=0.74)
+
+    _band(slide, stage_cols[1][0], arch_top, stage_cols[1][1], band_h,
+          "RECONSTRUCTION")
+    stack(stage_cols[1], arch_top + LABEL, band_h - LABEL - 0.08, [
         ("Packet decode", ""),
         ("TCP reassembly", "reorder \u00b7 retransmit \u00b7 gaps"),
         ("SMTP \u00b7 IMAP \u00b7 POP3", "state machines, not ports"),
-        ("STARTTLS / STLS", "advertised \u00b7 requested \u00b7 outcome"),
-    ])
-    column(6.92, 2.94, [
-        ("TLS handshake \u2192 X.509", "version, suite, key exchange, chain"),
-        ("25 policy rules", "versioned and fingerprinted"),
+        ("STARTTLS \u00b7 STLS", "advertised \u00b7 requested \u00b7 outcome"),
+    ], node_h=0.52)
+
+    _band(slide, stage_cols[2][0], arch_top, stage_cols[2][1], band_h,
+          "CRYPTOGRAPHIC ASSESSMENT")
+    stack(stage_cols[2], arch_top + LABEL, band_h - LABEL - 0.08, [
+        ("TLS handshake \u2192 X.509", "version \u00b7 suite \u00b7 key exchange"),
+        ("Certificate analysis", "where passively observable"),
+        ("25 deterministic rules", "versioned and fingerprinted"),
         ("Score \u00b7 coverage \u00b7 priority", "arithmetic shown, not asserted"),
-        ("Fingerprint \u00b7 drift \u00b7 ML", "ML is advisory only"),
-    ])
-    column(10.40, 2.36, [
+    ], node_h=0.52)
+
+    # --- the split layer: deterministic above, AI-assisted below ------------
+    split = stage_cols[3]
+    upper_h = 1.22
+    lower_h = band_h - upper_h - 0.10
+    ai_top = arch_top + upper_h + 0.10
+
+    _band(slide, split[0], arch_top, split[1], upper_h,
+          "DETERMINISTIC INTELLIGENCE")
+    stack(split, arch_top + LABEL, upper_h - LABEL - 0.06, [
+        ("Cryptographic fingerprint", ""),
+        ("Cross-session correlation", ""),
+        ("Configuration drift", ""),
+    ], node_h=0.26, gap=0.08)
+
+    ai_band = slide.shapes.add_shape(
+        MSO_SHAPE.ROUNDED_RECTANGLE,
+        Inches(split[0]), Inches(ai_top), Inches(split[1]), Inches(lower_h),
+    )
+    ai_band.fill.solid()
+    ai_band.fill.fore_color.rgb = RGBColor(0xFD, 0xF5, 0xE7)
+    ai_band.line.color.rgb = RGBColor(0xDC, 0xB8, 0x77)
+    ai_band.line.width = Pt(1.25)
+    ai_band.shadow.inherit = False
+    ai_frame = ai_band.text_frame
+    ai_frame.word_wrap = True
+    ai_frame.margin_left = Inches(0.08)
+    ai_frame.margin_top = Inches(0.03)
+    ai_frame.vertical_anchor = MSO_ANCHOR.TOP
+    _write(ai_frame, [("AI-ASSISTED TRIAGE", 8, True, WARN, 0)])
+    _no_bullets(ai_frame)
+
+    note_h = 0.30
+    stack(split, ai_top + LABEL, lower_h - LABEL - note_h - 0.04, [
+        ("93-feature vector", "cryptographic \u00b7 session \u00b7 evidence"),
+        ("Supervised classifier", "logistic regression"),
+        ("Advisory risk class", "CRITICAL \u00b7 HIGH \u00b7 MODERATE \u00b7 LOW"),
+    ], node_h=0.30, gap=0.08, fill=RGBColor(0xFF, 0xFD, 0xF8),
+        line=RGBColor(0xDC, 0xB8, 0x77))
+    note = _textbox(slide, split[0] + 0.10, ai_top + lower_h - note_h,
+                    split[1] - 0.20, note_h)
+    note.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+    _write(note.text_frame,
+           [("Advisory only \u2014 never overrides deterministic evidence "
+             "or scoring.", 8.5, True, WARN, 0)], line_spacing=0.9)
+    for paragraph in note.text_frame.paragraphs:
+        paragraph.alignment = PP_ALIGN.CENTER
+    _no_bullets(note.text_frame)
+
+    _band(slide, stage_cols[4][0], arch_top, stage_cols[4][1], band_h, "OUTPUT")
+    stack(stage_cols[4], arch_top + LABEL, band_h - LABEL - 0.08, [
         ("Canonical report model", "schema 1.4.0"),
         ("FastAPI + SQLite", "loopback only, token"),
         ("React workspace", "evidence-linked throughout"),
         ("JSON \u00b7 HTML \u00b7 PDF", "parity-tested"),
-    ])
+    ], node_h=0.52)
 
-    for x in (2.74, 6.56, 10.04):
-        _arrow(slide, x, node_top + 0.18, 0.22)
-
-    # --- the evidence rail, as a chain ---------------------------------------
-    rail_y = top + band_h + 0.16
-    _band(slide, 0.42, rail_y, 12.5, 0.86, "EVIDENCE RAIL \u2014 WHAT EVERY FINDING CARRIES")
-    chain = ["PACKET", "OBSERVATION", "CRYPTO FACT", "RULE", "FINDING", "REMEDIATION"]
-    cx, cw = 0.66, 1.80
-    for index, label in enumerate(chain):
-        _node(slide, cx, rail_y + 0.32, cw, 0.42, [(label, 10.5, True, ACCENT)],
+    # --- the evidence rail ---------------------------------------------------
+    rail_top, rail_h = 4.56, 0.72
+    _band(slide, CONTENT_LEFT, rail_top, CONTENT_RIGHT - CONTENT_LEFT, rail_h,
+          "EVIDENCE RAIL \u2014 WHAT EVERY FINDING CARRIES")
+    steps = ["PACKET", "OBSERVATION", "CRYPTO FACT", "RULE", "FINDING",
+             "REMEDIATION"]
+    node_top, node_h = rail_top + 0.26, 0.38
+    cards, arrows = chain(len(steps), left=CONTENT_LEFT + 0.14,
+                          right=CONTENT_RIGHT - 0.14)
+    for (x, w), label in zip(cards, steps, strict=True):
+        _node(slide, x, node_top, w, node_h,
+              [(label, 10, True, ACCENT)],
               fill=RGBColor(0xFF, 0xFF, 0xFF))
-        cx += cw
-        if index < len(chain) - 1:
-            _arrow(slide, cx + 0.03, rail_y + 0.46, 0.18)
-            cx += 0.26
+    for x in arrows:
+        _arrow(slide, x, middle(node_top, node_h, ARROW_H), ARROW_W)
 
-    # --- technology, in four groups, plus the three claims -------------------
+    # --- what it is built from ----------------------------------------------
+    tech_top, tech_h = 5.38, 0.76
     groups = [
-        ("ENGINE", "Python \u00b7 Scapy \u00b7 cryptography"),
-        ("APPLICATION", "FastAPI \u00b7 SQLite \u00b7 React \u00b7 TypeScript"),
-        ("ANALYTICS", "scikit-learn"),
-        ("VALIDATION", "pytest \u00b7 Playwright \u00b7 TShark"),
+        ("ENGINE", "Python \u00b7 Scapy \u00b7 cryptography", ACCENT),
+        ("APPLICATION", "FastAPI \u00b7 SQLite \u00b7 React \u00b7 TypeScript", ACCENT),
+        ("AI / ANALYTICS", "scikit-learn \u00b7 supervised risk classifier", WARN),
+        ("VALIDATION", "pytest \u00b7 Playwright \u00b7 TShark", ACCENT),
+        ("GUARANTEES", "Passive \u00b7 Local-first \u00b7 Evidence-linked", GOOD),
     ]
-    gy = rail_y + 1.02
-    gx, gw = 0.42, 2.30
-    for title, detail in groups:
-        panel = _panel(slide, gx, gy, gw, 0.74)
-        _write(panel.text_frame,
-               [(title, 10.5, True, ACCENT, 0), (detail, 9.5, False, BODY, 0)],
-               line_spacing=0.94)
-        _no_bullets(panel.text_frame)
-        gx += gw + 0.10
+    for (x, w), (title, detail, colour) in zip(
+        columns(5), groups, strict=True
+    ):
+        _node(slide, x, tech_top, w, tech_h,
+              [(title, 10.5, True, colour), (detail, 9, False, BODY)])
 
-    bx = gx
-    for text, colour in (("PASSIVE", GOOD), ("LOCAL-FIRST", ACCENT),
-                         ("EVIDENCE-LINKED", WARN)):
-        _node(slide, bx, gy, 1.02, 0.74, [(text, 9, True, colour)],
-              fill=RGBColor(0xFF, 0xFF, 0xFF))
-        bx += 1.08
+    foot = _textbox(slide, CONTENT_LEFT, 6.22, CONTENT_RIGHT - CONTENT_LEFT, 0.34)
+    _write(foot.text_frame,
+           [("The classifier is trained on 313 synthetic sessions and is "
+             "NOT VALIDATED for real-world risk; deterministic packet "
+             "evidence remains authoritative throughout.", 9.5, False, MUTED, 0)])
+    _no_bullets(foot.text_frame)
 
 
 # ---------------------------------------------------------------------------
 # slide 4 -- feasibility and viability
 # ---------------------------------------------------------------------------
 def slide_4(slide: Any, ev: dict[str, Any]) -> None:
-    box = _shape(slide, "TextBox 8")
-    assert box is not None
-    box.left, box.top = Inches(0.42), Inches(1.04)
-    box.width, box.height = Inches(12.5), Inches(0.36)
-    _write(
-        box.text_frame,
-        [("Feasible because it is built and measured. Every figure below was "
-          "re-run on the release commit.", 13, False, MUTED, 0)],
+    _subtitle(
+        slide,
+        "Feasible to build, feasible to operate, feasible to deploy and "
+        "feasible to maintain \u2014 each with its own evidence.",
+        top=1.14,
     )
-    _no_bullets(box.text_frame)
 
+    # --- A. technically feasible: the proof, compressed to one strip --------
     metrics = [
         (ev["tests"], "backend tests pass", ACCENT),
         (ev["tests_tshark"], "with the TShark cross-check", ACCENT),
         (ev["frontend_tests"], "frontend tests", ACCENT),
-        (ev["e2e_specs"], "real-backend E2E specs", ACCENT),
+        (ev["e2e_specs"], "real-backend browser E2E", ACCENT),
         (ev["typed_files"], "files ruff + mypy clean", ACCENT),
         ("0", "known advisories at audit", GOOD),
     ]
-    mx = 0.42
-    for figure, label, colour in metrics:
-        tile = _panel(slide, mx, 1.44, 2.02, 1.06)
+    strip_top, strip_h = 1.58, 0.86
+    for (x, w), (figure, label, colour) in zip(
+        columns(len(metrics)), metrics, strict=True
+    ):
+        tile = _panel(slide, x, strip_top, w, strip_h)
         tile.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
         _write(tile.text_frame,
-               [(figure, 32, True, colour, 0), (label, 9.5, False, MUTED, 0)],
-               line_spacing=0.86)
+               [(figure, 25, True, colour, 0), (label, 9, False, MUTED, 0)],
+               line_spacing=0.84)
         for paragraph in tile.text_frame.paragraphs:
             paragraph.alignment = PP_ALIGN.CENTER
             paragraph.space_after = Pt(0)
         _no_bullets(tile.text_frame)
-        mx += 2.12
 
-    # --- the proof, large enough to read -------------------------------------
-    # Cropped from the tag row to the packet rows: the two panels above them
-    # are on slide 5, and including them here would shrink the packet numbers
-    # -- the one thing this slide exists to show -- below reading size.
-    _shot(slide, "06-evidence-provenance.png", 0.42, 2.66, 7.10,
-          "TLS-KEX-001, HIGH \u2014 and the packets it was evaluated against. "
-          "Actual product output.",
-          crop=(0.360, 0.285, 1.0, 0.795))
-
-    # --- what the engine did, in four steps ----------------------------------
-    steps = [
-        ("OBSERVE", "Static RSA key exchange negotiated"),
-        ("TRACE", "Packets #4 and #5, with timestamps"),
-        ("ASSESS", "TLS-KEX-001 \u00b7 HIGH \u00b7 no forward secrecy"),
-        ("REMEDIATE", "Move to ephemeral key exchange"),
+    # --- the four questions this slide exists to answer ---------------------
+    # Two rows of two. Four tall columns left most of each card empty; this
+    # shape fits the text it actually has.
+    quad_top, quad_bottom = 2.60, 5.74
+    quads = [
+        ("TECHNICALLY FEASIBLE", ACCENT,
+         ["The pipeline runs end to end today: PCAP \u2192 reconstruction "
+          "\u2192 cryptographic assessment \u2192 findings \u2192 reports.",
+          "Every figure in the strip above was produced by running the gate, "
+          "not by asserting it."]),
+        ("OPERATIONALLY FEASIBLE", ACCENT,
+         ["No agent installation \u00b7 no mail-server modification \u00b7 "
+          "no credentials required \u00b7 no active probing.",
+          "Works from the authorised PCAP / PCAPNG an organisation already "
+          "collects."]),
+        ("DEPLOYMENT VIABLE", GOOD,
+         ["Local-first: FastAPI + React + SQLite. Core analysis works "
+          "offline.",
+          "Captured traffic never needs to be uploaded to a cloud service; it "
+          "runs as a self-contained investigation workstation."]),
+        ("MAINTAINABLE / EXTENSIBLE", ACCENT,
+         ["Versioned policy rules \u00b7 modular protocol and TLS pipeline "
+          "\u00b7 canonical report model \u00b7 independent TShark "
+          "cross-check.",
+          "New deterministic rules can be added without redesigning the "
+          "capture pipeline."]),
     ]
-    sy = 2.66
-    for index, (title, detail) in enumerate(steps):
-        panel = _panel(slide, 8.26, sy, 4.66, 0.72)
-        _write(panel.text_frame,
-               [(title, 12.5, True, ACCENT, 0), (detail, 11, False, BODY, 0)],
-               line_spacing=0.96)
-        _no_bullets(panel.text_frame)
-        sy += 0.72
-        if index < len(steps) - 1:
-            _arrow_down(slide, 10.50, sy + 0.02, 0.16)
-            sy += 0.20
+    quad_cols = columns(2)
+    quad_rows = rows(2, quad_top, quad_bottom)
+    for index, (title, colour, body) in enumerate(quads):
+        box = quad_cols[index % 2]
+        row_y, row_h = quad_rows[index // 2]
+        _card(slide, box, row_y, row_h, title, body,
+              title_size=12.5, body_size=11, title_colour=colour)
 
-    # --- boundaries: two lines --------------------------------------------
-    risks = _panel(slide, 0.42, 6.18, 12.5, 0.76,
-                   fill=RGBColor(0xFD, 0xF2, 0xEC), line=RGBColor(0xEE, 0xCF, 0xBE))
+    # --- the honest limits, kept to two lines -------------------------------
+    risks = _panel(slide, CONTENT_LEFT, 5.90, CONTENT_RIGHT - CONTENT_LEFT,
+                   0.82, fill=RGBColor(0xFD, 0xF2, 0xEC),
+                   line=RGBColor(0xEE, 0xCF, 0xBE))
     _write(
         risks.text_frame,
         [
-            ("KNOWN BOUNDARIES", 11, True, WARN, 0),
+            ("KNOWN BOUNDARIES", 10.5, True, WARN, 0),
             ("TLS 1.3 may encrypt certificate evidence a passive capture "
              "cannot recover; it is reported NOT AVAILABLE with the reason, "
-             "never guessed.", 11, False, BODY, 0),
-            ("The supervised classifier is experimental and never overrides a "
-             "deterministic finding.", 11, False, BODY, 0),
+             "never guessed.", 10.5, False, BODY, 0),
+            ("The AI classifier remains advisory until real-world "
+             "validation; it never overrides a deterministic finding or the "
+             "score.", 10.5, False, BODY, 0),
         ],
-        line_spacing=0.96,
+        line_spacing=0.94,
     )
     _no_bullets(risks.text_frame)
 
@@ -675,99 +874,118 @@ def slide_4(slide: Any, ev: dict[str, Any]) -> None:
 # slide 5 -- impact and benefits
 # ---------------------------------------------------------------------------
 def slide_5(slide: Any) -> None:
-    box = _shape(slide, "TextBox 8")
-    assert box is not None
-    box.left, box.top = Inches(0.42), Inches(1.04)
-    box.width, box.height = Inches(12.5), Inches(0.36)
-    _write(
-        box.text_frame,
-        [("For authorised email-security investigation \u2014 and every claim "
-          "below is what the product already outputs.", 13, False, MUTED, 0)],
+    _subtitle(
+        slide,
+        "What changes for the organisation that adopts it \u2014 and for the "
+        "people who have to act on the result.",
+        top=1.14,
     )
-    _no_bullets(box.text_frame)
 
-    outcomes = [
-        ("DISCOVER", "Observable weak cryptography"),
-        ("EXPLAIN", "Packet-backed evidence"),
-        ("PRIORITIZE", "What to fix first"),
-        ("TRACK", "Cryptographic drift"),
-        ("REPORT", "Portable forensic output"),
+    impacts = [
+        ("REDUCES MANUAL ANALYSIS",
+         "Turns captures into structured cryptographic findings instead of "
+         "an analyst reading every TLS negotiation by hand."),
+        ("NO PRODUCTION EXPOSURE",
+         "Assesses posture without modifying the mail server, deploying "
+         "agents, scanning or using credentials."),
+        ("MAKES FINDINGS DEFENSIBLE",
+         "Each conclusion links to capture, session, packet, timestamp, rule "
+         "and remediation \u2014 independently verifiable."),
+        ("PRIORITISES REMEDIATION",
+         "Severity, confidence, priority and a named fix, rather than raw "
+         "protocol data."),
+        ("DETECTS REGRESSION",
+         "Cross-capture drift reveals changes in observed cryptographic "
+         "posture between captures of the same service."),
     ]
-    x, w = 0.42, 2.40
-    for title, detail in outcomes:
-        panel = _panel(slide, x, 1.44, w, 0.84)
-        panel.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
-        _write(panel.text_frame,
-               [(title, 14, True, ACCENT, 0), (detail, 10.5, False, BODY, 0)],
-               line_spacing=0.94)
-        for paragraph in panel.text_frame.paragraphs:
-            paragraph.alignment = PP_ALIGN.CENTER
-            paragraph.space_after = Pt(1)
-        _no_bullets(panel.text_frame)
-        x += w + 0.10
+    imp_top, imp_h = 1.58, 1.62
+    for (x, w), (title, detail) in zip(columns(5), impacts, strict=True):
+        _card(slide, (x, w), imp_top, imp_h, title, [detail],
+              title_size=11.5, body_size=10)
 
-    # --- A: the evidence the first three outcomes rest on --------------------
-    _shot(slide, "04-finding-evidence.png", 0.42, 2.44, 7.12,
-          "DISCOVER \u00b7 EXPLAIN \u00b7 PRIORITIZE \u2014 one finding, its rule, "
-          "its severity and its remediation.",
-          crop=(0.11, 0.150, 1.0, 0.735))
+    # --- the visuals, each attached to the impact it supports ---------------
+    vis_top = 3.34
+    left_col, mid_col, right_col = weighted([5.05, 4.10, 3.10])
 
-    # --- B: drift, as the engine reported it ---------------------------------
-    _shot(slide, "13-drift-version.png", 7.72, 2.44, 5.20,
-          "TRACK \u2014 the same observed service, two captures.",
-          crop=(0.155, 0.150, 0.99, 0.262))
-
-    band = _panel(slide, 7.72, 4.02, 5.20, 0.62,
-                  fill=RGBColor(0xFF, 0xFF, 0xFF), line=BOX_LINE)
-    band.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
-    _write(
-        band.text_frame,
-        [("EARLIER  TLS 1.2      \u2192  OBSERVED_CHANGE  \u2192      LATER  TLS 1.0",
-          13, True, WARN, 0)],
+    shot_h = _shot(
+        slide, "04-finding-evidence.png", left_col[0], vis_top, left_col[1],
+        "DEFENSIBLE \u2014 the finding, its rule and the packets it was "
+        "evaluated against.",
+        crop=(0.11, 0.150, 1.0, 0.648),
     )
-    for paragraph in band.text_frame.paragraphs:
+    # All three blocks in this row end on the same line.
+    block_h = max(1.92, shot_h)
+
+    drift = _panel(slide, mid_col[0], vis_top, mid_col[1], block_h)
+    _write(drift.text_frame,
+           [("REGRESSION OVER TIME", 11.5, True, ACCENT, 0),
+            ("negotiated version \u00b7 OBSERVED_CHANGE", 10, True, WARN, 0)],
+           line_spacing=0.98)
+    _no_bullets(drift.text_frame)
+
+    ba_top, ba_h = vis_top + 0.60, 0.68
+    ba_cards, ba_arrows = chain(2, left=mid_col[0] + 0.30,
+                                right=mid_col[0] + mid_col[1] - 0.30,
+                                arrow=0.28)
+    ba = [("EARLIER", "TLS 1.2", ACCENT), ("LATER", "TLS 1.0", WARN)]
+    for (x, w), (label, value, colour) in zip(ba_cards, ba, strict=True):
+        _node(slide, x, ba_top, w, ba_h,
+              [(label, 9, True, MUTED), (value, 14, True, colour)],
+              fill=RGBColor(0xFF, 0xFF, 0xFF))
+    for x in ba_arrows:
+        _arrow(slide, x, middle(ba_top, ba_h, ARROW_H), 0.28)
+
+    drift_note = _textbox(slide, mid_col[0] + 0.16, vis_top + block_h - 0.58,
+                          mid_col[1] - 0.32, 0.52)
+    _write(drift_note.text_frame,
+           [("The same observed service, two captures. The change is "
+             "recorded as OBSERVED_CHANGE, never inferred.", 9.5, False,
+             MUTED, 0)], line_spacing=0.96)
+    for paragraph in drift_note.text_frame.paragraphs:
         paragraph.alignment = PP_ALIGN.CENTER
-    _no_bullets(band.text_frame)
+    _no_bullets(drift_note.text_frame)
 
-    # --- C: the report that leaves the tool ----------------------------------
-    _shot(slide, "12-pdf.png", 7.72, 4.80, 2.34,
-          "REPORT \u2014 the exported PDF.", crop=(0.0, 0.0, 1.0, 0.44))
+    _card(slide, right_col, vis_top, block_h,
+          "KEEPS SENSITIVE TRAFFIC LOCAL",
+          ["Captured enterprise and government email metadata does not need "
+           "to be sent to an external AI or cloud service for core analysis.",
+           "The engine opens no socket. The only traffic is the browser "
+           "talking to 127.0.0.1."],
+          title_size=11.5, body_size=10, title_colour=GOOD,
+          fill=RGBColor(0xEE, 0xF7, 0xF0), line=RGBColor(0xC6, 0xE2, 0xCE))
 
-    carry = _panel(slide, 10.24, 4.80, 2.68, 1.42)
-    _write(
-        carry.text_frame,
-        [("The report carries", 11.5, True, ACCENT, 0),
-         ("findings \u00b7 packet references \u00b7 remediation", 11, False, BODY, 0),
-         ("JSON \u00b7 standalone HTML \u00b7 PDF", 11, False, BODY, 0)],
-        line_spacing=0.98,
-    )
-    _no_bullets(carry.text_frame)
+    # --- who this is for ----------------------------------------------------
+    who_top, who_h = 5.56, 0.48
+    who = ["SOC / SECURITY ANALYSTS", "INCIDENT RESPONSE",
+           "MAIL ADMINISTRATORS", "AUDIT / ASSURANCE",
+           "GOVERNMENT / ENTERPRISE SECURITY"]
+    for (x, w), label in zip(columns(len(who)), who, strict=True):
+        _node(slide, x, who_top, w, who_h, [(label, 10, True, ACCENT)],
+              fill=RGBColor(0xFF, 0xFF, 0xFF))
 
-    note = _panel(slide, 0.42, 6.34, 7.12, 0.42,
-                  fill=RGBColor(0xE4, 0xEE, 0xE6), line=RGBColor(0xBE, 0xD8, 0xC6))
-    note.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
-    _write(
-        note.text_frame,
-        [("Demonstrated on controlled synthetic captures; no production "
-          "deployment claim.", 11, True, BODY, 0)],
-    )
-    _no_bullets(note.text_frame)
+    footer = _panel(slide, CONTENT_LEFT, 6.18, CONTENT_RIGHT - CONTENT_LEFT,
+                    0.46, fill=RGBColor(0xEF, 0xF5, 0xEF),
+                    line=RGBColor(0xCF, 0xE2, 0xCF))
+    footer.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+    _write(footer.text_frame,
+           [("Benefits demonstrated on controlled synthetic captures; no "
+             "production deployment and no measured time-saving claim.",
+             10.5, True, RGBColor(0x2D, 0x5A, 0x3A), 0)])
+    for paragraph in footer.text_frame.paragraphs:
+        paragraph.alignment = PP_ALIGN.CENTER
+    _no_bullets(footer.text_frame)
 
 
 # ---------------------------------------------------------------------------
 # slide 6 -- research and references
 # ---------------------------------------------------------------------------
 def slide_6(slide: Any) -> None:
-    box = _shape(slide, "TextBox 8")
-    assert box is not None
-    box.left, box.top = Inches(0.42), Inches(1.04)
-    box.width, box.height = Inches(12.5), Inches(0.36)
-    _write(
-        box.text_frame,
-        [("The standards the rules cite, and the pipeline every claim in this "
-          "deck is checked by.", 13, False, MUTED, 0)],
+    _subtitle(
+        slide,
+        "The standards the rules cite, and the pipeline every claim in this "
+        "deck is checked by.",
+        top=1.14,
     )
-    _no_bullets(box.text_frame)
 
     groups = [
         ("CORE TLS / PKI",
@@ -779,55 +997,66 @@ def slide_6(slide: Any) -> None:
           "RFC 9051 \u2014 IMAP 4rev2",
           "RFC 1939 / RFC 2595 \u2014 POP3 and TLS"]),
         ("VALIDATION / TOOLING",
-         ["Wireshark / TShark", "Scapy", "cryptography", "pytest \u00b7 Playwright"]),
+         ["Wireshark / TShark", "Scapy", "cryptography",
+          "pytest \u00b7 Playwright"]),
     ]
-    gx = 0.42
-    for title, items in groups:
-        panel = _panel(slide, gx, 1.44, 4.10, 1.56)
-        _write(panel.text_frame,
-               [(title, 12.5, True, ACCENT, 0)]
-               + [(item, 11, False, BODY, 0) for item in items],
-               line_spacing=1.0)
-        _no_bullets(panel.text_frame)
-        gx += 4.20
+    ref_top, ref_h = 1.58, 1.46
+    for (x, w), (title, items) in zip(columns(3), groups, strict=True):
+        _card(slide, (x, w), ref_top, ref_h, title, items,
+              title_size=12, body_size=10.5)
 
-    _band(slide, 0.42, 3.20, 12.5, 1.78, "HOW EVERY CLAIM IS CHECKED")
+    # --- how every claim in this deck is checked ----------------------------
+    band_top, band_h = 3.20, 1.72
+    _band(slide, CONTENT_LEFT, band_top, CONTENT_RIGHT - CONTENT_LEFT, band_h,
+          "HOW EVERY CLAIM IS CHECKED")
     steps = [
         ("CONTROLLED FIXTURES", "one fixed seed, identical bytes everywhere"),
         ("HAND-DERIVED EXPECTATIONS", "written by hand, committed, not read back"),
         ("ENGINE UNDER TEST", "1,357 tests; captures stay out of git"),
-        ("INDEPENDENT TSHARK CROSS-CHECK", "against Wireshark's own dissector"),
+        ("INDEPENDENT TSHARK CROSS-CHECK", "against Wireshark\u2019s own dissector"),
         ("REAL-BACKEND PLAYWRIGHT", "five browser specs, including a restart"),
         ("REPORT PARITY", "JSON, HTML and PDF asserted to agree"),
     ]
-    sx, sw = 0.60, 1.84
-    for index, (title, detail) in enumerate(steps):
-        _node(slide, sx, 3.58, sw, 1.22,
+    node_top, node_h = band_top + 0.30, 1.22
+    cards, arrows = chain(len(steps), left=CONTENT_LEFT + 0.16,
+                          right=CONTENT_RIGHT - 0.16)
+    for (x, w), (title, detail) in zip(cards, steps, strict=True):
+        _node(slide, x, node_top, w, node_h,
               [(title, 9.5, True, INK), (detail, 8.5, False, MUTED)])
-        sx += sw
-        if index < len(steps) - 1:
-            _arrow(slide, sx + 0.03, 4.12, 0.18)
-            sx += 0.24
+    for x in arrows:
+        _arrow(slide, x, middle(node_top, node_h, ARROW_H), ARROW_W)
 
-    project = _panel(slide, 0.42, 5.18, 9.06, 1.12)
-    _write(
-        project.text_frame,
-        [("PROJECT", 12.5, True, ACCENT, 0)],
-    )
+    # --- the project, and a code a judge can scan from a seat ---------------
+    row_top, row_h = 5.20, 1.16
+    project_col, qr_col = weighted([7.40, 4.93])
+
+    project = _panel(slide, project_col[0], row_top, project_col[1], row_h)
+    _write(project.text_frame, [("PROJECT", 12, True, ACCENT, 0)])
     _no_bullets(project.text_frame)
     _link_line(project.text_frame, "GitHub repository", REPOSITORY_URL,
-               REPOSITORY_URL, size=12)
-    _link_line(project.text_frame, "Demonstration video",
-               VIDEO_LINK_PLACEHOLDER, None, size=12)
+               REPOSITORY_URL, size=11.5)
+    demo = project.text_frame.add_paragraph()
+    demo.line_spacing = 0.88
+    demo.space_after = Pt(2)
+    run = demo.add_run()
+    run.text = VIDEO_LINK_PLACEHOLDER
+    run.font.size = Pt(11.5)
+    run.font.bold = True
+    run.font.color.rgb = INK
+    run.font.name = "Calibri"
+    _no_bullets(project.text_frame)
 
-    qr = _panel(slide, 9.66, 5.18, 3.26, 1.12)
-    _write(qr.text_frame, [("", 4, False, MUTED, 0)])
-    _no_bullets(qr.text_frame)
-    _qr(slide, REPOSITORY_URL, 9.80, 5.30, 0.88)
-    label = _textbox(slide, 10.80, 5.34, 2.02, 0.80)
+    _panel(slide, qr_col[0], row_top, qr_col[1], row_h)
+    qr_size = 0.86
+    _qr(slide, REPOSITORY_URL, qr_col[0] + 0.14,
+        middle(row_top, row_h, qr_size), qr_size)
+    label = _textbox(slide, qr_col[0] + 0.14 + qr_size + 0.14,
+                     middle(row_top, row_h, 0.66),
+                     qr_col[1] - (0.14 + qr_size + 0.14) - 0.14, 0.66)
+    label.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
     _write(label.text_frame,
            [("SCAN FOR THE REPOSITORY", 10, True, ACCENT, 0),
-            ("Public repository \u2014 source, tests and submission package.",
+            ("Public \u2014 source, tests and submission package.",
              9.5, False, MUTED, 0)],
            line_spacing=0.98)
     _no_bullets(label.text_frame)
@@ -837,6 +1066,16 @@ def slide_6(slide: Any) -> None:
 #: Strings that must never survive into the built deck. The team registered
 #: as exactly "Zero-Day"; "Team Zero Day" and its variants are wrong, and the
 #: template's own "Your Team Name" placeholder is wrong.
+#: Wordings that were wrong in an earlier deck and must not come back.
+FORBIDDEN_PHRASES = (
+    "Demonstration Demo",
+    "Demonstration video Included",
+    "Private until",
+    "public URL reserved",
+    "not yet issued",
+    "lines of code",
+)
+
 FORBIDDEN_TEAM_STRINGS = (
     "Your Team Name",
     "Team Zero Day",
@@ -912,6 +1151,17 @@ def verify(pptx: Path, pdf: Path | None, team_name: str) -> list[str]:
         # "Zero Day" as a substring of nothing else; check the exact spelling.
         if bad in both:
             failures.append(f"forbidden string present: {bad!r}")
+
+    for bad in FORBIDDEN_PHRASES:
+        if bad in both:
+            failures.append(f"forbidden wording present: {bad!r}")
+
+    # The problem statement itself is "AI-Assisted". A deck that does not say
+    # where the AI is, and what it is not allowed to do, has not answered it.
+    for required in ("AI-Assisted", "AI-ASSISTED TRIAGE", "Advisory only",
+                     "NOT VALIDATED"):
+        if required not in both:
+            failures.append(f"the AI story is incomplete, missing: {required!r}")
 
     for required in ("SecureMailScope", "SIH26159", "Software"):
         if required not in both:
