@@ -1,148 +1,73 @@
-# Narration script
+# Narration
 
-> **Superseded.** This is the plan the demonstration was designed from.
-> The video itself is built and finished — see `final-script.md`, which
-> describes what was actually assembled, and
-> `submission/final/SecureMailScope-SIH26159-Demo.mp4`. This file is kept
-> because the reasoning behind the shots is still worth reading, not
-> because anything here is outstanding.
+The words, as spoken in the finished video. Written to be said out loud, not
+read off a page: short sentences, contractions, no buzzwords.
 
-Target: **3:00–3:30**. Roughly 155 words per minute, which is a normal
-speaking pace — not a voiceover sprint.
+## Voice
 
-Read it flat and confident. No sell, no adjectives that aren't doing work. The
-material is interesting on its own; the delivery should get out of its way.
+| Field | Value |
+|---|---|
+| Provider | ElevenLabs |
+| Model | `eleven_multilingual_v2` |
+| Voice | **Neel** (`SQ8WYwlpzxrTbbuJgi38`) — Indian English, conversational, professional |
+| Settings | stability 0.42 · similarity 0.82 · style 0.18 · speaker boost on · speed 1.06 |
+| Pace | ~141 words per minute across the whole script |
 
-Timing notes are in brackets and are not spoken.
+The voice is **synthesised**, not a person, and that is stated here, in
+`demo-verification.md` and in `submission/README.md`. The operating system's
+own speech synthesis was rejected for this project: it sounds robotic, and a
+national-level submission should not open with a machine reading a script.
 
----
+Regenerate with `bash scripts/make_narration.sh`. The audio itself is not
+committed — it is large and regenerable — but the script, the voice and the
+exact settings are, so a rebuild sounds the same.
 
-### 0:00 — Open on the result
+## Script
 
-> Your email says it uses TLS.
+**Hook**
 
-*[beat — two seconds of silence over the finding on screen]*
+> TLS is enabled. That sounds secure. But it doesn't tell you whether the server negotiated old protocols, weak key exchange, or a bad certificate setup. That's what SecureMailScope checks.
 
-> But is the cryptography actually secure?
+**Input**
 
----
+> You give it an authorised PCAP or PCAPNG capture. It stays local. There's no live scan and no connection back to the mail server.
 
-### 0:12 — Title
+**Pipeline**
 
-*[no narration over the title card]*
+> SecureMailScope rebuilds the TCP sessions, figures out whether the traffic is SMTP, IMAP or POP three, follows STARTTLS, and then inspects the TLS handshake.
 
----
+**Analysis**
 
-### 0:18 — The problem
+> Here's a deliberately weak example. The server negotiated TLS 1.0 with static RSA. The investigation comes back weak, with high-priority findings that need attention.
 
-> An organisation can tell you which mail servers it runs. It usually can't
-> tell you which TLS versions those servers negotiated last week, which cipher
-> suites they accepted, or which sessions had no forward secrecy.
->
-> An active scanner won't answer that either. It reports what a server does for
-> a scanner today — not what it did for real clients during the period you're
-> investigating. And often you have no authority to touch the host at all.
+**Evidence**
 
----
+> And this is the part that matters. Open the finding. It isn't just saying weak crypto. The rule tells us what failed, why it matters, and exactly which packets established it. Packets four and five.
 
-### 0:45 — Passive by design
+**Verify**
 
-*[slow down here]*
+> So an analyst can take the same capture, open those packets in Wireshark, and check the conclusion independently.
 
-> SecureMailScope reads the packet captures you already have.
->
-> No live probing. No cloud upload. Nothing is sent anywhere, and no host in a
-> capture is ever contacted.
+**Tls13**
 
----
+> It's also careful about what it can't see. In TLS 1.3, the certificate message is normally encrypted. So if the capture doesn't contain decryptable certificate evidence, SecureMailScope says NOT AVAILABLE. It doesn't guess.
 
-### 1:00 — Live investigation
+**Drift**
 
-> This is a synthetic capture of an IMAP session over TLS.
->
-> The capture is reconstructed into sessions, the email protocol is identified
-> from the dialogue rather than the port, the TLS handshake is parsed, and each
-> conclusion is tied back to the evidence behind it.
+> Now compare two captures from the same observed service. Earlier, it negotiated TLS 1.2. Later, TLS 1.0. SecureMailScope records that as observed cryptographic drift, with the evidence from both captures.
 
-*[analysis runs — real, not sped up beyond a small editorial trim]*
+**Report**
 
-> Fifty-nine out of a hundred. Weak. Four findings, two of them high priority.
->
-> Notice what the interface leads with: not the score — the things that need
-> attention.
+> When the investigation is done, the same evidence can be exported as JSON, standalone HTML, or a forensic PDF. The report carries the findings, packet references and remediation with it.
 
----
+**Close**
 
-### 1:40 — Evidence
+> So the idea is simple. Don't just ask whether email traffic is encrypted. Check what cryptography was actually negotiated. Show the evidence. And tell the analyst what needs fixing. That's SecureMailScope.
 
-*[slow down — this is the point of the product]*
+## Why it reads this way
 
-> Static RSA key exchange. No forward secrecy.
->
-> Instead of just saying "weak cryptography", SecureMailScope shows why it was
-> flagged — the RFC it applies, the packets the evidence came from, and what to
-> change.
->
-> Packets four and five. You can open the same capture in Wireshark and check.
-
----
-
-### 2:05 — What it won't claim
-
-*[slow down again]*
-
-> Here's a TLS 1.3 session. The certificate reads: not available.
->
-> TLS 1.3 encrypts the certificate message. A passive capture without
-> decryption material cannot expose what isn't on the wire — so the tool says
-> so, rather than leaving a blank or guessing.
-
----
-
-### 2:30 — Drift
-
-> Two captures of the same server, an hour apart. Same client offer both times.
->
-> The server selected TLS 1.2, then TLS 1.0. Because the offer didn't change,
-> the difference is attributable to the server — and it's reported as an
-> observed change, not an inference.
-
----
-
-### 2:55 — Report
-
-> Every investigation exports as JSON, offline HTML, or a forensic PDF. The
-> HTML opens with no network access at all.
-
----
-
-### 3:10 — Close
-
-*[slow, deliberate]*
-
-> SecureMailScope turns captured email traffic into explainable cryptographic
-> evidence — so a security team can see what changed, understand what matters,
-> and know what to fix.
-
-*[end card: SecureMailScope · SIH26159 · Zero-Day]*
-
----
-
-## Words to avoid
-
-Banned outright, because they are hype and this project does not need it:
-
-*revolutionary · cutting-edge · next-generation · game-changer · seamless ·
-leverage · empower · unlock · imagine a world · welcome guys · in today's
-video · AI-powered* (the anomaly detector in use is not a model, so this one
-would also be false)
-
-## Claims that must not be made
-
-- That an **attack** was detected. The tool observes configurations.
-- That the ML classifier is validated. It is `NOT_VALIDATED`.
-- That the anomaly detector is machine learning. The one in use is a
-  deterministic frequency table.
-- That blast radius describes an enterprise. It is "observed within analyzed
-  captures only".
-- Any deployment, user count, saving or real-world detection rate.
+Judges hear a lot of narration that sounds like a product brochure. Every
+line here is something a person would actually say while showing somebody
+their tool: "And this is the part that matters." "It doesn't guess."
+"Packets four and five." The claims are the same ones the deck makes, in the
+same order, about the same finding.

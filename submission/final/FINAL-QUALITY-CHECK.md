@@ -77,9 +77,9 @@ anomaly method is a deterministic baseline and the supervised classifier is
 
 | Artefact | State |
 |---|---|
-| Six-slide deck | Built on the official template. Every title-page field resolved; the build fails on an `[UNRESOLVED]` marker, a seventh page, a wrong team name, a missing repository link or a missing video element. |
-| Demonstration video | **Complete.** 3 min 11 s, 1920×1080, 30 fps, H.264 CRF 18, built from a Playwright recording of the real stack. Narration is synthesised and labelled as such. |
-| Screenshots | 12, all regenerated from this build against the real backend. |
+| Six-slide deck | Rebuilt for a projector: body type at 11–13 pt, six large metric tiles, four purpose-built diagrams, and every screenshot cropped to the region that carries the message. Built on the official template. Every title-page field resolved; the build fails on an `[UNRESOLVED]` marker, a seventh page, a wrong team name, a missing repository link or a missing video element. |
+| Demonstration video | **Complete.** 2 min 58 s, 1920×1080, 30 fps, H.264 High CRF 16, audio at −16.0 LUFS. Built from a Playwright recording of the real stack; opens on a real finding rather than a title. Narration is neural (ElevenLabs) and labelled as synthesised. |
+| Screenshots | 13, all captured from this build against the real backend; the drift card is captured at 2× density so it stays sharp when the deck crops it. |
 | Manifest | `MANIFEST.md` / `manifest.json` — SHA-256 of every file in the package. |
 
 ## Deliberately not done

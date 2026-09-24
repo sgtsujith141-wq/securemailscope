@@ -292,9 +292,20 @@ def _value(config: dict[str, Any], key: str) -> tuple[str, bool]:
 
 
 
+def _qr(slide: Any, url: str, left: float, top: float, size: float) -> None:
+    """A QR code for a link a judge cannot click on a projected slide."""
+    import segno
+
+    path = CROPS / "qr.png"
+    CROPS.mkdir(parents=True, exist_ok=True)
+    segno.make(url, error="m").save(str(path), scale=12, border=2, dark="#123A63")
+    slide.shapes.add_picture(str(path), Inches(left), Inches(top), width=Inches(size))
+
+
 def _shot(
     slide: Any, name: str, left: float, top: float, width: float,
     caption: str | None = None, *, ratio: float = 16 / 9,
+    crop: tuple[float, float, float, float] | None = None,
 ) -> float:
     """Place a genuine product screenshot, cropped to a slide-friendly shape.
 
@@ -314,12 +325,28 @@ def _shot(
     from PIL import Image
 
     with Image.open(path) as source:
-        target_height = int(source.width / ratio)
-        if target_height < source.height:
-            cropped = CROPS / name
+        if crop is not None:
+            # An explicit window, in fractions of the full page. Shrinking a
+            # whole 1920x3000 screenshot into a slide column turns its text
+            # into a grey texture; cropping to the part that carries the
+            # message keeps it readable from the back of a room.
+            x0, y0, x1, y1 = crop
+            window_px = (
+                int(source.width * x0), int(source.height * y0),
+                int(source.width * x1), int(source.height * y1),
+            )
+            window = source.crop(window_px)
+            cropped = CROPS / f"crop-{x0}-{y0}-{x1}-{y1}-{name}"
             CROPS.mkdir(parents=True, exist_ok=True)
-            source.crop((0, 0, source.width, target_height)).save(cropped)
+            window.save(cropped)
             path = cropped
+        else:
+            target_height = int(source.width / ratio)
+            if target_height < source.height:
+                cropped = CROPS / name
+                CROPS.mkdir(parents=True, exist_ok=True)
+                source.crop((0, 0, source.width, target_height)).save(cropped)
+                path = cropped
 
     height = width / ratio
     picture = slide.shapes.add_picture(
@@ -336,11 +363,12 @@ def _shot(
     line.shadow.inherit = False
 
     if caption:
-        box = _textbox(slide, left, top + height + 0.02, width, 0.24)
-        _write(box.text_frame, [(caption, 8, False, MUTED, 0)])
+        box = _textbox(slide, left, top + height + 0.04, width, 0.28)
+        _write(box.text_frame, [(caption, 11, False, MUTED, 0)])
+        _no_bullets(box.text_frame)
         for paragraph in box.text_frame.paragraphs:
             paragraph.alignment = PP_ALIGN.CENTER
-        height += 0.26
+        height += 0.32
     return height
 
 
@@ -368,10 +396,34 @@ def slide_1(slide: Any, config: dict[str, Any]) -> list[str]:
             unresolved.append(key)
         # The en dash is the separator the official template uses.
         lines.append(
-            (f"{label} \u2013 {text}", 13, False,
+            (f"{label} \u2013 {text}", 15, False,
              INK if resolved else UNRESOLVED, 0)
         )
-    _write(box.text_frame, lines, line_spacing=1.22)
+    _write(box.text_frame, lines, line_spacing=1.30)
+    _no_bullets(box.text_frame)
+
+    # The project's own name, above the template's field list. The title page
+    # otherwise opens on "Problem Statement ID", which tells a judge what the
+    # slide is filed under rather than what the project is.
+    name = _textbox(slide, 0.62, 2.12, 7.40, 1.10)
+    _write(
+        name.text_frame,
+        [("SecureMailScope", 40, True, ACCENT, 0),
+         ("AI-Assisted Cryptographic Security Posture Assessment "
+          "for Secure Email Communications", 14, False, BODY, 0)],
+        line_spacing=1.04,
+    )
+    _no_bullets(name.text_frame)
+    rule = slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE, Inches(0.62), Inches(2.02), Inches(1.30), Inches(0.05)
+    )
+    rule.fill.solid()
+    rule.fill.fore_color.rgb = ACCENT
+    rule.line.fill.background()
+    rule.shadow.inherit = False
+
+    box.left, box.top = Inches(0.62), Inches(3.46)
+    box.width, box.height = Inches(7.40), Inches(3.10)
     return unresolved
 
 
@@ -381,67 +433,61 @@ def slide_1(slide: Any, config: dict[str, Any]) -> list[str]:
 def slide_2(slide: Any) -> None:
     box = _shape(slide, "TextBox 8")
     assert box is not None
-    box.left, box.top = Inches(0.42), Inches(1.16)
-    box.width, box.height = Inches(12.5), Inches(0.72)
+    box.left, box.top = Inches(0.42), Inches(1.06)
+    box.width, box.height = Inches(12.5), Inches(0.62)
     _write(
         box.text_frame,
-        [
-            ("SecureMailScope turns passive email packet captures into "
-             "evidence-backed cryptographic investigations.", 15, True, ACCENT, 0),
-            ("Every conclusion is traceable to the packets that establish it — "
-             "and where a capture cannot show something, it says so.",
-             10.5, False, MUTED, 0),
-        ],
+        [("SecureMailScope turns passive email packet captures into "
+          "evidence-backed cryptographic investigations.", 20, True, ACCENT, 0)],
         line_spacing=1.0,
     )
     _no_bullets(box.text_frame)
 
-    # --- the flow, left to right --------------------------------------------
-    flow = ["PCAP", "TCP\nreconstruction", "SMTP / IMAP\nPOP3",
-            "STARTTLS\nTLS", "Cryptographic\nevidence", "Risk +\nremediation"]
-    x, y, w = 0.42, 1.96, 1.86
-    for index, stage in enumerate(flow):
-        panel = _panel(slide, x, y, w, 0.58)
-        _write(panel.text_frame, [(stage, 9.5, True, INK, 0)], line_spacing=0.88)
-        for paragraph in panel.text_frame.paragraphs:
-            paragraph.alignment = PP_ALIGN.CENTER
-        x += w
-        if index < len(flow) - 1:
-            _arrow(slide, x + 0.02, y + 0.20, 0.22)
-            x += 0.28
-
-    # --- the product, and what it answers ------------------------------------
-    _shot(slide, "02-overview.png", 0.42, 2.76, 6.55,
-          f"The investigation overview, on {_demo_capture_count()} synthetic "
-          "captures. Actual product output.")
-
-    right = 7.22
-    blocks = [
-        ("What it does",
-         "Reads authorized PCAP/PCAPNG, reconstructs TCP sessions, identifies "
-         "the email protocol from the dialogue rather than the port, "
-         "reconstructs the TLS handshake, extracts certificate evidence where "
-         "it is observable, applies 25 policy rules and scores the result."),
-        ("How it addresses SIH26159",
-         "The organisation already holds the captures. No probe, no scan, no "
-         "credential and no change to a production mail server — which also "
-         "means an authorised investigator with no access to the host can "
-         "still assess how it protected traffic."),
-        ("What makes it different",
-         "Packet-level provenance on every finding · cryptographic DNA and "
-         "drift across captures · cross-session correlation · explainable "
-         "scoring with the arithmetic shown · fully local and offline · "
-         "stated limits instead of silent gaps"),
+    # --- the pipeline, as six readable stages --------------------------------
+    stages = [
+        ("PCAP / PCAPNG", "authorised capture"),
+        ("TCP RECONSTRUCTION", "sessions rebuilt"),
+        ("SMTP \u00b7 IMAP \u00b7 POP3", "from the dialogue"),
+        ("STARTTLS / TLS", "upgrade and handshake"),
+        ("CRYPTOGRAPHIC EVIDENCE", "versions, suites, certificates"),
+        ("RISK + REMEDIATION", "ranked, with the fix"),
     ]
-    top = 2.76
+    x, w = 0.42, 1.86
+    for index, (title, detail) in enumerate(stages):
+        _node(slide, x, 1.82, w, 0.78,
+              [(title, 11, True, INK), (detail, 8.5, False, MUTED)])
+        x += w
+        if index < len(stages) - 1:
+            _arrow(slide, x + 0.02, 2.12, 0.20)
+            x += 0.25
+
+    # --- the product, large enough to read -----------------------------------
+    _shot(slide, "02-overview.png", 0.42, 2.86, 8.16,
+          "The investigation opens on its conclusion. Actual product output.",
+          crop=(0.11, 0.022, 1.0, 0.200))
+
+    # --- three differentiators, not paragraphs -------------------------------
+    blocks = [
+        ("PASSIVE BY DESIGN",
+         "Existing captures only. No live probe, no connection back to the "
+         "mail server, nothing leaves the machine."),
+        ("EVIDENCE-FIRST",
+         "Every finding traces back to the packets that establish it \u2014 "
+         "number, timestamp and stream offset."),
+        ("CROSS-CAPTURE INTELLIGENCE",
+         "Cryptographic fingerprints, configuration drift and correlation "
+         "across captures of the same service."),
+    ]
+    y = 2.86
     for title, detail in blocks:
-        panel = _panel(slide, right, top, 5.70, 1.22)
+        panel = _panel(slide, 8.82, y, 4.10, 1.02)
         _write(
             panel.text_frame,
-            [(title, 10.5, True, ACCENT, 0), (detail, 9, False, BODY, 0)],
-            line_spacing=0.92,
+            [(title, 12.5, True, ACCENT, 0), (detail, 11, False, BODY, 0)],
+            line_spacing=0.98,
         )
-        top += 1.32
+        _no_bullets(panel.text_frame)
+        y += 1.12
 
 
 # ---------------------------------------------------------------------------
@@ -450,145 +496,99 @@ def slide_2(slide: Any) -> None:
 def slide_3(slide: Any) -> None:
     box = _shape(slide, "TextBox 8")
     assert box is not None
-    box.left, box.top = Inches(0.42), Inches(1.06)
-    box.width, box.height = Inches(12.5), Inches(0.34)
+    box.left, box.top = Inches(0.42), Inches(1.04)
+    box.width, box.height = Inches(12.5), Inches(0.36)
     _write(
         box.text_frame,
         [("One direction of flow. Each stage reads only what the previous one "
-          "produced, and attaches the packets it read it from.",
-          10, False, MUTED, 0)],
+          "produced, and records the packets it read it from.",
+          13, False, MUTED, 0)],
     )
     _no_bullets(box.text_frame)
 
-    # ----------------------------------------------------------------------
-    # The architecture, as a diagram: four bands, left to right, with the
-    # evidence rail running underneath all of them.
-    # ----------------------------------------------------------------------
-    top = 1.50
-    band_h = 2.72
+    top, band_h = 1.46, 3.02
+    node_top = top + 0.34
+    detail_pt = 8.5
 
-    _band(slide, 0.42, top, 2.08, band_h, "INPUT")
-    _band(slide, 2.74, top, 4.32, band_h, "RECONSTRUCTION")
-    _band(slide, 7.30, top, 2.86, band_h, "ASSESSMENT")
-    _band(slide, 10.40, top, 2.52, band_h, "OUTPUT")
+    _band(slide, 0.42, top, 2.30, band_h, "INPUT")
+    _band(slide, 2.94, top, 3.60, band_h, "RECONSTRUCTION")
+    _band(slide, 6.76, top, 3.26, band_h, "CRYPTOGRAPHIC ASSESSMENT")
+    _band(slide, 10.24, top, 2.68, band_h, "OUTPUT")
 
-    node_top = top + 0.30
-    small = 7.5
+    def column(left: float, width: float, rows: list[tuple[str, str]]) -> None:
+        y = node_top
+        for index, (title, detail) in enumerate(rows):
+            height = 0.50 if detail else 0.40
+            _node(slide, left, y, width, height,
+                  [(title, 10.5, True, INK)]
+                  + ([(detail, detail_pt, False, MUTED)] if detail else []))
+            y += height
+            if index < len(rows) - 1:
+                _arrow_down(slide, left + width / 2 - 0.09, y + 0.02, 0.16)
+                y += 0.22
 
-    # -- input --------------------------------------------------------------
-    _node(slide, 0.56, node_top, 1.80, 0.56,
-          [("PCAP / PCAPNG", 8.5, True, INK), ("untrusted file", small, False, MUTED)])
-    _arrow_down(slide, 1.37, node_top + 0.62, 0.20)
-    _node(slide, 0.56, node_top + 0.86, 1.80, 0.62,
-          [("Safe ingestion", 8.5, True, INK),
-           ("format from the bytes", small, False, MUTED),
-           ("8 hard limits", small, False, MUTED)])
-    _arrow_down(slide, 1.37, node_top + 1.48, 0.22)
-    _node(slide, 0.56, node_top + 1.74, 1.80, 0.48,
-          [("Packet decode", 8.5, True, INK)])
+    column(0.58, 1.98, [
+        ("PCAP / PCAPNG", "authorised capture"),
+        ("Safe ingestion", "format from the bytes, 8 limits"),
+    ])
+    column(3.10, 3.28, [
+        ("Packet decode", ""),
+        ("TCP reassembly", "reorder \u00b7 retransmit \u00b7 gaps"),
+        ("SMTP \u00b7 IMAP \u00b7 POP3", "state machines, not ports"),
+        ("STARTTLS / STLS", "advertised \u00b7 requested \u00b7 outcome"),
+    ])
+    column(6.92, 2.94, [
+        ("TLS handshake \u2192 X.509", "version, suite, key exchange, chain"),
+        ("25 policy rules", "versioned and fingerprinted"),
+        ("Score \u00b7 coverage \u00b7 priority", "arithmetic shown, not asserted"),
+        ("Fingerprint \u00b7 drift \u00b7 ML", "ML is advisory only"),
+    ])
+    column(10.40, 2.36, [
+        ("Canonical report model", "schema 1.4.0"),
+        ("FastAPI + SQLite", "loopback only, token"),
+        ("React workspace", "evidence-linked throughout"),
+        ("JSON \u00b7 HTML \u00b7 PDF", "parity-tested"),
+    ])
 
-    _arrow(slide, 2.44, node_top + 0.48, 0.24)
+    for x in (2.74, 6.56, 10.04):
+        _arrow(slide, x, node_top + 0.18, 0.22)
 
-    # -- reconstruction ------------------------------------------------------
-    _node(slide, 2.88, node_top, 2.02, 0.56,
-          [("TCP reassembly", 8.5, True, INK),
-           ("reorder \u00b7 retransmit \u00b7 gaps", small, False, MUTED)])
-    _node(slide, 5.00, node_top, 1.94, 0.56,
-          [("SMTP \u00b7 IMAP \u00b7 POP3", 8.5, True, INK),
-           ("state machines, not ports", small, False, MUTED)])
-    _arrow_down(slide, 3.80, node_top + 0.62, 0.20)
-    _arrow_down(slide, 5.88, node_top + 0.62, 0.20)
-    _node(slide, 2.88, node_top + 0.86, 2.02, 0.56,
-          [("STARTTLS / STLS", 8.5, True, INK),
-           ("advertised \u00b7 requested \u00b7 outcome", small, False, MUTED)])
-    _node(slide, 5.00, node_top + 0.86, 1.94, 0.56,
-          [("TLS handshake", 8.5, True, INK),
-           ("version, suite, key exchange", small, False, MUTED)])
-    _arrow_down(slide, 4.84, node_top + 1.48, 0.22)
-    _node(slide, 2.88, node_top + 1.74, 4.06, 0.48,
-          [("X.509 certificate analysis  \u2014  chain, dates, identity, key, "
-            "signature", 8.5, True, INK)])
+    # --- the evidence rail, as a chain ---------------------------------------
+    rail_y = top + band_h + 0.16
+    _band(slide, 0.42, rail_y, 12.5, 0.86, "EVIDENCE RAIL \u2014 WHAT EVERY FINDING CARRIES")
+    chain = ["PACKET", "OBSERVATION", "CRYPTO FACT", "RULE", "FINDING", "REMEDIATION"]
+    cx, cw = 0.66, 1.80
+    for index, label in enumerate(chain):
+        _node(slide, cx, rail_y + 0.32, cw, 0.42, [(label, 10.5, True, ACCENT)],
+              fill=RGBColor(0xFF, 0xFF, 0xFF))
+        cx += cw
+        if index < len(chain) - 1:
+            _arrow(slide, cx + 0.03, rail_y + 0.46, 0.18)
+            cx += 0.26
 
-    _arrow(slide, 7.00, node_top + 0.48, 0.24)
-
-    # -- assessment -----------------------------------------------------------
-    _node(slide, 7.44, node_top, 2.58, 0.56,
-          [("25 policy rules", 8.5, True, INK),
-           ("versioned, fingerprinted", small, False, MUTED)])
-    _arrow_down(slide, 8.64, node_top + 0.62, 0.20)
-    _node(slide, 7.44, node_top + 0.86, 2.58, 0.56,
-          [("Score \u00b7 coverage \u00b7 priority", 8.5, True, INK),
-           ("arithmetic shown, not asserted", small, False, MUTED)])
-    _arrow_down(slide, 8.64, node_top + 1.48, 0.22)
-    _node(slide, 7.44, node_top + 1.74, 2.58, 0.48,
-          [("Fingerprints \u00b7 drift \u00b7 correlation \u00b7 ML (advisory)",
-            8, True, INK)])
-
-    _arrow(slide, 10.10, node_top + 0.48, 0.24)
-
-    # -- output ---------------------------------------------------------------
-    _node(slide, 10.54, node_top, 2.24, 0.56,
-          [("One canonical report model", 8.5, True, INK),
-           ("schema 1.4.0", small, False, MUTED)])
-    _arrow_down(slide, 11.57, node_top + 0.62, 0.20)
-    _node(slide, 10.54, node_top + 0.86, 2.24, 0.56,
-          [("JSON \u00b7 offline HTML \u00b7 PDF", 8.5, True, INK),
-           ("parity-tested against each other", small, False, MUTED)])
-    _arrow_down(slide, 11.57, node_top + 1.48, 0.22)
-    _node(slide, 10.54, node_top + 1.74, 2.24, 0.48,
-          [("Local API \u2192 React dashboard", 8.5, True, INK)])
-
-    # -- the rail that runs under everything ----------------------------------
-    rail = _panel(slide, 0.42, 4.34, 12.5, 0.46,
-                  fill=RGBColor(0xEC, 0xF4, 0xFA), line=RGBColor(0xC8, 0xDD, 0xEE))
-    rail.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
-    _write(
-        rail.text_frame,
-        [("EVIDENCE PROVENANCE  \u2014  every stage attaches the capture, session, "
-          "packet number, timestamp and stream offset it read from, and marks each "
-          "value OBSERVED, INFERRED, UNKNOWN or NOT AVAILABLE",
-          9, True, ACCENT, 0)],
-    )
-    for paragraph in rail.text_frame.paragraphs:
-        paragraph.alignment = PP_ALIGN.CENTER
-    _no_bullets(rail.text_frame)
-
-    guard = _panel(slide, 0.42, 4.90, 12.5, 0.46,
-                   fill=RGBColor(0xE4, 0xEE, 0xE6), line=RGBColor(0xBE, 0xD8, 0xC6))
-    guard.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
-    _write(
-        guard.text_frame,
-        [("PASSIVE BY CONSTRUCTION  \u2014  no stage opens a socket. Scapy's "
-          "neighbour resolver is replaced with one that raises, and the whole "
-          "pipeline is run through stubbed socket constructors by the test suite",
-          9, True, GOOD, 0)],
-    )
-    for paragraph in guard.text_frame.paragraphs:
-        paragraph.alignment = PP_ALIGN.CENTER
-    _no_bullets(guard.text_frame)
-
-    # -- compact technology groups --------------------------------------------
+    # --- technology, in four groups, plus the three claims -------------------
     groups = [
-        ("Engine",
-         "Python 3.12 \u00b7 Scapy (dissection only) \u00b7 cryptography \u00b7 "
-         "Pydantic \u00b7 scikit-learn"),
-        ("Interface and API",
-         "FastAPI \u00b7 SQLite \u00b7 SQLAlchemy \u00b7 React 18 \u00b7 "
-         "TypeScript strict \u00b7 Vite \u00b7 Tailwind"),
-        ("Verification",
-         "pytest \u00b7 hypothesis \u00b7 Vitest \u00b7 Playwright \u00b7 "
-         "TShark as an independent dissector"),
+        ("ENGINE", "Python \u00b7 Scapy \u00b7 cryptography"),
+        ("APPLICATION", "FastAPI \u00b7 SQLite \u00b7 React \u00b7 TypeScript"),
+        ("ANALYTICS", "scikit-learn"),
+        ("VALIDATION", "pytest \u00b7 Playwright \u00b7 TShark"),
     ]
-    gx = 0.42
+    gy = rail_y + 1.02
+    gx, gw = 0.42, 2.30
     for title, detail in groups:
-        panel = _panel(slide, gx, 5.48, 4.10, 1.06)
-        _write(
-            panel.text_frame,
-            [(title, 9.5, True, ACCENT, 0), (detail, 8, False, BODY, 0)],
-            line_spacing=0.90,
-        )
+        panel = _panel(slide, gx, gy, gw, 0.74)
+        _write(panel.text_frame,
+               [(title, 10.5, True, ACCENT, 0), (detail, 9.5, False, BODY, 0)],
+               line_spacing=0.94)
         _no_bullets(panel.text_frame)
-        gx += 4.20
+        gx += gw + 0.10
+
+    bx = gx
+    for text, colour in (("PASSIVE", GOOD), ("LOCAL-FIRST", ACCENT),
+                         ("EVIDENCE-LINKED", WARN)):
+        _node(slide, bx, gy, 1.02, 0.74, [(text, 9, True, colour)],
+              fill=RGBColor(0xFF, 0xFF, 0xFF))
+        bx += 1.08
 
 
 # ---------------------------------------------------------------------------
@@ -597,87 +597,78 @@ def slide_3(slide: Any) -> None:
 def slide_4(slide: Any, ev: dict[str, Any]) -> None:
     box = _shape(slide, "TextBox 8")
     assert box is not None
-    box.left, box.top = Inches(0.42), Inches(1.06)
-    box.width, box.height = Inches(12.5), Inches(0.34)
+    box.left, box.top = Inches(0.42), Inches(1.04)
+    box.width, box.height = Inches(12.5), Inches(0.36)
     _write(
         box.text_frame,
-        [("Feasible because it is built and measured. Every figure below is "
-          "from the release commit, re-run \u2014 not an estimate.",
-          10, False, MUTED, 0)],
+        [("Feasible because it is built and measured. Every figure below was "
+          "re-run on the release commit.", 13, False, MUTED, 0)],
     )
     _no_bullets(box.text_frame)
 
-    # -- the measurements, as figures rather than sentences -------------------
     metrics = [
         (ev["tests"], "backend tests pass", ACCENT),
         (ev["tests_tshark"], "with the TShark cross-check", ACCENT),
         (ev["frontend_tests"], "frontend tests", ACCENT),
-        (ev["e2e_specs"], "browser end-to-end specs", ACCENT),
+        (ev["e2e_specs"], "real-backend E2E specs", ACCENT),
         (ev["typed_files"], "files ruff + mypy clean", ACCENT),
-        ("0", "known dependency vulnerabilities", GOOD),
+        ("0", "known advisories at audit", GOOD),
     ]
     mx = 0.42
     for figure, label, colour in metrics:
-        tile = _panel(slide, mx, 1.44, 2.02, 0.86)
+        tile = _panel(slide, mx, 1.44, 2.02, 1.06)
         tile.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
-        _write(
-            tile.text_frame,
-            [(figure, 22, True, colour, 0), (label, 7.5, False, MUTED, 0)],
-            line_spacing=0.84,
-        )
+        _write(tile.text_frame,
+               [(figure, 32, True, colour, 0), (label, 9.5, False, MUTED, 0)],
+               line_spacing=0.86)
         for paragraph in tile.text_frame.paragraphs:
             paragraph.alignment = PP_ALIGN.CENTER
             paragraph.space_after = Pt(0)
         _no_bullets(tile.text_frame)
         mx += 2.12
 
-    # -- the proof the metrics stand on ---------------------------------------
-    proof = _panel(slide, 0.42, 2.42, 6.20, 2.73)
-    _write(
-        proof.text_frame,
-        [
-            ("How a finding is proved", 10.5, True, GOOD, 0),
-            ("1.  A rule fails on a reconstructed observation \u2014 here, static "
-             "RSA key exchange, so no forward secrecy.", 9, False, BODY, 0),
-            ("2.  The engine attaches the packets it evaluated: #4 and #5, with "
-             "their capture timestamps and stream offsets.", 9, False, BODY, 0),
-            ("3.  The capture and session ids are printed beside them, so an "
-             "analyst can open the same packets in Wireshark and check.",
-             9, False, BODY, 0),
-            ("4.  Packet metadata only. Reconstructed payload bytes are never "
-             "included in a report or shown in the interface.", 9, False, BODY, 0),
-            ("Expectations are hand-derived and committed as manifests while the "
-             "captures are generated, so a test cannot confirm its own output; "
-             "ten TShark cross-checks compare our dissection against Wireshark's, "
-             "so a bug in our parser cannot validate itself.",
-             8.5, False, MUTED, 0),
-        ],
-        line_spacing=0.92,
-    )
-    _no_bullets(proof.text_frame)
+    # --- the proof, large enough to read -------------------------------------
+    # Cropped from the tag row to the packet rows: the two panels above them
+    # are on slide 5, and including them here would shrink the packet numbers
+    # -- the one thing this slide exists to show -- below reading size.
+    _shot(slide, "06-evidence-provenance.png", 0.42, 2.66, 7.10,
+          "TLS-KEX-001, HIGH \u2014 and the packets it was evaluated against. "
+          "Actual product output.",
+          crop=(0.360, 0.285, 1.0, 0.795))
 
-    # Cropped wider than 16:9 so the image and its caption both land above
-    # the template's footer band, which starts at 6.95in.
-    _shot(slide, "06-evidence-provenance.png", 6.78, 2.42, 6.14,
-          "The finding, and the packets it was evaluated against. "
-          "Actual product output.", ratio=2.25)
+    # --- what the engine did, in four steps ----------------------------------
+    steps = [
+        ("OBSERVE", "Static RSA key exchange negotiated"),
+        ("TRACE", "Packets #4 and #5, with timestamps"),
+        ("ASSESS", "TLS-KEX-001 \u00b7 HIGH \u00b7 no forward secrecy"),
+        ("REMEDIATE", "Move to ephemeral key exchange"),
+    ]
+    sy = 2.66
+    for index, (title, detail) in enumerate(steps):
+        panel = _panel(slide, 8.26, sy, 4.66, 0.72)
+        _write(panel.text_frame,
+               [(title, 12.5, True, ACCENT, 0), (detail, 11, False, BODY, 0)],
+               line_spacing=0.96)
+        _no_bullets(panel.text_frame)
+        sy += 0.72
+        if index < len(steps) - 1:
+            _arrow_down(slide, 10.50, sy + 0.02, 0.16)
+            sy += 0.20
 
-    # -- limits: two bullets, no essay ----------------------------------------
-    risks = _panel(slide, 0.42, 5.46, 12.5, 1.14,
+    # --- boundaries: two lines --------------------------------------------
+    risks = _panel(slide, 0.42, 6.18, 12.5, 0.76,
                    fill=RGBColor(0xFD, 0xF2, 0xEC), line=RGBColor(0xEE, 0xCF, 0xBE))
     _write(
         risks.text_frame,
         [
-            ("Limits, stated not hidden", 10.5, True, WARN, 0),
-            ("TLS 1.3 encrypts the Certificate message, so a passive capture "
-             "cannot expose it \u2014 reported NOT_AVAILABLE with the reason, "
-             "never blank and never guessed. TLS 1.2 chains are read and "
-             "verified in full.", 9, False, BODY, 0),
-            ("The supervised classifier is NOT VALIDATED for real-world use: it "
-             "was measured on synthetic servers only, it drives no finding and "
-             "no score, and the interface says so on screen.", 9, False, BODY, 0),
+            ("KNOWN BOUNDARIES", 11, True, WARN, 0),
+            ("TLS 1.3 may encrypt certificate evidence a passive capture "
+             "cannot recover; it is reported NOT AVAILABLE with the reason, "
+             "never guessed.", 11, False, BODY, 0),
+            ("The supervised classifier is experimental and never overrides a "
+             "deterministic finding.", 11, False, BODY, 0),
         ],
-        line_spacing=0.90,
+        line_spacing=0.96,
     )
     _no_bullets(risks.text_frame)
 
@@ -688,84 +679,79 @@ def slide_4(slide: Any, ev: dict[str, Any]) -> None:
 def slide_5(slide: Any) -> None:
     box = _shape(slide, "TextBox 8")
     assert box is not None
-    box.left, box.top = Inches(0.42), Inches(1.06)
-    box.width, box.height = Inches(12.5), Inches(0.34)
+    box.left, box.top = Inches(0.42), Inches(1.04)
+    box.width, box.height = Inches(12.5), Inches(0.36)
     _write(
         box.text_frame,
-        [("For authorised email-security investigation. Each visual below is "
-          "the product output that supports the benefit beside it.",
-          10, False, MUTED, 0)],
+        [("For authorised email-security investigation \u2014 and every claim "
+          "below is what the product already outputs.", 13, False, MUTED, 0)],
     )
     _no_bullets(box.text_frame)
 
-    # ----------------------------------------------------------------------
-    # Left: one evidence visual carrying three benefits that all rest on it.
-    # ----------------------------------------------------------------------
-    trio = [
-        ("DISCOVER",
-         "The cryptographic configuration actually negotiated \u2014 version, "
-         "cipher suite, key exchange, certificate \u2014 read from traffic the "
-         "organisation already holds, without touching the host."),
-        ("EXPLAIN",
-         "Every finding names the rule it failed, the RFC clause it applies and "
-         "the packets that establish it, so the conclusion can be checked "
-         "rather than believed."),
-        ("PRIORITIZE",
-         "Severity and confidence produce a ranked priority with a named "
-         "remediation, so 'what do I fix first' has an answer and a reason."),
+    outcomes = [
+        ("DISCOVER", "Observable weak cryptography"),
+        ("EXPLAIN", "Packet-backed evidence"),
+        ("PRIORITIZE", "What to fix first"),
+        ("TRACK", "Cryptographic drift"),
+        ("REPORT", "Portable forensic output"),
     ]
-    tx = 0.56
-    for title, detail in trio:
-        panel = _panel(slide, tx, 1.72, 2.34, 1.44)
-        _write(
-            panel.text_frame,
-            [(title, 11, True, ACCENT, 0), (detail, 8, False, BODY, 0)],
-            line_spacing=0.90,
-        )
+    x, w = 0.42, 2.40
+    for title, detail in outcomes:
+        panel = _panel(slide, x, 1.44, w, 0.84)
+        panel.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+        _write(panel.text_frame,
+               [(title, 14, True, ACCENT, 0), (detail, 10.5, False, BODY, 0)],
+               line_spacing=0.94)
+        for paragraph in panel.text_frame.paragraphs:
+            paragraph.alignment = PP_ALIGN.CENTER
+            paragraph.space_after = Pt(1)
         _no_bullets(panel.text_frame)
-        tx += 2.42
+        x += w + 0.10
 
-    _shot(slide, "04-finding-evidence.png", 0.56, 3.30, 7.06,
-          "One finding, its rule, its remediation and the packets behind it.",
-          ratio=2.6)
+    # --- A: the evidence the first three outcomes rest on --------------------
+    _shot(slide, "04-finding-evidence.png", 0.42, 2.44, 7.12,
+          "DISCOVER \u00b7 EXPLAIN \u00b7 PRIORITIZE \u2014 one finding, its rule, "
+          "its severity and its remediation.",
+          crop=(0.11, 0.150, 1.0, 0.735))
 
-    # ----------------------------------------------------------------------
-    # Right: the two benefits with their own distinct evidence.
-    # ----------------------------------------------------------------------
-    track = _panel(slide, 7.92, 1.40, 5.00, 0.96)
+    # --- B: drift, as the engine reported it ---------------------------------
+    _shot(slide, "13-drift-version.png", 7.72, 2.44, 5.20,
+          "TRACK \u2014 the same observed service, two captures.",
+          crop=(0.155, 0.150, 0.99, 0.262))
+
+    band = _panel(slide, 7.72, 4.02, 5.20, 0.62,
+                  fill=RGBColor(0xFF, 0xFF, 0xFF), line=BOX_LINE)
+    band.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
     _write(
-        track.text_frame,
-        [("TRACK", 11, True, ACCENT, 0),
-         ("Drift compares one endpoint across captures. Where the clients asked "
-          "different questions the comparison is reported INCONCLUSIVE rather "
-          "than blamed on the server.", 8, False, BODY, 0)],
-        line_spacing=0.90,
+        band.text_frame,
+        [("EARLIER  TLS 1.2      \u2192  OBSERVED_CHANGE  \u2192      LATER  TLS 1.0",
+          13, True, WARN, 0)],
     )
-    _no_bullets(track.text_frame)
-    _shot(slide, "08-drift.png", 7.92, 2.48, 5.00,
-          "Configuration drift, before and after.", ratio=2.6)
+    for paragraph in band.text_frame.paragraphs:
+        paragraph.alignment = PP_ALIGN.CENTER
+    _no_bullets(band.text_frame)
 
-    report = _panel(slide, 7.92, 4.86, 2.42, 1.56)
+    # --- C: the report that leaves the tool ----------------------------------
+    _shot(slide, "12-pdf.png", 7.72, 4.80, 2.34,
+          "REPORT \u2014 the exported PDF.", crop=(0.0, 0.0, 1.0, 0.44))
+
+    carry = _panel(slide, 10.24, 4.80, 2.68, 1.42)
     _write(
-        report.text_frame,
-        [("REPORT", 11, True, ACCENT, 0),
-         ("One canonical model produces JSON, a self-contained offline HTML "
-          "document and a PDF, so their facts cannot disagree.",
-          8, False, BODY, 0)],
-        line_spacing=0.90,
+        carry.text_frame,
+        [("The report carries", 11.5, True, ACCENT, 0),
+         ("findings \u00b7 packet references \u00b7 remediation", 11, False, BODY, 0),
+         ("JSON \u00b7 standalone HTML \u00b7 PDF", 11, False, BODY, 0)],
+        line_spacing=0.98,
     )
-    _no_bullets(report.text_frame)
-    _shot(slide, "11-reports.png", 10.50, 4.86, 2.42,
-          "Export, in three formats.", ratio=1.62)
+    _no_bullets(carry.text_frame)
 
-    note = _panel(slide, 0.42, 6.50, 7.34, 0.36,
+    note = _panel(slide, 0.42, 6.34, 7.12, 0.42,
                   fill=RGBColor(0xE4, 0xEE, 0xE6), line=RGBColor(0xBE, 0xD8, 0xC6))
     note.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
     _write(
         note.text_frame,
-        [("Benefits are demonstrated on synthetic captures. No deployment, "
-          "adoption figure or real-world detection rate is claimed.",
-          8.5, True, BODY, 0)],
+        [("Demonstrated on controlled synthetic captures; no production "
+          "deployment claim.", 11, True, BODY, 0)],
     )
     _no_bullets(note.text_frame)
 
@@ -776,93 +762,76 @@ def slide_5(slide: Any) -> None:
 def slide_6(slide: Any) -> None:
     box = _shape(slide, "TextBox 8")
     assert box is not None
-    box.left, box.top = Inches(0.42), Inches(1.06)
-    box.width, box.height = Inches(12.5), Inches(0.34)
+    box.left, box.top = Inches(0.42), Inches(1.04)
+    box.width, box.height = Inches(12.5), Inches(0.36)
     _write(
         box.text_frame,
-        [("The standards the rules cite and the parsers implement, and how "
-          "every claim in this deck is checked.", 10, False, MUTED, 0)],
+        [("The standards the rules cite, and the pipeline every claim in this "
+          "deck is checked by.", 13, False, MUTED, 0)],
     )
     _no_bullets(box.text_frame)
 
-    # -- references, in three groups ------------------------------------------
     groups = [
-        ("Core TLS and PKI",
-         [
-             "RFC 8446 \u2014 TLS 1.3",
-             "RFC 5246 \u2014 TLS 1.2",
-             "RFC 9325 \u2014 secure use of TLS (2022)",
-             "RFC 8996 \u2014 deprecating TLS 1.0 and 1.1",
-             "RFC 7457 \u2014 known attacks on TLS",
-             "RFC 4492 \u2014 ECC cipher suites",
-             "RFC 5280 \u2014 X.509 certificate and CRL profile",
-             "RFC 6125 \u2014 service identity verification",
-             "NIST SP 800-52 Rev. 2 \u00b7 IANA TLS registry",
-         ]),
-        ("Email protocols",
-         [
-             "RFC 5321 \u2014 SMTP",
-             "RFC 3207 \u2014 SMTP over TLS (STARTTLS)",
-             "RFC 9051 \u2014 IMAP 4rev2",
-             "RFC 1939 \u2014 POP3",
-             "RFC 2595 \u2014 TLS with IMAP, POP3 and ACAP",
-             "RFC 2606 \u2014 reserved names (.invalid, used by every fixture)",
-         ]),
-        ("Validation tools",
-         [
-             "Wireshark / TShark \u2014 independent dissection",
-             "pytest \u00b7 hypothesis \u2014 property and regression tests",
-             "Playwright \u00b7 Vitest \u2014 browser and unit tests",
-             "pip-audit \u00b7 npm audit \u00b7 CycloneDX \u2014 supply chain",
-             "ruff \u00b7 mypy \u2014 lint and strict typing",
-         ]),
+        ("CORE TLS / PKI",
+         ["RFC 8446 \u2014 TLS 1.3", "RFC 9325 \u2014 secure use of TLS",
+          "RFC 5280 \u2014 X.509 and CRL profile",
+          "NIST SP 800-52 Rev. 2"]),
+        ("EMAIL SECURITY",
+         ["RFC 5321 \u2014 SMTP", "RFC 3207 \u2014 STARTTLS",
+          "RFC 9051 \u2014 IMAP 4rev2",
+          "RFC 1939 / RFC 2595 \u2014 POP3 and TLS"]),
+        ("VALIDATION / TOOLING",
+         ["Wireshark / TShark", "Scapy", "cryptography", "pytest \u00b7 Playwright"]),
     ]
     gx = 0.42
     for title, items in groups:
-        panel = _panel(slide, gx, 1.44, 4.10, 1.96)
-        _write(
-            panel.text_frame,
-            [(title, 10, True, ACCENT, 0)]
-            + [(item, 8, False, BODY, 0) for item in items],
-            line_spacing=0.88,
-        )
+        panel = _panel(slide, gx, 1.44, 4.10, 1.56)
+        _write(panel.text_frame,
+               [(title, 12.5, True, ACCENT, 0)]
+               + [(item, 11, False, BODY, 0) for item in items],
+               line_spacing=1.0)
         _no_bullets(panel.text_frame)
         gx += 4.20
 
-    # -- the validation pipeline, as a diagram --------------------------------
-    _band(slide, 0.42, 3.60, 12.5, 1.74, "HOW EVERY CLAIM IN THIS DECK IS CHECKED")
-
+    _band(slide, 0.42, 3.20, 12.5, 1.78, "HOW EVERY CLAIM IS CHECKED")
     steps = [
-        ("Deterministic fixtures",
-         "generated from a fixed seed; identical bytes on every machine"),
-        ("Hand-derived manifests",
-         "expectations written by hand and committed, not read back"),
-        ("Engine under test",
-         "1,357 tests; the captures themselves stay out of git"),
-        ("Independent dissector",
-         "ten TShark cross-checks against Wireshark's own parse"),
-        ("Real browser, real backend",
-         "five Playwright specs, including a restart for persistence"),
-        ("Report parity",
-         "JSON, HTML and PDF asserted to agree, field by field"),
+        ("CONTROLLED FIXTURES", "one fixed seed, identical bytes everywhere"),
+        ("HAND-DERIVED EXPECTATIONS", "written by hand, committed, not read back"),
+        ("ENGINE UNDER TEST", "1,357 tests; captures stay out of git"),
+        ("INDEPENDENT TSHARK CROSS-CHECK", "against Wireshark's own dissector"),
+        ("REAL-BACKEND PLAYWRIGHT", "five browser specs, including a restart"),
+        ("REPORT PARITY", "JSON, HTML and PDF asserted to agree"),
     ]
-    sx = 0.58
+    sx, sw = 0.60, 1.84
     for index, (title, detail) in enumerate(steps):
-        _node(slide, sx, 3.98, 1.82, 1.18,
-              [(title, 8.5, True, INK), (detail, 7, False, MUTED)])
+        _node(slide, sx, 3.58, sw, 1.22,
+              [(title, 9.5, True, INK), (detail, 8.5, False, MUTED)])
+        sx += sw
         if index < len(steps) - 1:
-            _arrow(slide, sx + 1.86, 4.48, 0.20)
-        sx += 2.08
+            _arrow(slide, sx + 0.03, 4.12, 0.18)
+            sx += 0.24
 
-    # -- repository and video --------------------------------------------------
-    links = _panel(slide, 0.42, 5.52, 12.5, 0.80)
+    project = _panel(slide, 0.42, 5.18, 9.06, 1.12)
     _write(
-        links.text_frame,
-        [("Repository and demonstration", 10, True, ACCENT, 0)],
+        project.text_frame,
+        [("PROJECT", 12.5, True, ACCENT, 0)],
     )
-    _no_bullets(links.text_frame)
-    _link_line(links.text_frame, "Repository", REPOSITORY_URL, REPOSITORY_URL, size=9)
-    _link_line(links.text_frame, "Demonstration", VIDEO_LINK_PLACEHOLDER, None, size=9)
+    _no_bullets(project.text_frame)
+    _link_line(project.text_frame, "GitHub repository", REPOSITORY_URL,
+               REPOSITORY_URL, size=12)
+    _link_line(project.text_frame, "Demonstration", VIDEO_LINK_PLACEHOLDER,
+               None, size=12)
+
+    qr = _panel(slide, 9.66, 5.18, 3.26, 1.12)
+    _write(qr.text_frame, [("", 4, False, MUTED, 0)])
+    _no_bullets(qr.text_frame)
+    _qr(slide, REPOSITORY_URL, 9.80, 5.30, 0.88)
+    label = _textbox(slide, 10.80, 5.34, 2.02, 0.80)
+    _write(label.text_frame,
+           [("SCAN FOR THE REPOSITORY", 10, True, ACCENT, 0),
+            ("Private until the team publishes it.", 9.5, False, MUTED, 0)],
+           line_spacing=0.98)
+    _no_bullets(label.text_frame)
 
 
 # ---------------------------------------------------------------------------

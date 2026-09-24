@@ -27,6 +27,7 @@ working tree.
 | `archive/final-demo-v1` | The finished demonstration video |
 | `archive/final-candidate-v2` | The submission candidate, before the documentation follow-ups |
 | `archive/final-submission` | The submission candidate with CI green on all six jobs |
+| `archive/pre-national-final` | Before the national-level polish of the deck and video |
 
 List them, newest first:
 
@@ -55,6 +56,8 @@ submission/archive/
   ui-v2/     the screenshot set from the UI before the redesign
   demo-v1/   the demo package, SHA256SUMS, CHANGELOG, VIDEO.md
   demo-v2/   the demo package from before the video was finished
+  ppt-pre-national-final/    the deck before the national-level polish
+  video-pre-national-final/  that video's record (VIDEO.md; bytes stay out)
 ```
 
 Raw footage is deliberately **not** in Git: it is an editing input, it is

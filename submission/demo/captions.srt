@@ -1,89 +1,59 @@
 1
-00:00:08,000 --> 00:00:18,233
-SecureMailScope analyses email traffic captures. It is passive by design: no
-host in a capture is ever contacted, and nothing leaves this machine.
+00:00:00,000 --> 00:00:14,911
+TLS 1.0 negotiated · Static RSA · no forward secrecy · HIGH
 
 2
-00:00:18,233 --> 00:00:24,471
-Nine synthetic captures go in, covering SMTP, IMAP and POP3.
+00:00:19,311 --> 00:00:28,556
+Passive PCAP analysis · Nothing leaves this machine
 
 3
-00:00:24,471 --> 00:00:29,238
-Analysis runs entirely locally, against the bytes in the capture.
+00:00:28,556 --> 00:00:32,923
+Nine synthetic captures
 
 4
-00:00:29,238 --> 00:00:39,338
-The investigation opens on its conclusion: seven high-priority cryptographic
-issues require attention, and the weakest capture scores fifty-nine out of a
-hundred.
+00:00:32,923 --> 00:00:44,323
+Sessions rebuilt · SMTP · IMAP · POP3 · STARTTLS · TLS
 
 5
-00:00:39,338 --> 00:00:46,505
-Beneath it: the TLS version of every session, the severity distribution, and
-what the certificates showed.
+00:00:44,323 --> 00:00:55,565
+59/100 · WEAK · 7 high-priority findings
 
 6
-00:00:46,505 --> 00:00:54,938
-Then the findings themselves, beside the evidence timeline they were drawn
-from.
+00:00:55,565 --> 00:01:00,065
+TLS posture across every session
 
 7
-00:00:54,938 --> 00:01:04,872
-Each finding names the rule it failed, the session it came from and the
-confidence the engine assigned.
+00:01:00,065 --> 00:01:03,665
+Findings, ranked by priority
 
 8
-00:01:09,359 --> 00:01:17,859
-Static RSA key exchange. No forward secrecy: anyone who later obtains the
-server's long-term key can decrypt this session.
+00:01:03,665 --> 00:01:17,136
+Packets #4 and #5 · Evidence linked
 
 9
-00:01:17,859 --> 00:01:34,825
-Packets 4 and 5 — the exact packets the rule was evaluated against. Open the
-same two in Wireshark and check.
+00:01:17,136 --> 00:01:24,976
+Open the same packets in Wireshark
 
 10
-00:01:34,825 --> 00:01:42,459
-A session reads as the chain it is: entry point, version, cipher suite, key
-exchange, certificate.
+00:01:24,976 --> 00:01:40,409
+TLS 1.3 certificate unavailable · Reported, not guessed
 
 11
-00:01:42,459 --> 00:01:54,125
-A TLS 1.3 certificate is encrypted on the wire. It is reported as not
-available, with the reason — never guessed.
+00:01:40,409 --> 00:01:44,742
+Two captures of the same service
 
 12
-00:01:54,125 --> 00:02:01,392
-A fingerprint groups configurations. It identifies a setup, not an operator
-— and the page says so.
+00:01:44,742 --> 00:02:00,176
+Observed cryptographic drift · TLS 1.2 → TLS 1.0
 
 13
-00:02:01,392 --> 00:02:12,759
-Drift compares one endpoint across captures; where the clients asked
-different questions it says inconclusive. Correlations and blast radius stay
-inside the captures analysed.
+00:02:00,176 --> 00:02:12,676
+JSON · HTML · PDF
 
 14
-00:02:12,759 --> 00:02:22,825
-Every timeline event carries its evidence status: observed in a packet, or
-inferred.
+00:02:12,676 --> 00:02:16,876
+The exported forensic report
 
 15
-00:02:22,825 --> 00:02:32,192
-The anomaly detector actually in use is a deterministic rarity baseline, not
-a machine-learning model, and the interface says so.
-
-16
-00:02:32,192 --> 00:02:40,525
-One canonical model produces JSON, a self-contained HTML document and a PDF.
-Their facts cannot disagree.
-
-17
-00:02:40,525 --> 00:02:49,492
-Here is that export, opened straight from disk. It fetches nothing external,
-and it is the same report the engine just produced.
-
-18
-00:02:52,331 --> 00:03:01,331
-And the same report as a PDF, paginated, with the generation metadata on
-every page.
+00:02:16,876 --> 00:02:21,476
+Findings · packet references · remediation

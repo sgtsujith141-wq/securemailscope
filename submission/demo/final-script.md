@@ -1,77 +1,82 @@
 # Final script — the finished video
 
-The video is built, not planned: `scripts/build_demo_video.py` assembles it
+The video is built, not planned. `scripts/build_demo_video.py` assembles it
 from a Playwright recording of the real application and the beat log that
 recording produced. This sheet describes what was built.
 
-**`submission/final/SecureMailScope-SIH26159-Demo.mp4` — 3 min 11 s,
-1920x1080, 30 fps, H.264 CRF 18, AAC.**
+**`submission/final/SecureMailScope-SIH26159-Demo.mp4` — 2 min 58 s,
+1920x1080, 30 fps, H.264 High, CRF 16, AAC 192 kbps at -16.0 LUFS.**
 
 ## Structure
 
 | # | Element | Content |
 |---|---|---|
-| 1 | Title card | SecureMailScope · the problem statement title · SIH26159 · NTRO · Zero-Day |
-| 2 | Section card | *The problem* — encryption is visible; whether the cryptography is sound is not |
-| 3 | Footage | The first-run screen: passive by design |
-| 4 | Section card | *What goes in* — PCAP/PCAPNG already held; format read from the bytes |
-| 5 | Footage | Nine synthetic captures uploaded, then analysed at real speed |
-| 6 | Footage | The investigation dashboard: the attention hero, the posture arc, the four cryptographic modules, priority findings and the evidence timeline |
-| 7 | Section card | *Evidence, not assertion* |
-| 8 | Footage | The findings workspace, one finding in full, and the packets it was evaluated against |
-| 9 | Footage | A session as a negotiation chain, tinted where a finding was raised |
-| 10 | Section card | *Stated limits* — unknown is rendered as unknown |
-| 11 | Footage | A TLS 1.3 certificate reported NOT AVAILABLE, with the reason |
-| 12 | Section card | *Across captures* — fingerprints, entities, drift, correlation |
-| 13 | Footage | Drift before/after, then the evidence timeline, then the ML page with its stated limits |
-| 14 | Section card | *Verified, not asserted* — the real test counts |
-| 15 | Footage | JSON, offline HTML and PDF export from one canonical model |
-| 16 | End card | Passive · Local · Evidence-backed |
+| 1 | **Cold open** | A real HIGH finding, already on screen: TLS 1.0, static RSA, no forward secrecy |
+| 2 | Title card | SecureMailScope · SIH26159 · NTRO · Zero-Day |
+| 3 | Footage | The first-run screen: passive by design, nothing leaves the machine |
+| 4 | Footage | Nine synthetic captures uploaded |
+| 5 | Footage | Analysis at real speed; sessions rebuilt, protocols identified, TLS inspected |
+| 6 | Footage | The dashboard: 59/100 WEAK, seven high-priority findings |
+| 7 | Footage | TLS posture across every session; the findings list |
+| 8 | Footage | **The finding, and packets #4 and #5** — the longest held section |
+| 9 | Footage | A TLS 1.3 session: certificate NOT AVAILABLE, with the reason |
+| 10 | Footage | A second investigation over two captures of one service |
+| 11 | Footage | Drift: negotiated version, OBSERVED_CHANGE, TLS 1.2 → TLS 1.0 |
+| 12 | Footage | Export: JSON, standalone HTML, PDF — really downloaded on screen |
+| 13 | Stills | Two pages of the PDF that was just downloaded |
+| 14 | Footage | Closing montage: timeline, ML page, findings |
+| 15 | End card | Passive · Local · Evidence-backed |
 
-## Narration and captions
+Three full-screen elements in total: the title card, the end card, and
+nothing else. Everything between them is the product.
 
-Every line is **both** spoken and burned in as a caption, and the same text is
-written to `captions.srt` with the timings of the finished file. The voice is
-synthesised by the operating system's speech engine; `demo-verification.md`
-says so plainly. The video is fully usable with the sound off.
+## Captions
 
-Acronyms are spelled out for the synthesiser only ("T L S"); the caption on
-screen keeps the normal spelling.
+Short supportive labels, not a transcript: "TLS 1.0 negotiated", "Packets #4
+and #5", "Observed cryptographic drift". At most two lines, 46 px bold, on an
+opaque band — readable on a projector and on a phone. The same text is written
+to `captions.srt` with the timings of the finished file.
+
+## Narration
+
+See `narration.md` for the words and the voice. It is synthesised, and that is
+said plainly there and in `demo-verification.md`.
 
 ## Beats, as recorded
 
-The recording timestamps each narrated moment itself, so a caption cannot
-describe something the footage is not showing. Recorded offsets, in seconds
-from the first frame of the raw capture:
+The recording timestamps each shot itself, so a caption cannot describe
+something the footage is not showing. Offsets in seconds from the first frame
+of the raw capture:
 
 | Beat | At |
 |---|---|
-| `first-run` | 1.8 s |
-| `upload` | 9.0 s |
-| `analyse` | 15.6 s |
-| `dashboard` | 18.5 s |
-| `modules` | 25.9 s |
-| `rows` | 32.9 s |
-| `findings` | 40.6 s |
-| `finding-detail` | 46.9 s |
-| `evidence` | 54.2 s |
-| `session` | 61.8 s |
-| `tls13` | 71.6 s |
-| `drift` | 78.6 s |
-| `timeline` | 86.7 s |
-| `ml` | 93.7 s |
-| `reports` | 101.0 s |
-| `end` | 110.2 s |
+| `firstrun` | 1.6 s |
+| `upload` | 5.7 s |
+| `analyse` | 10.1 s |
+| `overview` | 12.4 s |
+| `modules` | 19.7 s |
+| `finding` | 24.2 s |
+| `finding-detail` | 27.8 s |
+| `evidence` | 33.3 s |
+| `verify` | 37.7 s |
+| `tls13` | 45.5 s |
+| `drift-setup` | 56.5 s |
+| `drift` | 60.8 s |
+| `report` | 73.9 s |
+| `montage` | 81.4 s |
+| `end` | 88.6 s |
 
-Raw footage: 112.8 s. The finished video is longer
-because of the cards and because a shot is held, never sped up, when its line
-of narration runs past it.
+Raw footage: 90.0 s. The finished cut is longer because of the two
+cards, the PDF stills, and because a shot is held — never sped up — when its
+line of narration runs past it. The cut also reorders: it opens on the finding,
+which is recorded partway through the take.
 
 ## Rebuilding
 
 ```bash
 python scripts/build_demo_dataset.py
 cd frontend && SMS_SCREENSHOTS=1 npx playwright test demo-capture && cd ..
+bash scripts/make_narration.sh
 .venv-release/bin/python scripts/build_demo_video.py
 ```
 
