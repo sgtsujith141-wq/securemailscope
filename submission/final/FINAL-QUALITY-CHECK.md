@@ -3,8 +3,8 @@
 Every result below was re-run against this working tree on 2026-09-23. Nothing is
 carried forward from an earlier milestone, and no number here is an estimate.
 
-- **Branch:** `main` · **Repository:** private, unchanged
-- **Nothing submitted, nothing uploaded, no licence added, visibility unchanged**
+- **Branch:** `main` · **Repository:** public
+- **Nothing submitted, nothing uploaded, no licence added**
 
 ## Automated gates
 
@@ -13,7 +13,7 @@ carried forward from an earlier milestone, and no number here is an estimate.
 | Backend tests | `pytest -q` | **1,357 passed**, 25 skipped |
 | TShark cross-check | `SECUREMAILSCOPE_TSHARK=1 pytest -q` | **1,367 passed**, 15 skipped |
 | Lint | `ruff check .` | **clean** |
-| Type check | `mypy` | **clean, 156 files** (`src/`, `tests/`, `scripts/`) |
+| Type check | `mypy` | **clean, 158 files** (`src/`, `tests/`, `scripts/`) |
 | Frontend types | `npx tsc --noEmit` | **clean** |
 | Frontend lint | `npm run lint` (`--max-warnings 0`) | **clean** |
 | Frontend tests | `npx vitest run` | **89 passed** |
@@ -78,7 +78,7 @@ anomaly method is a deterministic baseline and the supervised classifier is
 | Artefact | State |
 |---|---|
 | Six-slide deck | Rebuilt for a projector: body type at 11–13 pt, six large metric tiles, four purpose-built diagrams, and every screenshot cropped to the region that carries the message. Built on the official template. Every title-page field resolved; the build fails on an `[UNRESOLVED]` marker, a seventh page, a wrong team name, a missing repository link or a missing video element. |
-| Demonstration video | **Complete.** 2 min 58 s, 1920×1080, 30 fps, H.264 High CRF 16, audio at −16.0 LUFS. Built from a Playwright recording of the real stack; opens on a real finding rather than a title. Narration is neural (ElevenLabs) and labelled as synthesised. |
+| Demonstration video | **Complete.** 2 min 59 s, 1920×1080, 30 fps, H.264 High CRF 18, AAC 192 kbps at −16.0 LUFS, true peak −3.2 dBFS. Built from a Playwright recording of the real stack, one recording per shot. Opens with the team introducing itself over the title card, in the register of a presentation rather than an advertisement. Narration is neural (ElevenLabs) and labelled as synthesised. |
 | Screenshots | 13, all captured from this build against the real backend; the drift card is captured at 2× density so it stays sharp when the deck crops it. |
 | Manifest | `MANIFEST.md` / `manifest.json` — SHA-256 of every file in the package. |
 
@@ -86,6 +86,6 @@ anomaly method is a deterministic baseline and the supervised classifier is
 
 - Nothing submitted to the SIH portal.
 - No video uploaded anywhere; no public URL exists.
-- Repository visibility unchanged (**private**).
+- Repository is **public**, as the user directed.
 - No licence added.
 - No history rewritten, no branch force-pushed, no tag moved or deleted.

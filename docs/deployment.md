@@ -13,7 +13,7 @@ application makes an outbound network request.
 ## Install
 
 ```bash
-git clone <the private repository>
+git clone https://github.com/sgtsujith141-wq/securemailscope.git
 cd securemailscope
 
 python3.12 -m venv .venv

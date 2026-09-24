@@ -4,13 +4,12 @@ SHA-256 of every file in `submission/`. Regenerate with:
 
     python scripts/write_manifest.py
 
-Generated 2026-09-24T07:45:09+00:00
+Generated 2026-09-24T10:42:38+00:00
 
 | File | Bytes | SHA-256 |
 |---|---:|---|
 | `submission/README.md` | 4,024 | `ee3fa34bdb02d28387795b3f67387ee573c7383a3873f99a5c3b5406db9ac657` |
 | `submission/archive/demo-v1/CHANGELOG.md` | 281 | `e7e5ec6f0d285415bbb9da04e35c79c7fccbe73d6e633c4cd30de74d4482d8f5` |
-| `submission/archive/demo-v1/SHA256SUMS` | 761 | `a2344ed7ec7b1a66b7e1aa3aac226484f48b49a206f7ffd26abd3ed9ed91f55a` |
 | `submission/archive/demo-v1/VIDEO.md` | 744 | `79c1b52be197189363e56b61faa71c688aa8d4979268b6e810a419de448b8fb6` |
 | `submission/archive/demo-v1/captions.srt` | 2,673 | `db3d6faf4de2ea89d148baf9ac29e31fe2fdd1716bb409f06cc25ce6231ee4dd` |
 | `submission/archive/demo-v1/demo-verification.md` | 2,384 | `beecc91315d4132286f677ef1fe456ca3a122226760cb6edef33de2ef68a002d` |
@@ -22,7 +21,6 @@ Generated 2026-09-24T07:45:09+00:00
 | `submission/archive/demo-v1/storyboard.md` | 3,378 | `146ada4fb2aa1bf9394ee0362a9a5875fbd3f4c6874069e701dab49445319e31` |
 | `submission/archive/demo-v1/video-description.md` | 2,370 | `5914a1e32a137a2a9193d8e8e95b1f1c6311db816a5880f28362f508c328875a` |
 | `submission/archive/demo-v2/CHANGELOG.md` | 1,357 | `0f50cd45553fedf26a3fed9d3565165d76f3371597ba96b89bbb6d6d19359122` |
-| `submission/archive/demo-v2/SHA256SUMS` | 897 | `c9ccfb723f7825d3218a5f8ecf16c75302c363c198e641d141cf3a90d59bf43c` |
 | `submission/archive/demo-v2/VIDEO.md` | 1,117 | `0ce99e6b40115fdd549986e38b62c4db3c4df30436b18366e8ee2e7f23082f42` |
 | `submission/archive/demo-v2/captions.srt` | 2,673 | `db3d6faf4de2ea89d148baf9ac29e31fe2fdd1716bb409f06cc25ce6231ee4dd` |
 | `submission/archive/demo-v2/demo-verification.md` | 2,384 | `beecc91315d4132286f677ef1fe456ca3a122226760cb6edef33de2ef68a002d` |
@@ -34,12 +32,10 @@ Generated 2026-09-24T07:45:09+00:00
 | `submission/archive/demo-v2/storyboard.md` | 3,378 | `146ada4fb2aa1bf9394ee0362a9a5875fbd3f4c6874069e701dab49445319e31` |
 | `submission/archive/demo-v2/video-description.md` | 2,370 | `5914a1e32a137a2a9193d8e8e95b1f1c6311db816a5880f28362f508c328875a` |
 | `submission/archive/ppt-pre-national-final/CHANGELOG.md` | 1,318 | `59c1ddaecf4779963fb0f6b433ec2973053cec38f346c6ba9e39b1b1a840cd9d` |
-| `submission/archive/ppt-pre-national-final/SHA256SUMS` | 368 | `abca0ff7445ccb7f111eb37ec51ce00b3b3654b64e07b319b7a427d193d7bee7` |
 | `submission/archive/ppt-pre-national-final/SOURCE_COMMIT` | 41 | `e1cf796ce4e31f145cf97e4257e27e181635595e32fffe571f8c64debd5c6c59` |
 | `submission/archive/ppt-pre-national-final/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,513,027 | `06855d31d0e61d346dc38e52d14d069c78a9c19aa119baceadf33fa71ff34c4a` |
 | `submission/archive/ppt-pre-national-final/SecureMailScope-SIH26159-Zero-Day.pptx` | 2,380,045 | `78c56e618ec963676ae732714eb69b44ccd01ff5d529e632ca8fc845ac9286cc` |
 | `submission/archive/ppt-v1/CHANGELOG.md` | 866 | `d0c26baad10a249578bd6dec68e0185f0f032298617ce8cf96b5904db8dc6a1a` |
-| `submission/archive/ppt-v1/SHA256SUMS` | 771 | `9da6deb112fd813a1770309fe4e32fe95ecaa2a78043fbfd482949f52d80695d` |
 | `submission/archive/ppt-v1/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,083,182 | `36bf1dfc73155dd635e80c082d991d9472a95121e3dd60c4d04bc565833b36a8` |
 | `submission/archive/ppt-v1/SecureMailScope-SIH26159-Zero-Day.pptx` | 1,218,419 | `c2e04b109f8b4dd4743ad5897fd033945cbd4bbbd4bc34bd26aa62949ccfad32` |
 | `submission/archive/ppt-v1/slide-renders/slide1.png` | 286,170 | `cbb180a8059d854b3891ce3d5788040a308dfc29a826ac7af63ed847e0197663` |
@@ -49,7 +45,6 @@ Generated 2026-09-24T07:45:09+00:00
 | `submission/archive/ppt-v1/slide-renders/slide5.png` | 368,705 | `bc0d3cf1774f33495bb209dea3437717e3958acf4e765035b59b820824624f4a` |
 | `submission/archive/ppt-v1/slide-renders/slide6.png` | 339,310 | `f502650a8f219f19737856ac9d2d4a2317e9a9101f5015040146f548b4cc0014` |
 | `submission/archive/ppt-v2/CHANGELOG.md` | 1,280 | `51c8404ffef3acf30aec4d4b0350d4c8fb03fdd49e83830584da8ebbffc1b809` |
-| `submission/archive/ppt-v2/SHA256SUMS` | 771 | `c72afd43ff022767fbc6024736b7f3b96bf1c0ec26169921ba40ae85d8b7afde` |
 | `submission/archive/ppt-v2/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,256,863 | `e509cd45c8633a835e4274e041e18b80466355a53fe6cff7d4c0f77ea8d2cf9e` |
 | `submission/archive/ppt-v2/SecureMailScope-SIH26159-Zero-Day.pptx` | 2,269,237 | `4353d6b78a057ab8d9451f48b7dc57c6dbf2614bbd2666961b987c9b4412ee9a` |
 | `submission/archive/ppt-v2/slide-renders/slide1.png` | 287,106 | `c106ea32142a400959b6a6c78467b1e9cfe20cb3979b7ca1302807ad6c2138ed` |
@@ -59,7 +54,6 @@ Generated 2026-09-24T07:45:09+00:00
 | `submission/archive/ppt-v2/slide-renders/slide5.png` | 395,878 | `76006c7220b73e53b47f8a57d2905f9fcfe38c1f7091c7dcbbf0cee86343887f` |
 | `submission/archive/ppt-v2/slide-renders/slide6.png` | 413,233 | `d164b676127a1834e9eb3ec74d47f3475f57009ed82079f6ef4f3a1b78862a4c` |
 | `submission/archive/ppt-v3/CHANGELOG.md` | 1,619 | `c9e65424e1276657ede979611cf745bcb438774614b8ceb53a4b247c231cb448` |
-| `submission/archive/ppt-v3/SHA256SUMS` | 761 | `b6e2480fc2d2dd0bbb8e4c3579a720cb9e47ca84268105ad747baa88d3d76bd3` |
 | `submission/archive/ppt-v3/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,256,863 | `e509cd45c8633a835e4274e041e18b80466355a53fe6cff7d4c0f77ea8d2cf9e` |
 | `submission/archive/ppt-v3/SecureMailScope-SIH26159-Zero-Day.pptx` | 2,269,237 | `4353d6b78a057ab8d9451f48b7dc57c6dbf2614bbd2666961b987c9b4412ee9a` |
 | `submission/archive/ppt-v3/slide-renders/slide-1.png` | 231,265 | `d88e7cd16df2ea13326b1fe40ed19928d96488a5c9c489efc840f78691cda57c` |
@@ -69,7 +63,6 @@ Generated 2026-09-24T07:45:09+00:00
 | `submission/archive/ppt-v3/slide-renders/slide-5.png` | 333,069 | `f80fb7423727c81a478e42764f0cacc75b6832f6d0f5eacd4fb18a304b00225d` |
 | `submission/archive/ppt-v3/slide-renders/slide-6.png` | 312,530 | `d7b9814a903efee5f3b3939c54d8f355fee04c16df06113c0c7a8ae7cb1d1f04` |
 | `submission/archive/ui-v1/CHANGELOG.md` | 333 | `331ab291fdb245dec668b0ab9942ba66dbae950a04a478703b20858139b7910f` |
-| `submission/archive/ui-v1/SHA256SUMS` | 1,525 | `61429c148d19e2306a0c36354b0a7f34db9efcffeedad9e864493916650fa7a5` |
 | `submission/archive/ui-v1/screenshots/00-first-run.png` | 96,825 | `0d364fbbee052892da04ec35d84cb302ea2fb5471339c0626f4d8650f47a2192` |
 | `submission/archive/ui-v1/screenshots/01-investigation-overview.png` | 312,114 | `f03cafb78696db85d130e3d65f29869254308e7d883391513e587f72c10d04c6` |
 | `submission/archive/ui-v1/screenshots/02-high-severity-finding.png` | 203,280 | `ac7fed40d2b21e8b0bf9eae02b31abb67d39879d1570e52cbe6d34662536a58f` |
@@ -86,7 +79,6 @@ Generated 2026-09-24T07:45:09+00:00
 | `submission/archive/ui-v1/screenshots/13-drift-investigation.png` | 218,735 | `d7dcfa32949f0c3009ca8176c35f014d80b98de8517b49d88a4ca1553b5c3459` |
 | `submission/archive/ui-v1/screenshots/14-blast-radius.png` | 79,781 | `c40674e91276d55d30e3dfc427850210971956c966441d88d128132f28d1bbcf` |
 | `submission/archive/ui-v2/CHANGELOG.md` | 1,735 | `20e80c1bf1acfb936f98e63da92fef90783d41a2af03e1ee2e576f1425c9cee0` |
-| `submission/archive/ui-v2/SHA256SUMS` | 1,712 | `ead39e13bdd5fae623f3614154c24d479bacc9c014de7ae4935c336e18838a6f` |
 | `submission/archive/ui-v2/screenshots/01-landing.png` | 203,892 | `a680f89022e98313313a0329b8acf74e4105161dc0d6ddc9105d22839ffd18c5` |
 | `submission/archive/ui-v2/screenshots/02-investigation-overview.png` | 512,631 | `1617283f0c559f0a7347b779dc09fea7ff119c22ca7995a59856f081b4bbe116` |
 | `submission/archive/ui-v2/screenshots/03-findings-workspace.png` | 243,288 | `18fcff20c6e3b303eacdc99744983026405bed9754a07cb2f7c97dc41ceeae75` |
@@ -105,7 +97,6 @@ Generated 2026-09-24T07:45:09+00:00
 | `submission/archive/ui-v2/screenshots/16-global-overview.png` | 205,041 | `68bfa6849710820272d46ed206b01278d717ed471885c3613081c8136cc3e134` |
 | `submission/archive/ui-v2/screenshots/17-blast-radius.png` | 166,600 | `2c7e434d6fc270d1d6220acf1485bb3e2b4945c80d307ca2f7920f467bb4af3d` |
 | `submission/archive/video-pre-national-final/CHANGELOG.md` | 199 | `068071eb008d05f26f2bdb6e0868c61ed4cb7a8e027a12c64fb37a751c16b090` |
-| `submission/archive/video-pre-national-final/SHA256SUMS` | 234 | `9b5264448946d6330a850ca86572358006fadd0cd221853ad1d97974e54035de` |
 | `submission/archive/video-pre-national-final/SOURCE_COMMIT` | 41 | `e1cf796ce4e31f145cf97e4257e27e181635595e32fffe571f8c64debd5c6c59` |
 | `submission/archive/video-pre-national-final/VIDEO.md` | 1,265 | `82bd978e0a8a8d6010f15c5caca0c633d4589f5829db90dc1ced0c95e604106d` |
 | `submission/assets/screenshots-final/01-landing.png` | 236,695 | `74b8b5face42205f6675fcad4af73fa5942edf2007e25134775231f70195785a` |
@@ -121,26 +112,27 @@ Generated 2026-09-24T07:45:09+00:00
 | `submission/assets/screenshots-final/11-reports.png` | 238,327 | `18927250b42387f43597086d868779aeda9adbabcf79d0dfce7e4dab319aec98` |
 | `submission/assets/screenshots-final/12-pdf.png` | 278,225 | `e37d9783a0a6b41d3240e6ec70f3a20fe88c91092c783fa34f1c5db5a36d0ec0` |
 | `submission/assets/screenshots-final/13-drift-version.png` | 1,003,093 | `2a3c814dd6af4400b37d5e9a079a6381b5153184c6b3b882538ecc42ee56824f` |
-| `submission/demo/captions.srt` | 1,113 | `6fa566580fdf42f3f124e456ba0eb8c0f41a0aefd53cc5aef18c12aa5c275dd7` |
-| `submission/demo/demo-verification.md` | 4,210 | `7afee5cb39356aeb8d4430d39639d5637c151f336eb3ac1f53aa6a879ca8ad38` |
-| `submission/demo/final-script.md` | 3,370 | `d67d2fc93c24b278edec912e3e362d760aaf938467dd775e405720932be70f36` |
-| `submission/demo/narration.md` | 3,306 | `3bf15b5bf648be699cbad037368646d6804093c6015eccb8099ab742d4114e4c` |
+| `submission/demo/captions.srt` | 1,213 | `975a4b3751b61a8aa79362552ee49f7e129874b41a9ba0a8f27b9ae01bf0fd01` |
+| `submission/demo/demo-verification.md` | 4,790 | `d3a6be0f9203289eb99a877065d0a5148cb8cb735940088f4e285a22600d0bb4` |
+| `submission/demo/final-script.md` | 2,816 | `8c2d7530097cc9b8b6b8ca4dfe81c8d1b8f5bc482c6bde55011d2444806541bc` |
+| `submission/demo/narration-script.json` | 3,108 | `2d736215f3097e08cfa39fa39282f205f579c09554f96ddaa6e5bcff526ba106` |
+| `submission/demo/narration.md` | 4,290 | `76fd8f19ba75f419c893e1f4fe2ab3494d0ed320f02832991d4bd774e485ee7c` |
 | `submission/demo/recording-checklist.md` | 2,245 | `bad31070f84f769350ca0421450af7eaa22d9ae25e52b29b4064b9cdeac36947` |
 | `submission/demo/rehearsal.json` | 4,481 | `e31cd925512a1209171d6a10f86b0287d7282ccce04175007219908fbd997236` |
 | `submission/demo/shot-list.md` | 2,970 | `ebca4b633f6b7ea54fcd423cda598505c57b138db76c26c0f8cf310cd4a370f6` |
 | `submission/demo/storyboard.md` | 3,753 | `06edbd8ca3681013731d3c9106902f65d9ffe0fcca4453a55b8aa2e49cf926d1` |
-| `submission/demo/video-description.md` | 2,864 | `a37518b44e3b12b12d25595cd4d9943a1a5556b2843712d4ed288e3b928a802d` |
-| `submission/final/FINAL-QUALITY-CHECK.md` | 5,077 | `f0cf98246bdaedb76f081ddae8b55fc2e0d001a3ebab520b6a0e0d537dcaefc3` |
-| `submission/final/MANIFEST.md` | 16,758 | `df090f3fb479e93ccd6ec2ad27dd7184e97521d22ef03373ad2f2ed8e8091cac` |
+| `submission/demo/video-description.md` | 2,518 | `7229cf555d5b82036b02432b825c159b5c38439461ece3bb46364d420435112c` |
+| `submission/final/FINAL-QUALITY-CHECK.md` | 5,177 | `ab89ad68d8ec83a508bd2388443d2f761b4110cd724d658941c93539937a5170` |
+| `submission/final/MANIFEST.md` | 18,193 | `31ca8f5570839ddefcf2fd94fc2b183d26139b7346af90c2dfb9123f06180903` |
 | `submission/final/REQUIREMENT-COVERAGE.md` | 9,994 | `cb61b9a75728125c1d46168b60249e577d9468e0926b5df70c28e5f355c9a038` |
-| `submission/final/SecureMailScope-SIH26159-Demo.mp4` | 22,964,929 | `6fefa4fb729136bff45a7960d30b85788fa3916d66f178901f8776cedc40aa0a` |
-| `submission/final/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,299,437 | `63624cb644f564a5768c7becf51c6768f03ded0e6da9bbe4c03c8bbde3b4f3d2` |
-| `submission/final/SecureMailScope-SIH26159-Zero-Day.pptx` | 1,535,826 | `bb66ff5c5de722b40123417dbd0e3ce59d25dbd94cf049ace43a146b27821dd3` |
-| `submission/final/manifest.json` | 22,923 | `741c850be4d676d19929c0883063ef4c5ef9225fc08909be4e49f929d6e2a30e` |
+| `submission/final/SecureMailScope-SIH26159-Demo.mp4` | 22,153,052 | `0360d9b5e7cd12d4b59aa9d84effb4c3c7b5bc6ec61633b4a82b3cf63f293bce` |
+| `submission/final/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,319,786 | `c9d68d1a7071ff2e94c641b5dad041ffaea02559d916461ac0e4d048e9c185fe` |
+| `submission/final/SecureMailScope-SIH26159-Zero-Day.pptx` | 1,535,810 | `3315ed0136b3f93a2a5dc9d1aebe9f279b5b9c4affee20e1a3a0476af7791ddd` |
+| `submission/final/manifest.json` | 24,870 | `9c31faf990060bd8a19019e6db24dc609a2efe391ff900a18dadf8ec343c7ca2` |
 | `submission/presentation/SecureMailScope-SIH26159.pdf` | 606,554 | `fa269b0e599d3dcb357e045fd6583b93db238cd0bb5e0037418f56a208b153ae` |
 | `submission/presentation/SecureMailScope-SIH26159.pptx` | 683,037 | `8f6fa86357adbe789845c89122463e68ea126e8644211b225a82539df443278c` |
 | `submission/presentation/build-status.json` | 366 | `ffcdd896947fc9542822ffd90e165ac030088e8ac43a50446e669c521e32015e` |
 | `submission/presentation/team.json` | 1,340 | `c40fdacc8a3c4d2e6db02f18b631864351e2c75194b3ea9b9f2b473e8219d8e5` |
 | `submission/template/SIH2026-IDEA-Presentation-Format.pptx` | 924,505 | `ce3e5deebec2741f3383cb2dd21269cad8d9930f7c747c9903d7d4b27db14de6` |
 
-**134 files.**
+**126 files.**

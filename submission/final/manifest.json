@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-24T07:45:09+00:00",
+  "generated_at": "2026-09-24T10:42:38+00:00",
   "files": [
     {
       "path": "submission/README.md",
@@ -10,11 +10,6 @@
       "path": "submission/archive/demo-v1/CHANGELOG.md",
       "bytes": 281,
       "sha256": "e7e5ec6f0d285415bbb9da04e35c79c7fccbe73d6e633c4cd30de74d4482d8f5"
-    },
-    {
-      "path": "submission/archive/demo-v1/SHA256SUMS",
-      "bytes": 761,
-      "sha256": "a2344ed7ec7b1a66b7e1aa3aac226484f48b49a206f7ffd26abd3ed9ed91f55a"
     },
     {
       "path": "submission/archive/demo-v1/VIDEO.md",
@@ -72,11 +67,6 @@
       "sha256": "0f50cd45553fedf26a3fed9d3565165d76f3371597ba96b89bbb6d6d19359122"
     },
     {
-      "path": "submission/archive/demo-v2/SHA256SUMS",
-      "bytes": 897,
-      "sha256": "c9ccfb723f7825d3218a5f8ecf16c75302c363c198e641d141cf3a90d59bf43c"
-    },
-    {
       "path": "submission/archive/demo-v2/VIDEO.md",
       "bytes": 1117,
       "sha256": "0ce99e6b40115fdd549986e38b62c4db3c4df30436b18366e8ee2e7f23082f42"
@@ -132,11 +122,6 @@
       "sha256": "59c1ddaecf4779963fb0f6b433ec2973053cec38f346c6ba9e39b1b1a840cd9d"
     },
     {
-      "path": "submission/archive/ppt-pre-national-final/SHA256SUMS",
-      "bytes": 368,
-      "sha256": "abca0ff7445ccb7f111eb37ec51ce00b3b3654b64e07b319b7a427d193d7bee7"
-    },
-    {
       "path": "submission/archive/ppt-pre-national-final/SOURCE_COMMIT",
       "bytes": 41,
       "sha256": "e1cf796ce4e31f145cf97e4257e27e181635595e32fffe571f8c64debd5c6c59"
@@ -155,11 +140,6 @@
       "path": "submission/archive/ppt-v1/CHANGELOG.md",
       "bytes": 866,
       "sha256": "d0c26baad10a249578bd6dec68e0185f0f032298617ce8cf96b5904db8dc6a1a"
-    },
-    {
-      "path": "submission/archive/ppt-v1/SHA256SUMS",
-      "bytes": 771,
-      "sha256": "9da6deb112fd813a1770309fe4e32fe95ecaa2a78043fbfd482949f52d80695d"
     },
     {
       "path": "submission/archive/ppt-v1/SecureMailScope-SIH26159-Zero-Day.pdf",
@@ -207,11 +187,6 @@
       "sha256": "51c8404ffef3acf30aec4d4b0350d4c8fb03fdd49e83830584da8ebbffc1b809"
     },
     {
-      "path": "submission/archive/ppt-v2/SHA256SUMS",
-      "bytes": 771,
-      "sha256": "c72afd43ff022767fbc6024736b7f3b96bf1c0ec26169921ba40ae85d8b7afde"
-    },
-    {
       "path": "submission/archive/ppt-v2/SecureMailScope-SIH26159-Zero-Day.pdf",
       "bytes": 1256863,
       "sha256": "e509cd45c8633a835e4274e041e18b80466355a53fe6cff7d4c0f77ea8d2cf9e"
@@ -257,11 +232,6 @@
       "sha256": "c9e65424e1276657ede979611cf745bcb438774614b8ceb53a4b247c231cb448"
     },
     {
-      "path": "submission/archive/ppt-v3/SHA256SUMS",
-      "bytes": 761,
-      "sha256": "b6e2480fc2d2dd0bbb8e4c3579a720cb9e47ca84268105ad747baa88d3d76bd3"
-    },
-    {
       "path": "submission/archive/ppt-v3/SecureMailScope-SIH26159-Zero-Day.pdf",
       "bytes": 1256863,
       "sha256": "e509cd45c8633a835e4274e041e18b80466355a53fe6cff7d4c0f77ea8d2cf9e"
@@ -305,11 +275,6 @@
       "path": "submission/archive/ui-v1/CHANGELOG.md",
       "bytes": 333,
       "sha256": "331ab291fdb245dec668b0ab9942ba66dbae950a04a478703b20858139b7910f"
-    },
-    {
-      "path": "submission/archive/ui-v1/SHA256SUMS",
-      "bytes": 1525,
-      "sha256": "61429c148d19e2306a0c36354b0a7f34db9efcffeedad9e864493916650fa7a5"
     },
     {
       "path": "submission/archive/ui-v1/screenshots/00-first-run.png",
@@ -390,11 +355,6 @@
       "path": "submission/archive/ui-v2/CHANGELOG.md",
       "bytes": 1735,
       "sha256": "20e80c1bf1acfb936f98e63da92fef90783d41a2af03e1ee2e576f1425c9cee0"
-    },
-    {
-      "path": "submission/archive/ui-v2/SHA256SUMS",
-      "bytes": 1712,
-      "sha256": "ead39e13bdd5fae623f3614154c24d479bacc9c014de7ae4935c336e18838a6f"
     },
     {
       "path": "submission/archive/ui-v2/screenshots/01-landing.png",
@@ -487,11 +447,6 @@
       "sha256": "068071eb008d05f26f2bdb6e0868c61ed4cb7a8e027a12c64fb37a751c16b090"
     },
     {
-      "path": "submission/archive/video-pre-national-final/SHA256SUMS",
-      "bytes": 234,
-      "sha256": "9b5264448946d6330a850ca86572358006fadd0cd221853ad1d97974e54035de"
-    },
-    {
       "path": "submission/archive/video-pre-national-final/SOURCE_COMMIT",
       "bytes": 41,
       "sha256": "e1cf796ce4e31f145cf97e4257e27e181635595e32fffe571f8c64debd5c6c59"
@@ -568,23 +523,28 @@
     },
     {
       "path": "submission/demo/captions.srt",
-      "bytes": 1113,
-      "sha256": "6fa566580fdf42f3f124e456ba0eb8c0f41a0aefd53cc5aef18c12aa5c275dd7"
+      "bytes": 1213,
+      "sha256": "975a4b3751b61a8aa79362552ee49f7e129874b41a9ba0a8f27b9ae01bf0fd01"
     },
     {
       "path": "submission/demo/demo-verification.md",
-      "bytes": 4210,
-      "sha256": "7afee5cb39356aeb8d4430d39639d5637c151f336eb3ac1f53aa6a879ca8ad38"
+      "bytes": 4790,
+      "sha256": "d3a6be0f9203289eb99a877065d0a5148cb8cb735940088f4e285a22600d0bb4"
     },
     {
       "path": "submission/demo/final-script.md",
-      "bytes": 3370,
-      "sha256": "d67d2fc93c24b278edec912e3e362d760aaf938467dd775e405720932be70f36"
+      "bytes": 2816,
+      "sha256": "8c2d7530097cc9b8b6b8ca4dfe81c8d1b8f5bc482c6bde55011d2444806541bc"
+    },
+    {
+      "path": "submission/demo/narration-script.json",
+      "bytes": 3108,
+      "sha256": "2d736215f3097e08cfa39fa39282f205f579c09554f96ddaa6e5bcff526ba106"
     },
     {
       "path": "submission/demo/narration.md",
-      "bytes": 3306,
-      "sha256": "3bf15b5bf648be699cbad037368646d6804093c6015eccb8099ab742d4114e4c"
+      "bytes": 4290,
+      "sha256": "76fd8f19ba75f419c893e1f4fe2ab3494d0ed320f02832991d4bd774e485ee7c"
     },
     {
       "path": "submission/demo/recording-checklist.md",
@@ -608,18 +568,18 @@
     },
     {
       "path": "submission/demo/video-description.md",
-      "bytes": 2864,
-      "sha256": "a37518b44e3b12b12d25595cd4d9943a1a5556b2843712d4ed288e3b928a802d"
+      "bytes": 2518,
+      "sha256": "7229cf555d5b82036b02432b825c159b5c38439461ece3bb46364d420435112c"
     },
     {
       "path": "submission/final/FINAL-QUALITY-CHECK.md",
-      "bytes": 5077,
-      "sha256": "f0cf98246bdaedb76f081ddae8b55fc2e0d001a3ebab520b6a0e0d537dcaefc3"
+      "bytes": 5177,
+      "sha256": "ab89ad68d8ec83a508bd2388443d2f761b4110cd724d658941c93539937a5170"
     },
     {
       "path": "submission/final/MANIFEST.md",
-      "bytes": 16758,
-      "sha256": "df090f3fb479e93ccd6ec2ad27dd7184e97521d22ef03373ad2f2ed8e8091cac"
+      "bytes": 18193,
+      "sha256": "31ca8f5570839ddefcf2fd94fc2b183d26139b7346af90c2dfb9123f06180903"
     },
     {
       "path": "submission/final/REQUIREMENT-COVERAGE.md",
@@ -628,23 +588,23 @@
     },
     {
       "path": "submission/final/SecureMailScope-SIH26159-Demo.mp4",
-      "bytes": 22964929,
-      "sha256": "6fefa4fb729136bff45a7960d30b85788fa3916d66f178901f8776cedc40aa0a"
+      "bytes": 22153052,
+      "sha256": "0360d9b5e7cd12d4b59aa9d84effb4c3c7b5bc6ec61633b4a82b3cf63f293bce"
     },
     {
       "path": "submission/final/SecureMailScope-SIH26159-Zero-Day.pdf",
-      "bytes": 1299437,
-      "sha256": "63624cb644f564a5768c7becf51c6768f03ded0e6da9bbe4c03c8bbde3b4f3d2"
+      "bytes": 1319786,
+      "sha256": "c9d68d1a7071ff2e94c641b5dad041ffaea02559d916461ac0e4d048e9c185fe"
     },
     {
       "path": "submission/final/SecureMailScope-SIH26159-Zero-Day.pptx",
-      "bytes": 1535826,
-      "sha256": "bb66ff5c5de722b40123417dbd0e3ce59d25dbd94cf049ace43a146b27821dd3"
+      "bytes": 1535810,
+      "sha256": "3315ed0136b3f93a2a5dc9d1aebe9f279b5b9c4affee20e1a3a0476af7791ddd"
     },
     {
       "path": "submission/final/manifest.json",
-      "bytes": 22923,
-      "sha256": "741c850be4d676d19929c0883063ef4c5ef9225fc08909be4e49f929d6e2a30e"
+      "bytes": 24870,
+      "sha256": "9c31faf990060bd8a19019e6db24dc609a2efe391ff900a18dadf8ec343c7ca2"
     },
     {
       "path": "submission/presentation/SecureMailScope-SIH26159.pdf",

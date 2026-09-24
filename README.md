@@ -124,7 +124,7 @@ Requires Python 3.12 (the project pins `>=3.12,<3.13`) and Node 22+ for the
 dashboard.
 
 ```bash
-git clone <this repository>
+git clone https://github.com/sgtsujith141-wq/securemailscope.git
 cd securemailscope
 
 python3.12 -m venv .venv
@@ -445,4 +445,6 @@ Project documentation:
 ## Licence
 
 **No licence has been granted.** All rights reserved by the authors pending an
-explicit licensing decision.
+explicit licensing decision. The repository is public so that judges and
+reviewers can read the source and reproduce the results; publication is not a
+grant of any rights over it.

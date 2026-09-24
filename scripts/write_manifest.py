@@ -14,7 +14,16 @@ EXCLUDE = {"crops"}
 #: Files the operating system leaves behind. They are gitignored, so hashing
 #: them would put entries in the manifest for files nobody receiving this
 #: package would ever have.
-EXCLUDE_NAMES = {".DS_Store", "Thumbs.db"}
+EXCLUDE_NAMES = {".DS_Store", "Thumbs.db", "SHA256SUMS"}
+
+#: The three files a judge actually receives. They get their own checksum
+#: file in the format `sha256sum -c` reads, so the package can be verified
+#: with one command and without this repository.
+DELIVERABLES = (
+    "SecureMailScope-SIH26159-Zero-Day.pptx",
+    "SecureMailScope-SIH26159-Zero-Day.pdf",
+    "SecureMailScope-SIH26159-Demo.mp4",
+)
 
 
 def main() -> int:
@@ -55,7 +64,18 @@ def main() -> int:
     (ROOT / "submission/final/manifest.json").write_text(
         json.dumps({"generated_at": stamp, "files": rows}, indent=2) + "\n"
     )
+    final = ROOT / "submission" / "final"
+    sums = []
+    for name in DELIVERABLES:
+        path = final / name
+        if not path.is_file():
+            raise SystemExit(f"missing deliverable: {path.relative_to(ROOT)}")
+        sums.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {name}")
+    (final / "SHA256SUMS").write_text("\n".join(sums) + "\n")
+
     print(f"{len(rows)} files hashed")
+    for line in sums:
+        print(f"  {line}")
     return 0
 
 

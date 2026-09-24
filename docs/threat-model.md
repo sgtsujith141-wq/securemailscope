@@ -144,7 +144,8 @@ is effectively permanent; a force-push does not undo a clone.
 - Synthetic fixtures are **not** committed. The generator and the expectation
   manifests are committed instead, so captures are reproducible byte for byte
   without existing in history.
-- The repository is private and carries no licence grant.
+- The repository is public and carries no licence grant. Publication makes the
+  source readable; it grants no permission to use it.
 
 **Residual risk.** `git add -f` defeats both controls. Look at `git status`.
 
