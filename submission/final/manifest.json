@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-09-24T10:42:38+00:00",
+  "generated_at": "2026-09-24T10:49:41+00:00",
   "files": [
     {
       "path": "submission/README.md",
-      "bytes": 4024,
-      "sha256": "ee3fa34bdb02d28387795b3f67387ee573c7383a3873f99a5c3b5406db9ac657"
+      "bytes": 4191,
+      "sha256": "f08ed68b58de0f8f356236a4d0bb190ffd6aed986c740d3abd8bd596ff52535e"
     },
     {
       "path": "submission/archive/demo-v1/CHANGELOG.md",
@@ -578,8 +578,8 @@
     },
     {
       "path": "submission/final/MANIFEST.md",
-      "bytes": 18193,
-      "sha256": "31ca8f5570839ddefcf2fd94fc2b183d26139b7346af90c2dfb9123f06180903"
+      "bytes": 17214,
+      "sha256": "9ee1062fae76ce579b5ffad100b9709991215322965ce008e6526edf6b63809e"
     },
     {
       "path": "submission/final/REQUIREMENT-COVERAGE.md",
@@ -603,8 +603,8 @@
     },
     {
       "path": "submission/final/manifest.json",
-      "bytes": 24870,
-      "sha256": "9c31faf990060bd8a19019e6db24dc609a2efe391ff900a18dadf8ec343c7ca2"
+      "bytes": 23476,
+      "sha256": "4251c3d11fa88a3bf33e4884daad724f51783ac51504788cb962935da0efb1ef"
     },
     {
       "path": "submission/presentation/SecureMailScope-SIH26159.pdf",
