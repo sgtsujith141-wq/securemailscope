@@ -104,15 +104,14 @@ def _write(
         run.font.name = "Calibri"
 
 
-#: The repository this deck describes. Private at the time of writing; the
-#: link is included because the submission form asks for it, not as a claim
-#: that a reviewer can open it today.
+#: The repository this deck describes. Public, so the link and the QR code
+#: both resolve for anyone in the room.
 REPOSITORY_URL = "https://github.com/sgtsujith141-wq/securemailscope"
 
 #: What the deck says about the demonstration video. No URL exists because
 #: nothing has been uploaded anywhere, so the line states where the video is
 #: rather than promising a link.
-VIDEO_LINK_PLACEHOLDER = "Demo video included in submission package."
+VIDEO_LINK_PLACEHOLDER = "Included in the submission package."
 
 
 
@@ -448,7 +447,7 @@ def slide_2(slide: Any) -> None:
         ("PCAP / PCAPNG", "authorised capture"),
         ("TCP RECONSTRUCTION", "sessions rebuilt"),
         ("SMTP \u00b7 IMAP \u00b7 POP3", "from the dialogue"),
-        ("STARTTLS / TLS", "upgrade and handshake"),
+        ("STARTTLS \u00b7 STLS \u00b7 TLS", "upgrade and handshake"),
         ("CRYPTOGRAPHIC EVIDENCE", "versions, suites, certificates"),
         ("RISK + REMEDIATION", "ranked, with the fix"),
     ]
@@ -500,9 +499,8 @@ def slide_3(slide: Any) -> None:
     box.width, box.height = Inches(12.5), Inches(0.36)
     _write(
         box.text_frame,
-        [("One direction of flow. Each stage reads only what the previous one "
-          "produced, and records the packets it read it from.",
-          13, False, MUTED, 0)],
+        [("Each stage consumes the previous stage\u2019s evidence and preserves "
+          "packet-level provenance.", 13, False, MUTED, 0)],
     )
     _no_bullets(box.text_frame)
 
@@ -819,8 +817,8 @@ def slide_6(slide: Any) -> None:
     _no_bullets(project.text_frame)
     _link_line(project.text_frame, "GitHub repository", REPOSITORY_URL,
                REPOSITORY_URL, size=12)
-    _link_line(project.text_frame, "Demonstration", VIDEO_LINK_PLACEHOLDER,
-               None, size=12)
+    _link_line(project.text_frame, "Demonstration video",
+               VIDEO_LINK_PLACEHOLDER, None, size=12)
 
     qr = _panel(slide, 9.66, 5.18, 3.26, 1.12)
     _write(qr.text_frame, [("", 4, False, MUTED, 0)])
@@ -829,7 +827,8 @@ def slide_6(slide: Any) -> None:
     label = _textbox(slide, 10.80, 5.34, 2.02, 0.80)
     _write(label.text_frame,
            [("SCAN FOR THE REPOSITORY", 10, True, ACCENT, 0),
-            ("Private until the team publishes it.", 9.5, False, MUTED, 0)],
+            ("Public repository \u2014 source, tests and submission package.",
+             9.5, False, MUTED, 0)],
            line_spacing=0.98)
     _no_bullets(label.text_frame)
 
@@ -970,7 +969,7 @@ def _evidence() -> dict[str, Any]:
         "tests_tshark": "1,367",
         "frontend_tests": "89",
         "e2e_specs": "5",
-        "typed_files": "156",
+        "typed_files": "158",
         "rehearsal_steps": steps,
         "rehearsal_failed": failed,
     }
