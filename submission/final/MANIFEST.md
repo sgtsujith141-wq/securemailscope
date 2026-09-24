@@ -4,7 +4,7 @@ SHA-256 of every file in `submission/`. Regenerate with:
 
     python scripts/write_manifest.py
 
-Generated 2026-09-24T12:39:33+00:00
+Generated 2026-09-24T12:43:35+00:00
 
 | File | Bytes | SHA-256 |
 |---|---:|---|
@@ -125,12 +125,12 @@ Generated 2026-09-24T12:39:33+00:00
 | `submission/demo/storyboard.md` | 3,753 | `06edbd8ca3681013731d3c9106902f65d9ffe0fcca4453a55b8aa2e49cf926d1` |
 | `submission/demo/video-description.md` | 2,518 | `7229cf555d5b82036b02432b825c159b5c38439461ece3bb46364d420435112c` |
 | `submission/final/FINAL-QUALITY-CHECK.md` | 5,177 | `ab89ad68d8ec83a508bd2388443d2f761b4110cd724d658941c93539937a5170` |
-| `submission/final/MANIFEST.md` | 17,214 | `ee21b5c9321a3296af668e869bf267b9351b00c4285cd7d8e49b7fce93934753` |
+| `submission/final/MANIFEST.md` | 17,537 | `63c468b85a76604668edce3490dafd54c4f70b31aa772909008d49910da6a327` |
 | `submission/final/REQUIREMENT-COVERAGE.md` | 9,994 | `cb61b9a75728125c1d46168b60249e577d9468e0926b5df70c28e5f355c9a038` |
 | `submission/final/SecureMailScope-SIH26159-Demo.mp4` | 22,153,052 | `0360d9b5e7cd12d4b59aa9d84effb4c3c7b5bc6ec61633b4a82b3cf63f293bce` |
-| `submission/final/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,169,651 | `c752012b6122010b96f1486c7688485bf419e66740bc5a55cce7b3cf08caebd7` |
-| `submission/final/SecureMailScope-SIH26159-Zero-Day.pptx` | 1,256,974 | `dd66caa4b3016040728cadefd8f3b861d2ecf0d7b7b07a1eec5070a5a4a8021c` |
-| `submission/final/manifest.json` | 23,476 | `ca8c3978d1edde783c46a2473dd47c9ee1a55034e1a82528c7c2de7a81e9a2fd` |
+| `submission/final/SecureMailScope-SIH26159-Zero-Day.pdf` | 1,156,408 | `62d9622ecda4b50c8b0015de625feca3b6f36b60afa295293f3ffbfeba90c03d` |
+| `submission/final/SecureMailScope-SIH26159-Zero-Day.pptx` | 1,256,992 | `243e5a0660918f8e895b1eaf10d636722324b82afa8f97bb50cf9a84aded95ad` |
+| `submission/final/manifest.json` | 23,899 | `a85fff9d369a0e80cc693d53242648897ec2d7918925659ecc49e13d5afaee2b` |
 | `submission/presentation/SecureMailScope-SIH26159.pdf` | 606,554 | `fa269b0e599d3dcb357e045fd6583b93db238cd0bb5e0037418f56a208b153ae` |
 | `submission/presentation/SecureMailScope-SIH26159.pptx` | 683,037 | `8f6fa86357adbe789845c89122463e68ea126e8644211b225a82539df443278c` |
 | `submission/presentation/build-status.json` | 366 | `ffcdd896947fc9542822ffd90e165ac030088e8ac43a50446e669c521e32015e` |

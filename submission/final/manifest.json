@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-24T12:39:33+00:00",
+  "generated_at": "2026-09-24T12:43:35+00:00",
   "files": [
     {
       "path": "submission/README.md",
@@ -588,8 +588,8 @@
     },
     {
       "path": "submission/final/MANIFEST.md",
-      "bytes": 17214,
-      "sha256": "ee21b5c9321a3296af668e869bf267b9351b00c4285cd7d8e49b7fce93934753"
+      "bytes": 17537,
+      "sha256": "63c468b85a76604668edce3490dafd54c4f70b31aa772909008d49910da6a327"
     },
     {
       "path": "submission/final/REQUIREMENT-COVERAGE.md",
@@ -603,18 +603,18 @@
     },
     {
       "path": "submission/final/SecureMailScope-SIH26159-Zero-Day.pdf",
-      "bytes": 1169651,
-      "sha256": "c752012b6122010b96f1486c7688485bf419e66740bc5a55cce7b3cf08caebd7"
+      "bytes": 1156408,
+      "sha256": "62d9622ecda4b50c8b0015de625feca3b6f36b60afa295293f3ffbfeba90c03d"
     },
     {
       "path": "submission/final/SecureMailScope-SIH26159-Zero-Day.pptx",
-      "bytes": 1256974,
-      "sha256": "dd66caa4b3016040728cadefd8f3b861d2ecf0d7b7b07a1eec5070a5a4a8021c"
+      "bytes": 1256992,
+      "sha256": "243e5a0660918f8e895b1eaf10d636722324b82afa8f97bb50cf9a84aded95ad"
     },
     {
       "path": "submission/final/manifest.json",
-      "bytes": 23476,
-      "sha256": "ca8c3978d1edde783c46a2473dd47c9ee1a55034e1a82528c7c2de7a81e9a2fd"
+      "bytes": 23899,
+      "sha256": "a85fff9d369a0e80cc693d53242648897ec2d7918925659ecc49e13d5afaee2b"
     },
     {
       "path": "submission/presentation/SecureMailScope-SIH26159.pdf",

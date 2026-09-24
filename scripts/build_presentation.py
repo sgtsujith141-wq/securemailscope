@@ -379,7 +379,7 @@ def _band(
     frame.margin_left = Inches(0.08)
     frame.margin_top = Inches(0.03)
     frame.vertical_anchor = MSO_ANCHOR.TOP
-    _write(frame, [(label, 7.5, True, RGBColor(0x8A, 0x9B, 0xB0), 0)])
+    _write(frame, [(label, 8, True, RGBColor(0x8A, 0x9B, 0xB0), 0)])
     _no_bullets(frame)
     return shape
 
@@ -632,9 +632,9 @@ def slide_3(slide: Any) -> None:
 
     # The vertical budget is computed once and every band reads from it, so
     # no stack can grow past its own label or into the row below.
-    arch_top, arch_bottom = 1.46, 4.46
+    arch_top, arch_bottom = 1.46, 4.70
     band_h = arch_bottom - arch_top
-    LABEL = 0.24                      # the band label strip inside each band
+    LABEL = 0.32                      # the band label strip inside each band
     # Five stages. The fourth is split, because deterministic intelligence and
     # AI-assisted triage are different kinds of claim and a judge has to be
     # able to see at a glance which is which.
@@ -649,10 +649,10 @@ def slide_3(slide: Any) -> None:
         inner_x, inner_w = box[0] + 0.10, box[1] - 0.20
         for index, (title, detail) in enumerate(items):
             lines: list[tuple[str, float, bool, RGBColor]] = [
-                (title, 9.5, True, INK)
+                (title, 10, True, INK)
             ]
             if detail:
-                lines.append((detail, 7.5, False, MUTED))
+                lines.append((detail, 8.5, False, MUTED))
             _node(slide, inner_x, y, inner_w, node_h, lines,
                   fill=fill, line=line)
             y += node_h
@@ -666,7 +666,7 @@ def slide_3(slide: Any) -> None:
     stack(stage_cols[0], arch_top + LABEL, band_h - LABEL - 0.08, [
         ("PCAP / PCAPNG", "authorised capture"),
         ("Safe ingestion", "format from the bytes, 8 limits"),
-    ], node_h=0.74)
+    ], node_h=0.84)
 
     _band(slide, stage_cols[1][0], arch_top, stage_cols[1][1], band_h,
           "RECONSTRUCTION")
@@ -675,7 +675,7 @@ def slide_3(slide: Any) -> None:
         ("TCP reassembly", "reorder \u00b7 retransmit \u00b7 gaps"),
         ("SMTP \u00b7 IMAP \u00b7 POP3", "state machines, not ports"),
         ("STARTTLS \u00b7 STLS", "advertised \u00b7 requested \u00b7 outcome"),
-    ], node_h=0.52)
+    ], node_h=0.58)
 
     _band(slide, stage_cols[2][0], arch_top, stage_cols[2][1], band_h,
           "CRYPTOGRAPHIC ASSESSMENT")
@@ -684,21 +684,21 @@ def slide_3(slide: Any) -> None:
         ("Certificate analysis", "where passively observable"),
         ("25 deterministic rules", "versioned and fingerprinted"),
         ("Score \u00b7 coverage \u00b7 priority", "arithmetic shown, not asserted"),
-    ], node_h=0.52)
+    ], node_h=0.58)
 
     # --- the split layer: deterministic above, AI-assisted below ------------
     split = stage_cols[3]
-    upper_h = 1.22
+    upper_h = 1.26
     lower_h = band_h - upper_h - 0.10
     ai_top = arch_top + upper_h + 0.10
 
     _band(slide, split[0], arch_top, split[1], upper_h,
           "DETERMINISTIC INTELLIGENCE")
-    stack(split, arch_top + LABEL, upper_h - LABEL - 0.06, [
+    stack(split, arch_top + LABEL, upper_h - LABEL - 0.04, [
         ("Cryptographic fingerprint", ""),
         ("Cross-session correlation", ""),
         ("Configuration drift", ""),
-    ], node_h=0.26, gap=0.08)
+    ], node_h=0.26, gap=0.07)
 
     ai_band = slide.shapes.add_shape(
         MSO_SHAPE.ROUNDED_RECTANGLE,
@@ -714,15 +714,15 @@ def slide_3(slide: Any) -> None:
     ai_frame.margin_left = Inches(0.08)
     ai_frame.margin_top = Inches(0.03)
     ai_frame.vertical_anchor = MSO_ANCHOR.TOP
-    _write(ai_frame, [("AI-ASSISTED TRIAGE", 8, True, WARN, 0)])
+    _write(ai_frame, [("AI-ASSISTED TRIAGE", 8.5, True, WARN, 0)])
     _no_bullets(ai_frame)
 
     note_h = 0.30
-    stack(split, ai_top + LABEL, lower_h - LABEL - note_h - 0.04, [
+    stack(split, ai_top + LABEL, lower_h - LABEL - note_h - 0.02, [
         ("93-feature vector", "cryptographic \u00b7 session \u00b7 evidence"),
         ("Supervised classifier", "logistic regression"),
         ("Advisory risk class", "CRITICAL \u00b7 HIGH \u00b7 MODERATE \u00b7 LOW"),
-    ], node_h=0.30, gap=0.08, fill=RGBColor(0xFF, 0xFD, 0xF8),
+    ], node_h=0.38, gap=0.05, fill=RGBColor(0xFF, 0xFD, 0xF8),
         line=RGBColor(0xDC, 0xB8, 0x77))
     note = _textbox(slide, split[0] + 0.10, ai_top + lower_h - note_h,
                     split[1] - 0.20, note_h)
@@ -740,15 +740,15 @@ def slide_3(slide: Any) -> None:
         ("FastAPI + SQLite", "loopback only, token"),
         ("React workspace", "evidence-linked throughout"),
         ("JSON \u00b7 HTML \u00b7 PDF", "parity-tested"),
-    ], node_h=0.52)
+    ], node_h=0.58)
 
     # --- the evidence rail ---------------------------------------------------
-    rail_top, rail_h = 4.56, 0.72
+    rail_top, rail_h = 4.80, 0.66
     _band(slide, CONTENT_LEFT, rail_top, CONTENT_RIGHT - CONTENT_LEFT, rail_h,
           "EVIDENCE RAIL \u2014 WHAT EVERY FINDING CARRIES")
     steps = ["PACKET", "OBSERVATION", "CRYPTO FACT", "RULE", "FINDING",
              "REMEDIATION"]
-    node_top, node_h = rail_top + 0.26, 0.38
+    node_top, node_h = rail_top + 0.24, 0.36
     cards, arrows = chain(len(steps), left=CONTENT_LEFT + 0.14,
                           right=CONTENT_RIGHT - 0.14)
     for (x, w), label in zip(cards, steps, strict=True):
@@ -759,7 +759,7 @@ def slide_3(slide: Any) -> None:
         _arrow(slide, x, middle(node_top, node_h, ARROW_H), ARROW_W)
 
     # --- what it is built from ----------------------------------------------
-    tech_top, tech_h = 5.38, 0.76
+    tech_top, tech_h = 5.56, 0.74
     groups = [
         ("ENGINE", "Python \u00b7 Scapy \u00b7 cryptography", ACCENT),
         ("APPLICATION", "FastAPI \u00b7 SQLite \u00b7 React \u00b7 TypeScript", ACCENT),
@@ -773,7 +773,7 @@ def slide_3(slide: Any) -> None:
         _node(slide, x, tech_top, w, tech_h,
               [(title, 10.5, True, colour), (detail, 9, False, BODY)])
 
-    foot = _textbox(slide, CONTENT_LEFT, 6.22, CONTENT_RIGHT - CONTENT_LEFT, 0.34)
+    foot = _textbox(slide, CONTENT_LEFT, 6.38, CONTENT_RIGHT - CONTENT_LEFT, 0.34)
     _write(foot.text_frame,
            [("The classifier is trained on 313 synthetic sessions and is "
              "NOT VALIDATED for real-world risk; deterministic packet "
@@ -1022,7 +1022,7 @@ def slide_6(slide: Any) -> None:
                           right=CONTENT_RIGHT - 0.16)
     for (x, w), (title, detail) in zip(cards, steps, strict=True):
         _node(slide, x, node_top, w, node_h,
-              [(title, 9.5, True, INK), (detail, 8.5, False, MUTED)])
+              [(title, 10, True, INK), (detail, 9, False, MUTED)])
     for x in arrows:
         _arrow(slide, x, middle(node_top, node_h, ARROW_H), ARROW_W)
 
