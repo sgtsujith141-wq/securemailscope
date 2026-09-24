@@ -1,0 +1,70 @@
+{
+  "voice": "Neel",
+  "voice_id": "SQ8WYwlpzxrTbbuJgi38",
+  "model": "eleven_multilingual_v2",
+  "settings": {
+    "stability": 0.42,
+    "similarity_boost": 0.82,
+    "style": 0.18,
+    "use_speaker_boost": true,
+    "speed": 1.06
+  },
+  "segments": [
+    [
+      "01-intro",
+      "Hello, we are Team Zero-Day, and our solution for SIH26159 is SecureMailScope — an AI-assisted cryptographic security posture assessment tool for secure email communications."
+    ],
+    [
+      "02-what",
+      "SecureMailScope analyzes authorised PCAP and PCAPNG captures and shows how email traffic was actually protected — including TLS versions, cipher suites, key exchange, certificate evidence, security findings and remediation."
+    ],
+    [
+      "03-problem",
+      "Even when email traffic is encrypted, the cryptography negotiated during the connection may still be outdated or weak."
+    ],
+    [
+      "04-passive",
+      "SecureMailScope works passively on traffic the organisation already has. It does not contact the mail server, and the capture remains local."
+    ],
+    [
+      "05-analysis",
+      "Here we analyze a controlled synthetic capture containing a deliberately weak configuration."
+    ],
+    [
+      "06-engine",
+      "The engine rebuilds the TCP session, identifies the email protocol, follows the TLS negotiation and evaluates the observed cryptographic parameters."
+    ],
+    [
+      "07-finding",
+      "This session negotiated static RSA key exchange, so it does not provide forward secrecy. SecureMailScope classifies this as a high-priority finding."
+    ],
+    [
+      "08-evidence",
+      "Every finding is linked back to the packet evidence used to establish it. Here the system points to packets four and five, together with their timestamps and the observation that triggered the rule."
+    ],
+    [
+      "09-verify",
+      "This allows an analyst to independently verify the same evidence in a tool such as Wireshark."
+    ],
+    [
+      "10-tls13",
+      "SecureMailScope also distinguishes evidence it could not observe from evidence that something is safe. In TLS 1.3, certificate messages may be encrypted in a passive capture. When that evidence cannot be observed, the tool reports it as NOT AVAILABLE instead of guessing."
+    ],
+    [
+      "11-drift",
+      "For repeated observations of the same service, SecureMailScope compares cryptographic posture across captures. Here, the observed negotiation changes from TLS 1.2 to TLS 1.0, which is recorded as cryptographic drift."
+    ],
+    [
+      "12-report",
+      "The investigation can then be exported as JSON, standalone HTML or PDF, carrying the findings, supporting packet references and remediation guidance."
+    ],
+    [
+      "13-summary",
+      "In summary, SecureMailScope provides passive, local-first and evidence-linked analysis of secure email traffic."
+    ],
+    [
+      "14-close",
+      "It helps an analyst understand what cryptography was actually negotiated, identify weaknesses, verify the evidence, track changes across captures and generate a forensic report. Thank you."
+    ]
+  ]
+}

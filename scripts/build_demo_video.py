@@ -30,6 +30,7 @@ import argparse
 import contextlib
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -44,7 +45,13 @@ BUILD = ROOT / "local-evidence" / "video-build"
 OUT_DEFAULT = ROOT / "submission" / "final" / "SecureMailScope-SIH26159-Demo.mp4"
 
 WIDTH, HEIGHT, FPS = 1920, 1080, 30
-CRF = "16"
+SAMPLE_RATE = 48000
+#: Silence before a line starts inside its shot, and after it ends.
+LEAD, TAIL = 0.35, 0.55
+GAP = 0.45              # breath between two lines spoken over one shot
+TAG = 1.20              # footage kept after a line ends, before the cut
+SILENT = 4.50           # how long a shot with no line of its own runs
+CRF = "18"
 
 INK = (7, 12, 20)
 MIST = (226, 234, 245)
@@ -83,16 +90,18 @@ def _font(candidates: tuple[str, ...]) -> str:
 class Shot:
     """One segment of product footage.
 
-    `beat` and `until` name marks in the recording's own beat log, so a shot
-    can never drift from what was recorded. `narration` names a file in
+    `beat` names the section's own recording, local-evidence/footage/<beat>.webm.
+    One file per shot is what makes the cut trustworthy: Playwright drops
+    frames while the page is busy, so an offset into a single long recording
+    does not point at the frame it was measured against, while a whole file
+    cannot drift from what it recorded. `narration` names a file in
     local-evidence/narration; `captions` are short labels, not a transcript.
     """
 
     beat: str
-    until: str | None = None
-    narration: str | None = None
+    narration: str | tuple[str, ...] | None = None
     captions: tuple[str, ...] = ()
-    seconds: float | None = None          # cap the window; None = to `until`
+    seconds: float | None = None          # cap the window; None = whole clip
     zoom: float = 1.0                     # gentle push-in over the shot
     lead: float = 0.0                     # silence before the line starts
 
@@ -108,17 +117,19 @@ class Card:
     footer: tuple[str, ...] = field(default_factory=tuple)
 
 
+#: The team introduces itself over the title, the way it would in the room.
+#: The card is held for as long as that takes.
 TITLE_CARD = Card(
-    kind="title", seconds=4.4,
+    kind="title", seconds=4.4, narration="01-intro",
     heading="SecureMailScope",
     sub="Cryptographic security posture, from the packets you already have.",
     note="Smart India Hackathon 2026  ·  SIH26159  ·  NTRO  ·  Zero-Day",
 )
 
 END_CARD = Card(
-    kind="end", seconds=7.5,
+    kind="end", seconds=7.5, narration="14-close",
     heading="SecureMailScope",
-    sub="Passive  ·  Local  ·  Evidence-backed",
+    sub="Passive  ·  Local-first  ·  Evidence-linked",
     footer=(
         "Smart India Hackathon 2026  ·  Problem statement SIH26159",
         "National Technical Research Organisation",
@@ -128,42 +139,46 @@ END_CARD = Card(
     ),
 )
 
-#: The cut, in order. The first shot is the hook: the product already showing
-#: a real weak finding, before any title.
+#: The cut, in order. A presentation, not an advertisement: it opens on the
+#: title the way a team opens a talk, then shows the product doing the work.
 CUT: list[Shot | Card] = [
-    Shot("finding-detail", until="evidence", narration="01-hook",
-         captions=("TLS 1.0 negotiated", "Static RSA · no forward secrecy", "HIGH"),
-         zoom=1.05),
     TITLE_CARD,
-    Shot("firstrun", until="upload", narration="02-input",
-         captions=("Passive PCAP analysis", "Nothing leaves this machine")),
-    Shot("upload", until="analyse", narration=None,
-         captions=("Nine synthetic captures",)),
-    Shot("analyse", until="overview", narration="03-pipeline",
-         captions=("Sessions rebuilt", "SMTP · IMAP · POP3 · STARTTLS · TLS")),
-    Shot("overview", until="modules", narration="04-analysis",
-         captions=("59/100 · WEAK", "7 high-priority findings"), zoom=1.04),
-    Shot("modules", until="finding", narration=None,
-         captions=("TLS posture across every session",)),
-    Shot("finding", until="finding-detail", narration=None,
+    Shot("firstrun", narration="02-what",
+         captions=("Passive PCAP / PCAPNG analysis",)),
+    Shot("upload", narration=("03-problem", "04-passive"),
+         captions=("Authorised captures only",
+                   "No live scan \u00b7 the capture stays on this machine")),
+    Shot("overview", narration="05-analysis",
+         captions=("Controlled synthetic capture", "59/100 \u00b7 WEAK"), zoom=1.04),
+    Shot("modules", narration="06-engine",
+         captions=("Session \u00b7 protocol \u00b7 TLS \u00b7 assessment",)),
+    Shot("finding", narration=None,
          captions=("Findings, ranked by priority",)),
-    Shot("evidence", until="verify", narration="05-evidence",
-         captions=("Packets #4 and #5", "Evidence linked"), zoom=1.06),
-    Shot("verify", until="tls13", narration="06-verify",
-         captions=("Open the same packets in Wireshark",), zoom=1.04),
-    Shot("tls13", until="drift", narration="07-tls13",
-         captions=("TLS 1.3 certificate unavailable", "Reported, not guessed")),
-    Shot("drift-setup", until="drift", narration=None,
-         captions=("Two captures of the same service",)),
-    Shot("drift", until="report", narration="08-drift",
-         captions=("Observed cryptographic drift", "TLS 1.2 → TLS 1.0"), zoom=1.05),
-    Shot("report", until="montage", narration="09-report",
-         captions=("JSON · HTML · PDF",)),
+    Shot("finding-detail", narration="07-finding",
+         captions=("TLS-KEX-001 \u00b7 HIGH", "Static RSA \u00b7 no forward secrecy"),
+         zoom=1.04),
+    Shot("evidence", narration="08-evidence",
+         captions=("Packets #4 and #5", "Rule \u00b7 severity \u00b7 remediation"),
+         zoom=1.05),
+    Shot("verify", narration="09-verify",
+         captions=("Packets #4\u2013#5 \u00b7 independently verifiable in Wireshark",),
+         zoom=1.03),
+    Shot("tls13", narration="10-tls13",
+         captions=("TLS 1.3 certificate", "Reported NOT AVAILABLE, not guessed")),
+    Shot("drift-setup", narration=None,
+         captions=("A second observation of the same service",)),
+    Shot("drift", narration="11-drift",
+         captions=("Cryptographic drift", "TLS 1.2 \u2192 OBSERVED_CHANGE \u2192 TLS 1.0"),
+         zoom=1.04),
+    Shot("report", narration="12-report",
+         captions=("JSON \u00b7 standalone HTML \u00b7 PDF",)),
+    # Long enough to read, now that the page is drawn at a size that can be.
     Shot("__pdf__", narration=None, captions=("The exported forensic report",),
-         seconds=4.2),
+         seconds=5.2),
     Shot("__pdf2__", narration=None,
-         captions=("Findings · packet references · remediation",), seconds=4.6),
-    Shot("montage", until="end", narration="10-close", captions=()),
+         captions=("Findings \u00b7 packet references \u00b7 remediation",), seconds=5.4),
+    Shot("montage", narration="13-summary",
+         captions=("Every finding traces to the packets that produced it",)),
     END_CARD,
 ]
 
@@ -271,91 +286,87 @@ def _render_caption(lines: tuple[str, ...], path: Path) -> Path | None:
     return path
 
 
+#: How wide the exported page is drawn on the 16:9 canvas. Fitting a portrait
+#: page to the frame height leaves it about a third of the width and its text
+#: too small to read from a seat; this is wide enough to read and still leaves
+#: a margin either side.
+PAGE_WIDTH = 1180
+
+
 def _frame_page(page_png: Path, out: Path) -> Path:
-    """Centre a portrait page on a 16:9 canvas in the product's ink."""
+    """Draw a portrait page on a 16:9 canvas, top-anchored and readable.
+
+    The page is scaled for legibility rather than to fit, so what runs past
+    the bottom of the frame is simply not shown. The top of a report page is
+    where the summary and the first finding are, which is what the shot is
+    there to show.
+    """
     from PIL import Image
 
     canvas = Image.new("RGB", (WIDTH, HEIGHT), INK)
     with Image.open(page_png) as page:
-        scale = (HEIGHT - 56) / page.height
-        size = (max(1, int(page.width * scale)), HEIGHT - 56)
-        canvas.paste(
-            page.convert("RGB").resize(size, Image.Resampling.LANCZOS),
-            ((WIDTH - size[0]) // 2, 28),
-        )
+        scale = PAGE_WIDTH / page.width
+        size = (PAGE_WIDTH, max(1, int(page.height * scale)))
+        drawn = page.convert("RGB").resize(size, Image.Resampling.LANCZOS)
+        canvas.paste(drawn, ((WIDTH - PAGE_WIDTH) // 2, 24))
     canvas.save(out)
     return out
 
 
-def _encode(
-    video_inputs: list[str], chain: list[str], video_label: str,
-    audio: Path | None, seconds: float, out: Path, *, lead: float = 0.0,
+def _encode_video(
+    inputs: list[str], chain: list[str], label: str, seconds: float, out: Path,
 ) -> None:
-    """Encode one segment: video filter chain, optional narration under it."""
-    argv = [_ffmpeg(), "-y", "-loglevel", "error", *video_inputs]
-    chain = list(chain)
-    if audio is not None and audio.exists():
-        argv += ["-i", str(audio)]
-        index = len([a for a in video_inputs if a == "-i"])
-        delay = int(lead * 1000)
-        chain.append(f"[{index}:a]adelay={delay}|{delay},apad[a]")
-        audio_map = "[a]"
-    else:
-        argv += ["-f", "lavfi", "-t", f"{seconds:.3f}",
-                 "-i", "anullsrc=channel_layout=stereo:sample_rate=48000"]
-        audio_map = f"{len([a for a in video_inputs if a == '-i'])}:a"
-    argv += ["-filter_complex", ";".join(chain),
-             "-map", video_label, "-map", audio_map,
-             "-c:v", "libx264", "-preset", "slow", "-crf", CRF,
-             "-pix_fmt", "yuv420p", "-r", str(FPS),
-             "-c:a", "aac", "-b:a", "192k",
-             "-t", f"{seconds:.3f}", str(out)]
+    """Encode one segment, video only.
+
+    Narration is not attached here. Laying a line under each clip and then
+    concatenating means a join inside the audio at every cut, and a join is
+    where a click comes from. Instead every clip is silent, and one continuous
+    narration track is mixed over the finished picture.
+    """
+    argv = [_ffmpeg(), "-y", "-loglevel", "error", *inputs,
+            "-filter_complex", ";".join(chain), "-map", label,
+            "-an",
+            "-c:v", "libx264", "-preset", "slow", "-crf", CRF,
+            "-profile:v", "high", "-pix_fmt", "yuv420p", "-r", str(FPS),
+            "-t", f"{seconds:.3f}", str(out)]
     subprocess.run(argv, check=True)  # noqa: S603
 
 
-def _encode_card(card: Card, png: Path, audio: Path | None, out: Path) -> None:
-    seconds = card.seconds
-    if audio is not None and audio.exists():
-        seconds = max(seconds, _duration(audio) + 1.0)
+def _encode_card(card: Card, png: Path, seconds: float, out: Path) -> None:
     fade = max(0.0, seconds - 0.4)
-    _encode(
+    _encode_video(
         ["-loop", "1", "-framerate", str(FPS), "-t", f"{seconds:.3f}", "-i", str(png)],
         [f"[0:v]fps={FPS},format=yuv420p,fade=t=in:st=0:d=0.4,"
          f"fade=t=out:st={fade:.3f}:d=0.4[v]"],
-        "[v]", audio, seconds, out, lead=0.35,
+        "[v]", seconds, out,
     )
 
 
-def _encode_still(png: Path, caption: Path | None, audio: Path | None,
-                  out: Path, *, seconds: float) -> None:
-    length = seconds
-    if audio is not None and audio.exists():
-        length = max(length, _duration(audio) + 0.8)
-    inputs = ["-loop", "1", "-framerate", str(FPS), "-t", f"{length:.3f}", "-i", str(png)]
+def _encode_still(png: Path, caption: Path | None, seconds: float, out: Path) -> None:
+    inputs = ["-loop", "1", "-framerate", str(FPS), "-t", f"{seconds:.3f}", "-i", str(png)]
     chain = [f"[0:v]fps={FPS},scale={WIDTH}:{HEIGHT}[base]"]
     label = "[base]"
     if caption is not None:
-        inputs += ["-loop", "1", "-framerate", str(FPS), "-t", f"{length:.3f}",
+        inputs += ["-loop", "1", "-framerate", str(FPS), "-t", f"{seconds:.3f}",
                    "-i", str(caption)]
         chain.append("[base][1:v]overlay=x=0:y=H-h[capped]")
         label = "[capped]"
     chain.append(f"{label}format=yuv420p[v]")
-    _encode(inputs, chain, "[v]", audio, length, out, lead=0.3)
+    _encode_video(inputs, chain, "[v]", seconds, out)
 
 
 def _encode_shot(source: Path, start: float, length: float, shot: Shot,
-                 caption: Path | None, audio: Path | None, out: Path) -> None:
-    """Cut one shot, push in gently, composite its caption, lay the line under."""
-    seconds = length
-    if audio is not None and audio.exists():
-        seconds = max(seconds, _duration(audio) + shot.lead + 0.7)
-    hold = max(0.0, seconds - length)
+                 caption: Path | None, seconds: float, out: Path) -> None:
+    """Cut one shot, push in gently, composite its caption.
 
+    Where the line of narration runs past the footage the final frame is held
+    rather than the footage being sped up: the recording is evidence, and its
+    timing is not adjusted to fit a script.
+    """
+    hold = max(0.0, seconds - length)
     inputs = ["-ss", f"{start:.3f}", "-t", f"{length:.3f}", "-i", str(source)]
     steps = [f"fps={FPS}", f"scale={WIDTH}:{HEIGHT}"]
     if shot.zoom > 1.0:
-        # A slow push-in, a few per cent over the shot. Enough to keep a
-        # static page feeling alive; small enough that nothing is cropped out.
         steps.append(
             f"zoompan=z='min(zoom+{(shot.zoom - 1) / (seconds * FPS):.6f},{shot.zoom})'"
             f":d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
@@ -370,17 +381,67 @@ def _encode_shot(source: Path, start: float, length: float, shot: Shot,
         chain.append("[base][1:v]overlay=x=0:y=H-h[capped]")
         label = "[capped]"
     chain.append(f"{label}format=yuv420p[v]")
-    _encode(inputs, chain, "[v]", audio, seconds, out, lead=shot.lead)
+    _encode_video(inputs, chain, "[v]", seconds, out)
 
 
-def _normalise(source: Path, out: Path) -> None:
-    """Bring the finished cut to -16 LUFS with a -1 dBTP ceiling.
+def _build_narration(
+    placements: list[tuple[float, Path]], total: float, out: Path,
+) -> None:
+    """One continuous narration track, each line mixed in at its own offset.
 
-    Two passes, because one-pass `loudnorm` only estimates: it lands a couple
-    of LU away, which is audible as a video that is quieter than everything
-    else a judge has just watched. The measurement from the first pass is fed
-    back into the second, and the video stream is copied so normalising costs
-    no picture quality.
+    No concatenation and therefore no joins: the lines are delayed onto a
+    single silent bed and summed. They never overlap, so `normalize=0` is
+    exact addition rather than the attenuation `amix` applies by default.
+    """
+    argv = [_ffmpeg(), "-y", "-loglevel", "error",
+            "-f", "lavfi", "-t", f"{total:.3f}",
+            "-i", f"anullsrc=channel_layout=stereo:sample_rate={SAMPLE_RATE}"]
+    chain: list[str] = []
+    labels = ["[0:a]"]
+    for index, (offset, path) in enumerate(placements, start=1):
+        argv += ["-i", str(path)]
+        ms = int(round(offset * 1000))
+        # A short fade at each end of a line, so a take that starts on a hard
+        # transient cannot produce a click when it is summed in.
+        chain.append(
+            f"[{index}:a]aresample={SAMPLE_RATE},afade=t=in:st=0:d=0.012,"
+            f"areverse,afade=t=in:st=0:d=0.012,areverse,"
+            f"adelay={ms}|{ms}[n{index}]"
+        )
+        labels.append(f"[n{index}]")
+    chain.append(
+        "".join(labels) + f"amix=inputs={len(labels)}:normalize=0:dropout_transition=0"
+        f",atrim=0:{total:.3f},asetpts=N/SR/TB[a]"
+    )
+    argv += ["-filter_complex", ";".join(chain), "-map", "[a]",
+             "-ar", str(SAMPLE_RATE), "-ac", "2", "-c:a", "pcm_s16le",
+             "-t", f"{total:.3f}", str(out)]
+    subprocess.run(argv, check=True)  # noqa: S603
+
+
+def _aac_args() -> list[str]:
+    """Encoder arguments that actually deliver the stated audio bitrate.
+
+    ffmpeg's built-in AAC encoder treats `-b:a` as a ceiling and rate-controls
+    below it, so a narration track with pauses in it lands near 130 kb/s no
+    matter what is asked for. AudioToolbox will hold a constant rate, so it is
+    preferred where it exists and the built-in encoder is the fallback.
+    """
+    have = subprocess.run(  # noqa: S603 - resolved path, fixed argv, no shell
+        [_ffmpeg(), "-hide_banner", "-encoders"],
+        capture_output=True, text=True, check=False,
+    ).stdout
+    if " aac_at " in have:
+        return ["-c:a", "aac_at", "-aac_at_mode", "cbr", "-b:a", "192k"]
+    return ["-c:a", "aac", "-b:a", "192k"]
+
+
+def _normalise_audio(source: Path, out: Path) -> None:
+    """Bring the narration track to -16 LUFS with a -1 dBTP ceiling.
+
+    Two passes, because one-pass `loudnorm` only estimates and lands a couple
+    of LU away -- audible as a video quieter than everything else a judge has
+    just watched. The measurement from the first pass feeds the second.
     """
     probe = subprocess.run(  # noqa: S603 - resolved path, fixed argv, no shell
         [_ffmpeg(), "-hide_banner", "-i", str(source),
@@ -388,20 +449,23 @@ def _normalise(source: Path, out: Path) -> None:
          "-f", "null", "-"],
         check=False, capture_output=True, text=True,
     )
-    # ffmpeg prints the measurement as a JSON object at the very end of
-    # stderr, preceded by its own log lines. Taking everything from the last
-    # opening brace caught a nested one; matching the final balanced block
-    # from the last line that is exactly "{" does not.
+    # ffmpeg prints the measurement as a JSON object and then keeps writing:
+    # the muxing summary and a final progress line follow it. Take the block
+    # from its opening brace to its own closing brace, not to end of output.
     measured: dict[str, str] = {}
     lines = probe.stderr.splitlines()
     for index in range(len(lines) - 1, -1, -1):
-        if lines[index].strip() == "{":
-            with contextlib.suppress(json.JSONDecodeError):
-                measured = json.loads("\n".join(lines[index:]))
-            break
+        if lines[index].strip() != "{":
+            continue
+        for close in range(index + 1, len(lines)):
+            if lines[close].strip() == "}":
+                with contextlib.suppress(json.JSONDecodeError):
+                    measured = json.loads("\n".join(lines[index:close + 1]))
+                break
+        break
 
-    if all(k in measured for k in
-           ("input_i", "input_tp", "input_lra", "input_thresh", "target_offset")):
+    needed = ("input_i", "input_tp", "input_lra", "input_thresh", "target_offset")
+    if all(key in measured for key in needed):
         chain = (
             "loudnorm=I=-16:TP=-1.0:LRA=11"
             f":measured_I={measured['input_i']}"
@@ -413,28 +477,53 @@ def _normalise(source: Path, out: Path) -> None:
     else:
         print("  note: loudness measurement unavailable; single-pass fallback")
         chain = "loudnorm=I=-16:TP=-1.0:LRA=11"
-    # A limiter after normalisation, so a loud syllable cannot clip.
-    chain += ",alimiter=limit=0.891"
+    # A limiter after normalisation, so nothing can clip: -1 dBTP is 0.891.
+    # `level` is on by default and would lift the whole track up to that
+    # ceiling, undoing the normalisation and landing about a loudness unit
+    # hot. The limiter is here to catch peaks, not to set the level.
+    chain += ",alimiter=limit=0.891:level=disabled"
 
     subprocess.run(  # noqa: S603 - resolved path, fixed argv, no shell
         [_ffmpeg(), "-y", "-loglevel", "error", "-i", str(source),
-         "-af", chain, "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-         "-movflags", "+faststart", str(out)],
+         "-af", chain, "-ar", str(SAMPLE_RATE), "-ac", "2",
+         "-c:a", "pcm_s16le", str(out)],
         check=True,
     )
 
 
-def _find_footage() -> Path:
-    candidates = sorted(
-        (ROOT / "frontend" / "test-results").rglob("*.webm"),
-        key=lambda p: p.stat().st_mtime, reverse=True,
+def _content_starts(source: Path, limit: float = 6.0) -> float:
+    """Where the recorded page stops loading and the product is on screen.
+
+    A recording opens on the browser's blank white page and stays bright
+    until the dark application paints. Rather than trimming a guessed number
+    of seconds, measure it: walk the opening frames and take the first one
+    whose average luma has dropped into the application's range. The
+    application sits near luma 15-40 and a blank page near 235, so the
+    threshold is nowhere near either. Nothing is moving during those frames,
+    so nothing of the demonstration is lost.
+    """
+    # `file=-` sends the measurements to stdout. Left on ffmpeg's own output
+    # they are printed at info level, which a quiet build never shows, and the
+    # trim silently becomes zero.
+    probe = subprocess.run(  # noqa: S603 - resolved path, fixed argv, no shell
+        [_ffmpeg(), "-v", "error", "-t", f"{limit:.2f}", "-i", str(source),
+         "-vf",
+         "signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-",
+         "-f", "null", "-"],
+        capture_output=True, text=True, check=False,
     )
-    if not candidates:
-        raise SystemExit(
-            "no recording found. Run:  cd frontend && "
-            "SMS_SCREENSHOTS=1 npx playwright test demo-capture"
-        )
-    return candidates[0]
+    at = 0.0
+    for line in probe.stdout.splitlines():
+        stamp = re.search(r"pts_time:([0-9.]+)", line)
+        if stamp:
+            at = float(stamp.group(1))
+            continue
+        luma = re.search(r"lavfi\.signalstats\.YAVG=([0-9.]+)", line)
+        if luma and float(luma.group(1)) < 110.0:
+            # Start on the first fully painted frame, not just before it: a
+            # single white frame at a cut is the most visible defect there is.
+            return at + 0.08
+    return 0.0
 
 
 def _pdf_pages(pdf: Path, count: int) -> list[Path]:
@@ -469,6 +558,119 @@ def _pdf_pages(pdf: Path, count: int) -> list[Path]:
     return pages
 
 
+def _bright_frames(video: Path, ceiling: float = 200.0) -> list[float]:
+    """Every frame bright enough to be an unpainted page rather than the product.
+
+    The application and the title cards are dark throughout, so a bright frame
+    in the finished video means a browser load flash survived the cut. One of
+    those at a join is the most obvious defect a viewer can see, so the build
+    looks for them rather than trusting that the trim worked.
+    """
+    probe = subprocess.run(  # noqa: S603 - resolved path, fixed argv, no shell
+        [_ffmpeg(), "-v", "error", "-i", str(video),
+         "-vf",
+         "signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-",
+         "-f", "null", "-"],
+        capture_output=True, text=True, check=False,
+    )
+    found: list[float] = []
+    at = 0.0
+    for line in probe.stdout.splitlines():
+        stamp = re.search(r"pts_time:([0-9.]+)", line)
+        if stamp:
+            at = float(stamp.group(1))
+            continue
+        luma = re.search(r"lavfi\.signalstats\.YAVG=([0-9.]+)", line)
+        if luma and float(luma.group(1)) > ceiling:
+            found.append(at)
+    return found
+
+
+def _loudness(video: Path) -> dict[str, str]:
+    """Measure the finished file, rather than assert what it was asked for."""
+    probe = subprocess.run(  # noqa: S603 - resolved path, fixed argv, no shell
+        [_ffmpeg(), "-hide_banner", "-nostats", "-i", str(video),
+         "-af", "ebur128=peak=true", "-f", "null", "-"],
+        capture_output=True, text=True, check=False,
+    )
+    tail = probe.stderr[probe.stderr.rfind("Summary"):]
+    out: dict[str, str] = {}
+    for key, label in (("I:", "integrated"), ("LRA:", "range"),
+                       ("Peak:", "true_peak")):
+        found = re.search(rf"{re.escape(key)}\s*(-?[0-9.]+)\s*(LUFS|LU|dBFS)", tail)
+        if found:
+            out[label] = f"{found.group(1)} {found.group(2)}"
+    return out
+
+
+def _write_final_script(
+    assembled: list[tuple[str, float, float, list[str], tuple[str, ...]]],
+    video: Path, loudness: dict[str, str], path: Path,
+) -> None:
+    """Describe the video that was actually built, not one that was planned.
+
+    Written by the build from the cut it just assembled, so the sheet cannot
+    drift from the file the way a hand-maintained one does.
+    """
+    seconds = _duration(video)
+    lines = [
+        "# Final script \u2014 the finished video",
+        "",
+        "Written by `scripts/build_demo_video.py` from the cut it assembled, so",
+        "every timing below is the file's own. The footage is a Playwright",
+        "recording of the real application against the real backend: one",
+        "recording per shot, concatenated whole.",
+        "",
+        f"**`{video.relative_to(ROOT)}` \u2014 "
+        f"{int(seconds // 60)} min {int(seconds % 60):02d} s, "
+        f"{WIDTH}x{HEIGHT}, {FPS} fps, H.264 High, CRF {CRF}, AAC 192 kbps"
+        + (f" at {loudness['integrated']}" if "integrated" in loudness else "")
+        + ".**",
+        "",
+    ]
+    if loudness:
+        lines += [
+            "| Measurement | Value |", "|---|---|",
+            *(f"| {k.replace('_', ' ').capitalize()} | {v} |"
+              for k, v in loudness.items()),
+            "",
+        ]
+    lines += [
+        "## The cut",
+        "",
+        "| # | At | Length | Element | Narration | Caption |",
+        "|---:|---:|---:|---|---|---|",
+    ]
+    for index, (label, at, length, spoken, captions) in enumerate(assembled, 1):
+        lines.append(
+            f"| {index} | {_timecode(at)[:8]} | {length:.1f}s | {label} | "
+            f"{', '.join(f'`{n}`' for n in spoken) or '\u2014'} | "
+            f"{' \u00b7 '.join(captions) or '\u2014'} |"
+        )
+    cards = sum(1 for label, *_ in assembled if label.startswith("card"))
+    stills = sum(1 for label, *_ in assembled if label.startswith("pdf"))
+    lines += [
+        "",
+        f"{cards} full-screen cards and {stills} report-page stills. Everything",
+        "else is the product being used.",
+        "",
+        "## Captions",
+        "",
+        "Short supportive labels, not a transcript. At most two lines, 46 px",
+        "bold on an opaque band, readable on a projector and on a phone. The",
+        "same text is written to `captions.srt` with the timings of this file.",
+        "",
+        "## Narration",
+        "",
+        "See `narration.md` for the spoken words, the voice and its settings.",
+        "The lines are mixed onto one continuous bed at absolute offsets rather",
+        "than butted together per clip, so there is no join in the audio at a",
+        "picture cut, and each line is faded in and out over 12 ms.",
+        "",
+    ]
+    path.write_text("\n".join(lines))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, default=OUT_DEFAULT)
@@ -476,117 +678,191 @@ def main() -> int:
                         help="Build the same cut with captions and no narration.")
     args = parser.parse_args()
 
-    beats_file = FOOTAGE / "beats.json"
-    if not beats_file.is_file():
-        raise SystemExit(f"no beat log at {beats_file}. Record the footage first.")
-    record = json.loads(beats_file.read_text())
-    marks = {b["id"]: b["at_ms"] / 1000.0 for b in record["beats"]}
-    order = [b["id"] for b in record["beats"]]
-
-    source = _find_footage()
-    total = _duration(source)
-    print(f"footage : {source.relative_to(ROOT)}  ({total:.1f}s)")
+    log = FOOTAGE / "sections.json"
+    if not log.is_file():
+        raise SystemExit(
+            f"no recording at {log}. Run:  cd frontend && "
+            "SMS_SCREENSHOTS=1 npx playwright test demo-capture"
+        )
+    record = json.loads(log.read_text())
+    clips = {p.stem: p for p in sorted(FOOTAGE.glob("*.webm"))}
+    print(f"footage : {len(clips)} section recordings in "
+          f"{FOOTAGE.relative_to(ROOT)}")
 
     if BUILD.exists():
         shutil.rmtree(BUILD)
     BUILD.mkdir(parents=True)
 
-    pdf = ROOT / record.get("exported_pdf", "local-evidence/exports/securemailscope-report.pdf")
+    pdf = ROOT / record.get(
+        "exported_pdf", "local-evidence/exports/securemailscope-report.pdf")
     pdf_pages = _pdf_pages(pdf, 2) if pdf.is_file() else []
 
+    def narration_for(name: str | tuple[str, ...] | None) -> list[Path]:
+        """Every line a shot speaks, in order, skipping any not yet recorded."""
+        if args.silent or not name:
+            return []
+        names = (name,) if isinstance(name, str) else name
+        found: list[Path] = []
+        for one in names:
+            candidate = NARRATION / f"{one}.mp3"
+            if candidate.is_file():
+                found.append(candidate)
+            else:
+                missing.append(one)
+        return found
+
     pieces: list[Path] = []
+    assembled: list[tuple[str, float, float, list[str], tuple[str, ...]]] = []
+    placements: list[tuple[float, Path]] = []
     subtitles: list[tuple[float, float, str]] = []
     elapsed = 0.0
-    missing_narration: list[str] = []
+    missing: list[str] = []
 
     for index, item in enumerate(CUT):
         name = f"{index:02d}"
+        lines = narration_for(item.narration)
+        # A pause between consecutive lines, so two sentences do not run into
+        # one another the way a single breathless take would.
+        spoken = sum(_duration(a) for a in lines) + GAP * max(0, len(lines) - 1)
+
         if isinstance(item, Card):
+            seconds = max(item.seconds, spoken + LEAD + TAIL)
             png = BUILD / f"{name}-card.png"
             _render_card(item, png)
             clip = BUILD / f"{name}-card.mp4"
-            audio = None
-            if not args.silent and item.narration:
-                candidate = NARRATION / f"{item.narration}.mp3"
-                audio = candidate if candidate.is_file() else None
-            _encode_card(item, png, audio, clip)
-            pieces.append(clip)
-            elapsed += _duration(clip)
-            print(f"  {'card':<16} {item.heading}")
-            continue
-
-        audio = None
-        if not args.silent and item.narration:
-            candidate = NARRATION / f"{item.narration}.mp3"
-            if candidate.is_file():
-                audio = candidate
-            else:
-                missing_narration.append(item.narration)
-        caption = _render_caption(item.captions, BUILD / f"{name}-caption.png")
-        clip = BUILD / f"{name}-{item.beat.strip('_')}.mp4"
-
-        if item.beat.startswith("__pdf"):
+            _encode_card(item, png, seconds, clip)
+            label = f"card: {item.heading}"
+        elif item.beat.startswith("__pdf"):
             which = 0 if item.beat == "__pdf__" else 1
             if which >= len(pdf_pages):
                 print(f"  {'pdf':<16} page {which + 1} unavailable, omitted")
                 continue
-            _encode_still(pdf_pages[which], caption, audio, clip,
-                          seconds=item.seconds or 4.0)
+            seconds = max(item.seconds or 4.0, spoken + LEAD + TAIL)
+            caption = _render_caption(item.captions, BUILD / f"{name}-caption.png")
+            clip = BUILD / f"{name}-pdf.mp4"
+            _encode_still(pdf_pages[which], caption, seconds, clip)
+            label = f"{item.beat.strip('_'):<16}"
         else:
-            if item.beat not in marks:
-                print(f"  {'skip':<16} {item.beat}: not in the beat log")
+            if item.beat not in clips:
+                print(f"  {'skip':<16} {item.beat}: not recorded")
                 continue
-            start = marks[item.beat]
-            if item.until and item.until in marks:
-                end = marks[item.until]
-            else:
-                nxt = order.index(item.beat) + 1
-                end = marks[order[nxt]] if nxt < len(order) else min(total, start + 5)
-            length = max(0.8, min(end, total) - start)
+            source = clips[item.beat]
+            total = _duration(source)
+            floor = _content_starts(source)
+            # Each section is recorded longer than the shot needs: it opens by
+            # navigating to the screen it is about, and it ends settled on it.
+            # Take the shot from the END of the recording, so the navigation
+            # falls outside it and the caption never describes a screen that
+            # has not arrived yet. The surplus is dropped rather than held,
+            # because a shot that runs on in silence is what makes a
+            # presentation drag.
+            want = spoken + LEAD + TAIL + TAG if spoken else SILENT
             if item.seconds:
-                length = min(length, item.seconds)
-            _encode_shot(source, start, length, item, caption, audio, clip)
+                want = min(want, item.seconds)
+            length = max(0.8, min(total - floor, want))
+            begin = max(floor, total - length)
+            seconds = max(length, spoken + LEAD + TAIL)
+            caption = _render_caption(item.captions, BUILD / f"{name}-caption.png")
+            clip = BUILD / f"{name}-{item.beat}.mp4"
+            _encode_shot(source, begin, length, item, caption, seconds, clip)
+            label = f"{item.beat:<16}"
 
-        seconds = _duration(clip)
-        if item.captions:
-            subtitles.append((elapsed, elapsed + seconds, " · ".join(item.captions)))
-        elapsed += seconds
+        actual = _duration(clip)
+        at = elapsed + LEAD
+        for line in lines:
+            placements.append((at, line))
+            at += _duration(line) + GAP
+        # Cards carry no caption band; only shots do.
+        captions = () if isinstance(item, Card) else item.captions
+        if captions:
+            subtitles.append((elapsed, elapsed + actual, " \u00b7 ".join(captions)))
         pieces.append(clip)
-        print(f"  {item.beat:<16} +{seconds:5.1f}s"
-              f"{'  (no narration)' if item.narration and audio is None else ''}")
+        assembled.append((label.strip(), elapsed, actual,
+                          [a.stem for a in lines], captions))
+        print(f"  {label:<16} +{actual:5.1f}s"
+              f"{'' if lines else '   (no line)'}")
+        elapsed += actual
 
+    # ---- picture ---------------------------------------------------------
     listing = BUILD / "concat.txt"
     listing.write_text("".join(f"file '{p.name}'\n" for p in pieces))
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    joined = BUILD / "joined.mp4"
+    picture = BUILD / "picture.mp4"
     subprocess.run(  # noqa: S603 - resolved path, fixed argv, no shell
         [_ffmpeg(), "-y", "-loglevel", "error",
          "-f", "concat", "-safe", "0", "-i", str(listing),
          "-c:v", "libx264", "-preset", "slow", "-crf", CRF,
          "-profile:v", "high", "-pix_fmt", "yuv420p", "-r", str(FPS),
-         "-x264-params", "ref=4:bframes=3",
-         "-c:a", "aac", "-b:a", "192k", str(joined)],
+         "-x264-params", "ref=4:bframes=3", "-an", str(picture)],
         check=True, cwd=BUILD,
     )
-    _normalise(joined, args.out)
+    runtime = _duration(picture)
+
+    # ---- sound -----------------------------------------------------------
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    if placements:
+        track = BUILD / "narration.wav"
+        _build_narration(placements, runtime, track)
+        normalised = BUILD / "narration-normalised.wav"
+        _normalise_audio(track, normalised)
+        subprocess.run(  # noqa: S603 - resolved path, fixed argv, no shell
+            [_ffmpeg(), "-y", "-loglevel", "error",
+             "-i", str(picture), "-i", str(normalised),
+             "-map", "0:v", "-map", "1:a", "-c:v", "copy",
+             *_aac_args(), "-ar", str(SAMPLE_RATE),
+             "-shortest", "-movflags", "+faststart", str(args.out)],
+            check=True,
+        )
+    else:
+        subprocess.run(  # noqa: S603 - resolved path, fixed argv, no shell
+            [_ffmpeg(), "-y", "-loglevel", "error", "-i", str(picture),
+             "-f", "lavfi", "-t", f"{runtime:.3f}",
+             "-i", f"anullsrc=channel_layout=stereo:sample_rate={SAMPLE_RATE}",
+             "-map", "0:v", "-map", "1:a", "-c:v", "copy",
+             *_aac_args(), "-ar", str(SAMPLE_RATE),
+             "-shortest", "-movflags", "+faststart", str(args.out)],
+            check=True,
+        )
 
     _write_srt(subtitles, ROOT / "submission" / "demo" / "captions.srt")
+    loudness = _loudness(args.out)
+    _write_final_script(
+        assembled, args.out, loudness,
+        ROOT / "submission" / "demo" / "final-script.md",
+    )
+
+    glare = _bright_frames(args.out)
+    if glare:
+        print("WARNING: blank or near-white frames at "
+              + ", ".join(f"{t:.2f}s" for t in glare[:8]), file=sys.stderr)
 
     digest = hashlib.sha256(args.out.read_bytes()).hexdigest()
     seconds = _duration(args.out)
+    audio_seconds = _stream_duration(args.out, "a")
     print()
-    if missing_narration:
-        print(f"WARNING: no narration for {', '.join(missing_narration)}",
-              file=sys.stderr)
+    if missing:
+        print(f"WARNING: no narration for {', '.join(missing)}", file=sys.stderr)
     print(f"video   : {args.out.relative_to(ROOT)}")
-    print(f"duration: {int(seconds // 60)}:{int(seconds % 60):02d}  ({seconds:.1f}s)"
-          f"  {WIDTH}x{HEIGHT} @ {FPS}fps H.264 CRF {CRF}")
+    print(f"duration: {int(seconds // 60)}:{int(seconds % 60):02d}  ({seconds:.2f}s)"
+          f"  {WIDTH}x{HEIGHT} @ {FPS}fps H.264 High CRF {CRF}")
+    print(f"audio   : {audio_seconds:.2f}s  (drift {abs(seconds - audio_seconds):.2f}s)")
     print(f"size    : {args.out.stat().st_size:,} bytes")
     print(f"sha256  : {digest}")
     if not 165 <= seconds <= 195:
         print(f"\nNOTE: {seconds:.0f}s is outside the 2:45-3:15 target.",
               file=sys.stderr)
     return 0
+
+
+def _stream_duration(path: Path, kind: str) -> float:
+    result = subprocess.run(  # noqa: S603 - resolved path, fixed argv, no shell
+        [_ffprobe(), "-v", "error", "-select_streams", kind,
+         "-show_entries", "stream=duration", "-of", "default=nw=1:nk=1", str(path)],
+        check=False, capture_output=True, text=True,
+    )
+    try:
+        return float(result.stdout.strip().splitlines()[0])
+    except (ValueError, IndexError):
+        return 0.0
 
 
 def _timecode(seconds: float) -> str:

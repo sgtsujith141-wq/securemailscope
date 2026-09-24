@@ -1,59 +1,60 @@
 1
-00:00:00,000 --> 00:00:14,911
-TLS 1.0 negotiated · Static RSA · no forward secrecy · HIGH
+00:00:12,433 --> 00:00:29,300
+Passive PCAP / PCAPNG analysis
 
 2
-00:00:19,311 --> 00:00:28,556
-Passive PCAP analysis · Nothing leaves this machine
+00:00:29,300 --> 00:00:45,267
+Authorised captures only · No live scan · the capture stays on this
+machine
 
 3
-00:00:28,556 --> 00:00:32,923
-Nine synthetic captures
+00:00:45,267 --> 00:00:52,067
+Controlled synthetic capture · 59/100 · WEAK
 
 4
-00:00:32,923 --> 00:00:44,323
-Sessions rebuilt · SMTP · IMAP · POP3 · STARTTLS · TLS
+00:00:52,067 --> 00:01:03,967
+Session · protocol · TLS · assessment
 
 5
-00:00:44,323 --> 00:00:55,565
-59/100 · WEAK · 7 high-priority findings
-
-6
-00:00:55,565 --> 00:01:00,065
-TLS posture across every session
-
-7
-00:01:00,065 --> 00:01:03,665
+00:01:03,967 --> 00:01:08,467
 Findings, ranked by priority
 
+6
+00:01:08,467 --> 00:01:19,167
+TLS-KEX-001 · HIGH · Static RSA · no forward secrecy
+
+7
+00:01:19,167 --> 00:01:31,767
+Packets #4 and #5 · Rule · severity · remediation
+
 8
-00:01:03,665 --> 00:01:17,136
-Packets #4 and #5 · Evidence linked
+00:01:31,767 --> 00:01:38,733
+Packets #4–#5 · independently verifiable in Wireshark
 
 9
-00:01:17,136 --> 00:01:24,976
-Open the same packets in Wireshark
+00:01:38,733 --> 00:01:57,366
+TLS 1.3 certificate · Reported NOT AVAILABLE, not guessed
 
 10
-00:01:24,976 --> 00:01:40,409
-TLS 1.3 certificate unavailable · Reported, not guessed
+00:01:57,366 --> 00:02:01,866
+A second observation of the same service
 
 11
-00:01:40,409 --> 00:01:44,742
-Two captures of the same service
+00:02:01,866 --> 00:02:17,933
+Cryptographic drift · TLS 1.2 → OBSERVED_CHANGE → TLS 1.0
 
 12
-00:01:44,742 --> 00:02:00,176
-Observed cryptographic drift · TLS 1.2 → TLS 1.0
+00:02:17,933 --> 00:02:29,500
+JSON · standalone HTML · PDF
 
 13
-00:02:00,176 --> 00:02:12,676
-JSON · HTML · PDF
-
-14
-00:02:12,676 --> 00:02:16,876
+00:02:29,500 --> 00:02:34,700
 The exported forensic report
 
-15
-00:02:16,876 --> 00:02:21,476
+14
+00:02:34,700 --> 00:02:40,100
 Findings · packet references · remediation
+
+15
+00:02:40,100 --> 00:02:48,433
+Every finding traces to the packets that produced it

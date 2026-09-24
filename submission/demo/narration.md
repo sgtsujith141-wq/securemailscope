@@ -1,7 +1,8 @@
 # Narration
 
-The words, as spoken in the finished video. Written to be said out loud, not
-read off a page: short sentences, contractions, no buzzwords.
+The words, as spoken in the finished video, one entry per generated line.
+Written to be said out loud rather than read off a page, in the register a
+team uses when it presents to judges: no hook, no slogan, no trailer voice.
 
 ## Voice
 
@@ -11,63 +12,77 @@ read off a page: short sentences, contractions, no buzzwords.
 | Model | `eleven_multilingual_v2` |
 | Voice | **Neel** (`SQ8WYwlpzxrTbbuJgi38`) — Indian English, conversational, professional |
 | Settings | stability 0.42 · similarity 0.82 · style 0.18 · speaker boost on · speed 1.06 |
-| Pace | ~141 words per minute across the whole script |
+| Length | 14 lines, 326 words, 134.7s of speech |
+| Pace | 145 words per minute across the whole script |
 
 The voice is **synthesised**, not a person, and that is stated here, in
 `demo-verification.md` and in `submission/README.md`. The operating system's
 own speech synthesis was rejected for this project: it sounds robotic, and a
 national-level submission should not open with a machine reading a script.
 
-Regenerate with `bash scripts/make_narration.sh`. The audio itself is not
-committed — it is large and regenerable — but the script, the voice and the
-exact settings are, so a rebuild sounds the same.
+Regenerate with `bash scripts/make_narration.sh`, or one line at a time with
+`bash scripts/make_narration.sh 10-tls13`. The audio itself is not committed
+— it is large and regenerable — but the script, the voice and the exact
+settings are, so a rebuild sounds the same.
+
+Every line is quality-checked by `scripts/check_narration.py`, which measures
+pace against the batch, looks for clipped samples, looks for the repeating
+consonant artefact a stitched take produces, and flags a dead tail.
 
 ## Script
 
-**Hook**
+**01-intro** · 24 words · 11.52s
 
-> TLS is enabled. That sounds secure. But it doesn't tell you whether the server negotiated old protocols, weak key exchange, or a bad certificate setup. That's what SecureMailScope checks.
+> Hello, we are Team Zero-Day, and our solution for SIH26159 is SecureMailScope — an AI-assisted cryptographic security posture assessment tool for secure email communications.
 
-**Input**
+**02-what** · 29 words · 14.77s
 
-> You give it an authorised PCAP or PCAPNG capture. It stays local. There's no live scan and no connection back to the mail server.
+> SecureMailScope analyzes authorised PCAP and PCAPNG captures and shows how email traffic was actually protected — including TLS versions, cipher suites, key exchange, certificate evidence, security findings and remediation.
 
-**Pipeline**
+**03-problem** · 18 words · 5.90s
 
-> SecureMailScope rebuilds the TCP sessions, figures out whether the traffic is SMTP, IMAP or POP three, follows STARTTLS, and then inspects the TLS handshake.
+> Even when email traffic is encrypted, the cryptography negotiated during the connection may still be outdated or weak.
 
-**Analysis**
+**04-passive** · 21 words · 7.52s
 
-> Here's a deliberately weak example. The server negotiated TLS 1.0 with static RSA. The investigation comes back weak, with high-priority findings that need attention.
+> SecureMailScope works passively on traffic the organisation already has. It does not contact the mail server, and the capture remains local.
 
-**Evidence**
+**05-analysis** · 12 words · 4.69s
 
-> And this is the part that matters. Open the finding. It isn't just saying weak crypto. The rule tells us what failed, why it matters, and exactly which packets established it. Packets four and five.
+> Here we analyze a controlled synthetic capture containing a deliberately weak configuration.
 
-**Verify**
+**06-engine** · 20 words · 9.80s
 
-> So an analyst can take the same capture, open those packets in Wireshark, and check the conclusion independently.
+> The engine rebuilds the TCP session, identifies the email protocol, follows the TLS negotiation and evaluates the observed cryptographic parameters.
 
-**Tls13**
+**07-finding** · 21 words · 8.59s
 
-> It's also careful about what it can't see. In TLS 1.3, the certificate message is normally encrypted. So if the capture doesn't contain decryptable certificate evidence, SecureMailScope says NOT AVAILABLE. It doesn't guess.
+> This session negotiated static RSA key exchange, so it does not provide forward secrecy. SecureMailScope classifies this as a high-priority finding.
 
-**Drift**
+**08-evidence** · 33 words · 10.50s
 
-> Now compare two captures from the same observed service. Earlier, it negotiated TLS 1.2. Later, TLS 1.0. SecureMailScope records that as observed cryptographic drift, with the evidence from both captures.
+> Every finding is linked back to the packet evidence used to establish it. Here the system points to packets four and five, together with their timestamps and the observation that triggered the rule.
 
-**Report**
+**09-verify** · 16 words · 4.88s
 
-> When the investigation is done, the same evidence can be exported as JSON, standalone HTML, or a forensic PDF. The report carries the findings, packet references and remediation with it.
+> This allows an analyst to independently verify the same evidence in a tool such as Wireshark.
 
-**Close**
+**10-tls13** · 42 words · 16.53s
 
-> So the idea is simple. Don't just ask whether email traffic is encrypted. Check what cryptography was actually negotiated. Show the evidence. And tell the analyst what needs fixing. That's SecureMailScope.
+> SecureMailScope also distinguishes evidence it could not observe from evidence that something is safe. In TLS 1.3, certificate messages may be encrypted in a passive capture. When that evidence cannot be observed, the tool reports it as NOT AVAILABLE instead of guessing.
 
-## Why it reads this way
+**11-drift** · 30 words · 13.98s
 
-Judges hear a lot of narration that sounds like a product brochure. Every
-line here is something a person would actually say while showing somebody
-their tool: "And this is the part that matters." "It doesn't guess."
-"Packets four and five." The claims are the same ones the deck makes, in the
-same order, about the same finding.
+> For repeated observations of the same service, SecureMailScope compares cryptographic posture across captures. Here, the observed negotiation changes from TLS 1.2 to TLS 1.0, which is recorded as cryptographic drift.
+
+**12-report** · 21 words · 9.47s
+
+> The investigation can then be exported as JSON, standalone HTML or PDF, carrying the findings, supporting packet references and remediation guidance.
+
+**13-summary** · 13 words · 6.22s
+
+> In summary, SecureMailScope provides passive, local-first and evidence-linked analysis of secure email traffic.
+
+**14-close** · 26 words · 10.31s
+
+> It helps an analyst understand what cryptography was actually negotiated, identify weaknesses, verify the evidence, track changes across captures and generate a forensic report. Thank you.
